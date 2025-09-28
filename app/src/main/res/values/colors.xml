@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- 既存のカラー（互換性のため保持） -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
@@ -7,4 +8,34 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- BugMemo カスタムカラーパレット（落ち着いたオレンジ系） -->
+    <color name="bugmemo_orange">#FFD84315</color>           <!-- メインオレンジ -->
+    <color name="bugmemo_orange_light">#FFFF7043</color>     <!-- ライトオレンジ -->
+    <color name="bugmemo_orange_dark">#FFBF360C</color>      <!-- ダークオレンジ -->
+    <color name="bugmemo_accent">#FFFF9800</color>           <!-- アクセントオレンジ -->
+    <color name="bugmemo_background">#FFFFF8F5</color>       <!-- 暖かみのある背景 -->
+    <color name="bugmemo_surface">#FFFFFBFA</color>          <!-- サーフェス色 -->
+
+    <!-- テキストカラー -->
+    <color name="bugmemo_on_primary">#FFFFFFFF</color>       <!-- プライマリー上のテキスト -->
+    <color name="bugmemo_on_surface">#FF1C1B1F</color>       <!-- サーフェス上のテキスト -->
+    <color name="bugmemo_text_secondary">#FF757575</color>    <!-- セカンダリーテキスト -->
+
+    <!-- 状態カラー -->
+    <color name="bugmemo_error">#FFBA1A1A</color>            <!-- エラー色 -->
+    <color name="bugmemo_success">#FF2E7D32</color>          <!-- 成功色 -->
+    <color name="bugmemo_warning">#FFF57C00</color>          <!-- 警告色 -->
+
+    <!-- グレースケール -->
+    <color name="bugmemo_gray_50">#FFFAFAFA</color>
+    <color name="bugmemo_gray_100">#FFF5F5F5</color>
+    <color name="bugmemo_gray_200">#FFEEEEEE</color>
+    <color name="bugmemo_gray_300">#FFE0E0E0</color>
+    <color name="bugmemo_gray_400">#FFBDBDBD</color>
+    <color name="bugmemo_gray_500">#FF9E9E9E</color>
+    <color name="bugmemo_gray_600">#FF757575</color>
+    <color name="bugmemo_gray_700">#FF616161</color>
+    <color name="bugmemo_gray_800">#FF424242</color>
+    <color name="bugmemo_gray_900">#FF212121</color>
 </resources>

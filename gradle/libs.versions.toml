@@ -6,7 +6,7 @@
 [versions]
 agp = "8.13.0"
 kotlin = "2.2.20"
-
+compose-material-icons = "1.7.8"
 coreKtx = "1.17.0"
 
 # 既存の lifecycleRuntimeKtx (= 2.9.4) に合わせて、Compose連携側も同系列で統一
@@ -46,6 +46,9 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 
 # Activity-Compose（BOM対象外）→ version.ref を明示
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+
+# アイコン用追加
+androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "compose-material-icons" }
 
 # ★★ ここが今回の“赤字”解消ポイント（BOM対象外なので版を付ける） ★★
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation" }        # ★ Added
