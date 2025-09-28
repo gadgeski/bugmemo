@@ -16,7 +16,7 @@ lifecycle = "2.9.4"                         # ★ Added: lifecycle-*（compose�
 activityCompose = "1.11.0"                  # （既存）Activity-Compose はBOM対象外なので単独で版管理
 
 # Compose BOM はそのまま（Compose UI/M3 群は版なしで可）
-composeBom = "2025.09.00"
+composeBom = "2025.09.01"
 
 # テスト系は据え置き
 junit = "4.13.2"
@@ -26,7 +26,7 @@ espressoCore = "3.7.0"
 # ★ Added: navigation-compose 用のバージョン変数
 # → ここは Android Studio の提案（安定版）に置き換えてください
 #   例: 依存行にカーソル → Alt/Option+Enter → "Add library dependency" から選択
-navigation = "2.9.4"   # ★ Added（要置換）
+navigation = "2.9.5"   # ★ Added（要置換）
 
 [libraries]
 # コア
