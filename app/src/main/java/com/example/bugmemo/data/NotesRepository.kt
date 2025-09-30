@@ -1,38 +1,21 @@
-// ----------------------------------------
-// file: app/src/main/java/com/example/bugmemo/data/NotesRepository.kt
-// ----------------------------------------
 package com.example.bugmemo.data
 
+import kotlinx.coroutines.flow.Flow
+
+// ──────────────────────────────────────────────────────────────
+// Flow ベースのリポジトリIF（← このファイルは IF だけ持つ）
+// ──────────────────────────────────────────────────────────────
 interface NotesRepository {
-    fun all(): List<Note>
-    fun find(id: Long): Note?
-    fun create(): Note
-    fun update(id: Long, title: String, content: String, folder: String?)
-    fun delete(id: Long)
-    fun folders(): List<String>
-    fun addFolder(name: String)
-}
+    fun observeNotes(): Flow<List<Note>>
+    fun searchNotes(query: String): Flow<List<Note>>
+    fun observeFolders(): Flow<List<Folder>>
 
-class InMemoryNotesRepository : NotesRepository {
-    private val _notes = mutableListOf<Note>()
-    private val _folders = mutableListOf("Inbox", "UI", "Networking", "Crash")
-    private var nextId = 1L
+    suspend fun getNote(id: Long): Note?
+    suspend fun upsert(note: Note): Long
+    suspend fun deleteNote(id: Long)
 
-    init {
-        if (_notes.isEmpty()) {
-            _notes += Note(nextId++, "プレビューが落ちる", "SwiftUIのPreviewでクラッシュ。再現手順…", folder = "UI")
-            _notes += Note(nextId++, "API で 500", "/v1/tickets が500。再試行で成功あり", folder = "Networking")
-        }
-    }
+    suspend fun addFolder(name: String): Long
+    suspend fun deleteFolder(id: Long)
 
-    override fun all(): List<Note> = _notes.sortedByDescending { it.updatedAt }
-    override fun find(id: Long): Note? = _notes.firstOrNull { it.id == id }
-    override fun create(): Note { val n = Note(nextId++, "", "", null); _notes += n; return n }
-    override fun update(id: Long, title: String, content: String, folder: String?) {
-        val n = find(id) ?: return
-        n.title = title; n.content = content; n.folder = folder; n.updatedAt = System.currentTimeMillis()
-    }
-    override fun delete(id: Long) { _notes.removeIf { it.id == id } }
-    override fun folders(): List<String> = _folders.toList()
-    override fun addFolder(name: String) { if (name.isNotBlank() && name !in _folders) _folders += name }
+    suspend fun setStarred(id: Long, starred: Boolean) // 既存のまま
 }

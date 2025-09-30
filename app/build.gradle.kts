@@ -1,7 +1,11 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.android.application)      // OK
+    alias(libs.plugins.kotlin.android)           // OK
+    alias(libs.plugins.kotlin.compose)           // OK（Compose Compiler DSL）
+    alias(libs.plugins.ksp)                      // OK（Room の KSP） // ★ Fixed: 重複を削除
+    // ★ Fixed: 下の2行は重複だったので削除
+    // alias(libs.plugins.android.application)
+    // alias(libs.plugins.kotlin.android)
 }
 
 android {
@@ -14,7 +18,6 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -27,12 +30,13 @@ android {
             )
         }
     }
+
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17   // ★ Changed
-        targetCompatibility = JavaVersion.VERSION_17   // ★ Changed
+        sourceCompatibility = JavaVersion.VERSION_17   // そのままOK
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlin {
-        jvmToolchain(17)   // ★ Added
+        jvmToolchain(17)                               // そのままOK
     }
     buildFeatures {
         compose = true
@@ -42,17 +46,21 @@ android {
 dependencies {
 
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.activity.compose) // setContent{} 用
+    implementation(libs.androidx.activity.compose)           // setContent{}
     implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.compose.ui) // UI 基本
+    implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.compose.material3) // Material 3
+    implementation(libs.androidx.compose.material3)
+
+    // ★ 注意: Version Catalog に "androidx-compose-material-icons-extended" が無いと赤くなります
     implementation(libs.androidx.compose.material.icons.extended)
-    // ★ Compose: 画面遷移・Lifecycle/ViewModel 連携
+
+    // Compose連携
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -60,6 +68,12 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-    // runtime-ktx は使っていれば↓を残す、使っていなければ削除
-// implementation(libs.androidx.lifecycle.runtime.ktx)
+
+    // （必要なときだけ残す）
+    // implementation(libs.androidx.lifecycle.runtime.ktx)
+
+    // Room
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)  // ← ここは “ksp 構成”で呼ぶだけ。版は TOML の room に従う
 }
