@@ -36,20 +36,25 @@ import kotlinx.coroutines.launch
 
 /**
  * NotesViewModel
- * - 検索クエリとフォルダ絞り込みを DataStore へ保存・復元
- * - 一覧は（検索クエリ × フォルダID）で動的フィルタ
+ * - 検索クエリ / フォルダ絞り込みを DataStore へ保存・復元
+ * - 一覧は（検索 × フォルダ）で動的フィルタ
+ * - ★ 削除 → Undo 対応を追加
  */
 class NotesViewModel(
     private val repo: NotesRepository,
-    private val settings: SettingsRepository                     // ★ Added: DataStore リポジトリ
+    private val settings: SettingsRepository
 ) : ViewModel() {
 
     // ─────────── UIイベント（Snackbar など）───────────
     sealed interface UiEvent {
         data class Message(val text: String) : UiEvent
+        data class UndoDelete(val text: String) : UiEvent   // ★ Added: Undo 用イベント
     }
     private val _events = MutableSharedFlow<UiEvent>(extraBufferCapacity = 1)
     val events: SharedFlow<UiEvent> = _events.asSharedFlow()
+
+    // ★ Added: 直前に削除したノート（Undo 復元用）を保持
+    private var lastDeleted: Note? = null
 
     // ─────────── 検索クエリ（保存・復元対応）──────────
     private val _query = MutableStateFlow("")
@@ -63,7 +68,7 @@ class NotesViewModel(
 
     // ─────────── フォルダ絞り込み（保存・復元対応）──────────
     private val _filterFolderId = MutableStateFlow<Long?>(null)
-    val filterFolderId: StateFlow<Long?> = _filterFolderId.asStateFlow()  // 公開状態
+    val filterFolderId: StateFlow<Long?> = _filterFolderId.asStateFlow()
 
     fun setFolderFilter(id: Long?) {
         _filterFolderId.value = id
@@ -138,12 +143,30 @@ class NotesViewModel(
         }
     }
 
+    // ★ Changed: 削除時に退避＋Undo 可能なイベントを発行
     fun deleteEditing() {
         val id = _editing.value?.id ?: return
         viewModelScope.launch {
+            lastDeleted = _editing.value                 // ★ 退避
             repo.deleteNote(id)
             _editing.value = null
-            _events.tryEmit(UiEvent.Message("削除しました"))
+            _events.tryEmit(UiEvent.UndoDelete("削除しました（元に戻す）")) // ★ Snackbar 側でアクション表示
+        }
+    }
+
+    // ★ Added: Undo 実行（Snackbar のアクションから呼ぶ）
+    fun undoDelete() {
+        val note = lastDeleted ?: return
+        lastDeleted = null
+        viewModelScope.launch {
+            // 新規として復元（IDはDB側で再採番）
+            repo.upsert(
+                note.copy(
+                    id = 0L,
+                    updatedAt = System.currentTimeMillis()
+                )
+            )
+            _events.tryEmit(UiEvent.Message("復元しました"))
         }
     }
 
