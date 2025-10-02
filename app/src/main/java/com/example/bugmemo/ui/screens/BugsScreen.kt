@@ -1,5 +1,6 @@
-@file:OptIn( // ★ (必要な場合のみ) Material3 の Experimental API を明示許可。不要なら削除可。
-    androidx.compose.material3.ExperimentalMaterial3Api::class
+// app/src/main/java/com/example/bugmemo/ui/screens/BugsScreen.kt
+@file:OptIn(
+    androidx.compose.material3.ExperimentalMaterial3Api::class // TopAppBar の版差異対策（不要になれば削除OK）
 )
 
 package com.example.bugmemo.ui.screens
@@ -14,27 +15,26 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Search   // ★ Added: 検索アイコン
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
 
-// ====== Material3（必要なものだけ明示 import に統一） ======
-// import androidx.compose.material3.*                 // ★ Removed: 冗長(ワイルドカード)を廃止
+// ====== Material3 ======
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider     // ★ Added: Divider 後継
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme        // ★ Added: MaterialTheme を明示 import
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TopAppBar            // ★ Added: SmallTopAppBar ではなく TopAppBar を使用
-import androidx.compose.material3.VerticalDivider      // ★ Added: Divider 後継
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.VerticalDivider
 
 // ====== Compose ランタイム ======
 import androidx.compose.runtime.*
@@ -47,43 +47,37 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 
-// ====== アプリのモデル ======
+// ====== モデル ======
 import com.example.bugmemo.data.Folder
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.ui.NotesViewModel
 
 @Composable
 fun BugsScreen(
-    vm: NotesViewModel = viewModel()
+    vm: NotesViewModel = viewModel(),
+    onOpenEditor: () -> Unit = {},
+    onOpenSearch: () -> Unit = {} // ★ Added: Search 画面へ遷移するコールバック
 ) {
     val notes by vm.notes.collectAsStateWithLifecycle(initialValue = emptyList())
     val folders by vm.folders.collectAsStateWithLifecycle(initialValue = emptyList())
     val editing by vm.editing.collectAsStateWithLifecycle(initialValue = null)
-    val query by vm.query.collectAsStateWithLifecycle(initialValue = "")
-
     var showFolderMenu by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
-            // ★ Changed: SmallTopAppBar → TopAppBar（安定API寄りに）
             TopAppBar(
                 title = { Text("Bug Memo") },
                 actions = {
-                    TextField(
-                        value = query,
-                        onValueChange = { vm.setQuery(it) }, // ★ setQuery を実際に使用
-                        singleLine = true,
-                        placeholder = { Text("検索…") },
-                        modifier = Modifier
-                            .padding(end = 8.dp)
-                            .width(220.dp)
-                    )
+                    // ★ Changed: TopBar の TextField 検索は削除し、アイコン遷移に一本化
+                    IconButton(onClick = onOpenSearch) { // ★ Added
+                        Icon(Icons.Filled.Search, contentDescription = "Search")
+                    }
                 }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { vm.newNote() }) { // ★ newNote 使用
-                Icon(Icons.Default.Add, contentDescription = "New")
+            FloatingActionButton(onClick = { vm.newNote() }) {
+                Icon(Icons.Filled.Add, contentDescription = "New")
             }
         }
     ) { inner ->
@@ -102,32 +96,35 @@ fun BugsScreen(
                     items(notes, key = { it.id }) { note ->
                         NoteRow(
                             note = note,
-                            onClick = { vm.loadNote(note.id) },                    // ★ loadNote 使用
-                            onToggleStar = { vm.toggleStar(note.id, note.isStarred) } // ★ toggleStar 使用
+                            onClick = {
+                                vm.loadNote(note.id) // 編集対象をロード
+                                onOpenEditor()       // Editor へ遷移
+                            },
+                            onToggleStar = { vm.toggleStar(note.id, note.isStarred) }
                         )
                     }
                 }
             }
 
-            // ★ Changed: Divider → VerticalDivider（非推奨APIの置換）
+            // 区切り
             VerticalDivider(
                 modifier = Modifier.fillMaxHeight(),
                 thickness = 1.dp
             )
 
-            // 右：エディタ
+            // 右：簡易エディタ（現編集状態のプレビュー/編集）
             EditorPane(
                 editing = editing,
                 folders = folders,
-                onTitleChange = { vm.setEditingTitle(it) },       // ★ 使用
-                onContentChange = { vm.setEditingContent(it) },   // ★ 使用
-                onFolderPick = { vm.setEditingFolder(it) },       // ★ 使用
-                onSave = { vm.saveEditing() },                    // ★ 使用
-                onDelete = { vm.deleteEditing() },                // ★ 使用
-                onAddFolder = { name -> vm.addFolder(name) },     // ★ 使用
-                onDeleteFolder = { id -> vm.deleteFolder(id) },   // ★ 使用
-                showFolderMenu = showFolderMenu,                  // ★ 使用
-                setShowFolderMenu = { showFolderMenu = it }       // ★ 使用
+                onTitleChange = { vm.setEditingTitle(it) },
+                onContentChange = { vm.setEditingContent(it) },
+                onFolderPick = { vm.setEditingFolder(it) },
+                onSave = { vm.saveEditing() },
+                onDelete = { vm.deleteEditing() },
+                onAddFolder = { name -> vm.addFolder(name) },
+                onDeleteFolder = { id -> vm.deleteFolder(id) },
+                showFolderMenu = showFolderMenu,
+                setShowFolderMenu = { showFolderMenu = it }
             )
         }
     }
@@ -201,7 +198,7 @@ private fun EditorPane(
 
         OutlinedTextField(
             value = editing?.title.orEmpty(),
-            onValueChange = onTitleChange,     // ★ setEditingTitle を使用
+            onValueChange = onTitleChange,
             label = { Text("タイトル") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
@@ -209,16 +206,14 @@ private fun EditorPane(
 
         OutlinedTextField(
             value = editing?.content.orEmpty(),
-            onValueChange = onContentChange,   // ★ setEditingContent を使用
+            onValueChange = onContentChange,
             label = { Text("内容") },
             minLines = 6,
             modifier = Modifier.fillMaxWidth()
         )
 
-        // 区切り
-        HorizontalDivider(thickness = 1.dp)   // ★ Changed: Divider → HorizontalDivider
+        HorizontalDivider(thickness = 1.dp)
 
-        // フォルダ選択（メニューを実際に使う）
         Box {
             OutlinedButton(onClick = { setShowFolderMenu(true) }) {
                 Text(folders.firstOrNull { it.id == editing?.folderId }?.name ?: "フォルダ未選択")
@@ -230,7 +225,7 @@ private fun EditorPane(
                 DropdownMenuItem(
                     text = { Text("未選択（なし）") },
                     onClick = {
-                        onFolderPick(null)      // ★ setEditingFolder(null)
+                        onFolderPick(null)
                         setShowFolderMenu(false)
                     }
                 )
@@ -238,12 +233,12 @@ private fun EditorPane(
                     DropdownMenuItem(
                         text = { Text(f.name) },
                         onClick = {
-                            onFolderPick(f.id) // ★ setEditingFolder(id)
+                            onFolderPick(f.id)
                             setShowFolderMenu(false)
                         },
                         trailingIcon = {
-                            IconButton(onClick = { onDeleteFolder(f.id) }) { // ★ deleteFolder を使用
-                                Icon(Icons.Default.Delete, contentDescription = "Delete folder")
+                            IconButton(onClick = { onDeleteFolder(f.id) }) {
+                                Icon(Icons.Filled.Delete, contentDescription = "Delete folder")
                             }
                         }
                     )
@@ -251,30 +246,12 @@ private fun EditorPane(
             }
         }
 
-        // 保存・削除・フォルダ追加
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(onClick = onSave, enabled = editing != null) { // ★ saveEditing 使用
-                Text("保存")
-            }
+            Button(onClick = onSave, enabled = editing != null) { Text("保存") }
             OutlinedButton(
-                onClick = onDelete,                              // ★ deleteEditing 使用
+                onClick = onDelete,
                 enabled = (editing?.id ?: 0L) != 0L
             ) { Text("削除") }
-
-            var newFolder by remember { mutableStateOf("") }
-            OutlinedTextField(
-                value = newFolder,
-                onValueChange = { newFolder = it },
-                label = { Text("新規フォルダ名") },
-                singleLine = true,
-                modifier = Modifier.weight(1f)
-            )
-            Button(
-                onClick = {
-                    if (newFolder.isNotBlank()) onAddFolder(newFolder.trim()) // ★ addFolder 使用
-                    newFolder = ""
-                }
-            ) { Text("追加") }
         }
     }
 }

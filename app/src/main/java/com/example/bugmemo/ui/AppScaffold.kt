@@ -1,122 +1,76 @@
-// ----------------------------------------
-// file: app/src/main/java/com/example/bugmemo/ui/AppScaffold.kt
-// ----------------------------------------
+// app/src/main/java/com/example/bugmemo/ui/AppScaffold.kt
 package com.example.bugmemo.ui
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.automirrored.filled.List   // ★ Added: AutoMirrored の List（import 名はそのまま）
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.AccountTree
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.Modifier                                  // ★ Added: Modifier の import
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.bugmemo.ui.navigation.AppNavHost
-import com.example.bugmemo.ui.navigation.Dest
 import com.example.bugmemo.ui.navigation.NavRoutes
-
-// タブアイテムの定義（アイコン付き）
-data class TabItem(
-    val dest: Dest,
-    val icon: ImageVector,
-    val label: String
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppScaffold(vm: NotesViewModel = viewModel()) {
+fun AppScaffold(
+    vm: NotesViewModel = viewModel()
+) {
     val nav = rememberNavController()
     val backstack by nav.currentBackStackEntryAsState()
-    val current = backstack?.destination?.route
+    val currentRoute = backstack?.destination?.route
 
-    // タブ定義（アイコン付き）
+    // ★ Changed: Icons.AutoMirrored.Filled.List を直接使用（衝突/未解決を回避）
     val tabs = listOf(
-        TabItem(Dest.Bugs, Icons.Filled.BugReport, "バグ"),
-        TabItem(Dest.Folders, Icons.Filled.Folder, "フォルダ"),
-        TabItem(Dest.MindMap, Icons.Filled.AccountTree, "マインドマップ"),
-        TabItem(Dest.Search, Icons.Filled.Search, "検索")
+        TabSpec(route = NavRoutes.BUGS,    icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Bugs") }),
+        TabSpec(route = NavRoutes.SEARCH,  icon = { Icon(Icons.Filled.Search,            contentDescription = "Search") }),
+        TabSpec(route = NavRoutes.FOLDERS, icon = { Icon(Icons.Filled.Folder,            contentDescription = "Folders") }),
     )
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "🐛 BugMemo",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                modifier = Modifier.shadow(
-                    elevation = 4.dp,
-                    shape = RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp)
-                )
-            )
-        },
         bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-                tonalElevation = 8.dp,
-                modifier = Modifier.shadow(
-                    elevation = 8.dp,
-                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-                )
-            ) {
-                tabs.forEach { item ->
-                    val isSelected = current?.startsWith(item.dest.route) == true
-
+            NavigationBar {
+                tabs.forEach { tab ->
+                    val selected = currentRoute == tab.route
                     NavigationBarItem(
-                        selected = isSelected,
-                        onClick = { NavRoutes.navigateSingleTop(nav, item.dest.route) },
-                        icon = {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.label,
-                                modifier = Modifier.size(24.dp)
-                            )
+                        selected = selected,
+                        onClick = {
+                            if (!selected) {
+                                nav.navigate(tab.route) {
+                                    launchSingleTop = true
+                                    restoreState = true
+                                    popUpTo(NavRoutes.BUGS) { saveState = true }
+                                }
+                            }
                         },
-                        label = {
-                            Text(
-                                text = item.label,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
-                            )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                        )
+                        icon = { tab.icon() }
                     )
                 }
             }
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { innerPadding ->
-        // コンテンツエリア
-        AppNavHost(
-            nav = nav,
-            vm = vm,
-            modifier = Modifier.padding(innerPadding)
-        )
+        }
+    ) { inner ->
+        // bottomBar の分の余白を適用
+        Box(Modifier.padding(inner)) {
+            AppNavHost(
+                nav = nav,
+                vm = vm,
+                startDestination = NavRoutes.BUGS
+            )
+        }
     }
 }
+
+private data class TabSpec(
+    val route: String,
+    val icon: @Composable () -> Unit
+)
