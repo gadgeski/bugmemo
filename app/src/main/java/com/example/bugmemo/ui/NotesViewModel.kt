@@ -1,8 +1,6 @@
-// app/src/main/java/.../NotesViewModel.kt
-
 @file:OptIn(
-    kotlinx.coroutines.FlowPreview::class,              // ★ 追加: debounce 等のプレビューAPI
-    kotlinx.coroutines.ExperimentalCoroutinesApi::class // ★ 追加: stateIn/SharingStarted 等で要求される場合あり
+    kotlinx.coroutines.FlowPreview::class,
+    kotlinx.coroutines.ExperimentalCoroutinesApi::class
 )
 
 package com.example.bugmemo.ui
@@ -15,102 +13,96 @@ import com.example.bugmemo.data.NotesRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-/**
- * NotesViewModel（Flowベース版）
- * - 旧API all()/folders()/create()/update()/delete()/find() は使用しない // ★ 置き換え
- * - 新API observeNotes()/observeFolders()/upsert()/deleteNote()/getNote()/setStarred()/addFolder()/deleteFolder() を使用
- */
 class NotesViewModel(
     private val repo: NotesRepository
 ) : ViewModel() {
 
-    // 検索キーワード
-    private val _query = MutableStateFlow("")                         // ★ 追加: 検索状態
-    val query: StateFlow<String> = _query.asStateFlow()
+    // ★ Added: UI イベント（Snackbar 用）
+    sealed interface UiEvent {
+        data class Message(val text: String) : UiEvent
+    }
+    private val _events = MutableSharedFlow<UiEvent>(extraBufferCapacity = 1)
+    val events: SharedFlow<UiEvent> = _events.asSharedFlow()
 
-    // ノート一覧（検索クエリに応じて Flow を切替）
+    // 検索
+    private val _query = MutableStateFlow("")
+    val query: StateFlow<String> = _query.asStateFlow()
+    fun setQuery(q: String) { _query.value = q }
+
+    // フォルダフィルタ（将来: Bugs ← Folders 導線で使用予定）
+    private val _filterFolderId = MutableStateFlow<Long?>(null)
+    fun setFolderFilter(id: Long?) { _filterFolderId.value = id } // ★ Added
+
+    // ノート一覧
     val notes: StateFlow<List<Note>> =
-        query
-            .debounce(150)                                            // タイプ中の揺れを軽減（任意）
-            .map { it.trim() }
-            .flatMapLatest { q ->
-                if (q.isEmpty()) repo.observeNotes()                  // ★ 旧: all() → 新: observeNotes()
-                else repo.searchNotes(q)                              // ★ 旧: 手元検索 → 新: searchNotes()
+        combine(query, _filterFolderId) { q, folderId -> q.trim() to folderId }
+            .debounce(150)
+            .flatMapLatest { (q, folderId) ->
+                val base = if (q.isEmpty()) repo.observeNotes() else repo.searchNotes(q)
+                if (folderId == null) base else base.map { list -> list.filter { it.folderId == folderId } }
             }
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // フォルダ一覧
     val folders: StateFlow<List<Folder>> =
-        repo.observeFolders()                                         // ★ 旧: folders() → 新: observeFolders()
-            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        repo.observeFolders().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    // 編集対象（詳細表示やエディタで使う想定）
+    // 編集対象
     private val _editing = MutableStateFlow<Note?>(null)
     val editing: StateFlow<Note?> = _editing.asStateFlow()
 
-    // ─────────────────────────────────────────────
-    // UI アクション
-    // ─────────────────────────────────────────────
-
-    fun setQuery(q: String) { _query.value = q }                      // ★ 置き換え: create()/find() ではなく検索用の状態
-
-    fun loadNote(id: Long) {                                          // ★ 旧: find(id) → 新: getNote(id)
+    fun loadNote(id: Long) {
         viewModelScope.launch {
             _editing.value = repo.getNote(id)
         }
     }
 
-    fun newNote() {                                                   // ★ 旧: create() → 新: upsert(Note(...))
+    fun newNote() {
         val now = System.currentTimeMillis()
-        _editing.value = Note(
-            id = 0L,
-            title = "",
-            content = "",
-            folderId = null,
-            createdAt = now,
-            updatedAt = now,
-            isStarred = false
-        )
+        _editing.value = Note(0L, "", "", null, now, now, false)
     }
 
-    fun saveEditing() {                                               // ★ 旧: update(...) → 新: upsert(note)
+    fun setEditingTitle(text: String) { _editing.update { it?.copy(title = text) } }
+    fun setEditingContent(text: String) { _editing.update { it?.copy(content = text) } }
+    fun setEditingFolder(folderId: Long?) { _editing.update { it?.copy(folderId = folderId) } }
+
+    fun saveEditing() {
         val note = _editing.value ?: return
         viewModelScope.launch {
             val id = repo.upsert(note)
-            if (note.id == 0L && id != 0L) {
-                _editing.value = note.copy(id = id)
-            }
+            if (note.id == 0L && id != 0L) _editing.value = note.copy(id = id)
+            _events.tryEmit(UiEvent.Message("保存しました"))        // ★ Added
         }
     }
 
-    fun deleteEditing() {                                             // ★ 旧: delete(id) → 新: deleteNote(id)
+    fun deleteEditing() {
         val id = _editing.value?.id ?: return
-        viewModelScope.launch { repo.deleteNote(id) }
-        _editing.value = null
+        viewModelScope.launch {
+            repo.deleteNote(id)
+            _editing.value = null
+            _events.tryEmit(UiEvent.Message("削除しました"))        // ★ Added
+        }
     }
 
-    fun toggleStar(noteId: Long, current: Boolean) {                  // ★ 追加: 部分更新 setStarred()
-        viewModelScope.launch { repo.setStarred(noteId, !current) }
+    fun toggleStar(noteId: Long, current: Boolean) {
+        viewModelScope.launch {
+            repo.setStarred(noteId, !current)
+            _events.tryEmit(UiEvent.Message(if (current) "スターを外しました" else "スターを付けました")) // ★ Added
+        }
     }
 
-    fun setEditingTitle(text: String) {
-        _editing.update { it?.copy(title = text) }
-    }
-
-    fun setEditingContent(text: String) {
-        _editing.update { it?.copy(content = text) }
-    }
-
-    fun setEditingFolder(folderId: Long?) {
-        _editing.update { it?.copy(folderId = folderId) }
-    }
-
-    // フォルダ操作
-    fun addFolder(name: String) {                                     // ★ suspend を launch で呼ぶ
-        viewModelScope.launch { repo.addFolder(name) }                // ← エラー1の解決ポイント
+    fun addFolder(name: String) {
+        viewModelScope.launch {
+            val res = repo.addFolder(name)
+            if (res != 0L) _events.tryEmit(UiEvent.Message("フォルダを追加しました"))               // ★ Added
+            else _events.tryEmit(UiEvent.Message("フォルダ名が不正、または重複しています"))        // ★ Added
+        }
     }
 
     fun deleteFolder(id: Long) {
-        viewModelScope.launch { repo.deleteFolder(id) }
+        viewModelScope.launch {
+            repo.deleteFolder(id)
+            _events.tryEmit(UiEvent.Message("フォルダを削除しました"))                               // ★ Added
+        }
     }
 }
