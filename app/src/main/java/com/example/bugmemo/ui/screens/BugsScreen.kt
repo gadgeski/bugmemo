@@ -1,25 +1,31 @@
 // app/src/main/java/com/example/bugmemo/ui/screens/BugsScreen.kt
-@file:OptIn(
-    androidx.compose.material3.ExperimentalMaterial3Api::class // TopAppBar の版差異対策（不要になれば削除OK）
-)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 package com.example.bugmemo.ui.screens
 
-// ====== 基本UI ======
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-
-// ====== アイコン ======
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Search   // ★ Added: 検索アイコン
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
-
-// ====== Material3 ======
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -35,19 +41,17 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
-
-// ====== Compose ランタイム ======
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-
-// ====== Lifecycle Compose ======
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-
-// ====== モデル ======
 import com.example.bugmemo.data.Folder
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.ui.NotesViewModel
@@ -56,28 +60,41 @@ import com.example.bugmemo.ui.NotesViewModel
 fun BugsScreen(
     vm: NotesViewModel = viewModel(),
     onOpenEditor: () -> Unit = {},
-    onOpenSearch: () -> Unit = {} // ★ Added: Search 画面へ遷移するコールバック
+    onOpenSearch: () -> Unit = {},
+    onOpenFolders: () -> Unit = {}          // （任意導線）
 ) {
     val notes by vm.notes.collectAsStateWithLifecycle(initialValue = emptyList())
     val folders by vm.folders.collectAsStateWithLifecycle(initialValue = emptyList())
     val editing by vm.editing.collectAsStateWithLifecycle(initialValue = null)
+    val filterFolderId by vm.filterFolderId.collectAsStateWithLifecycle(initialValue = null)
+
     var showFolderMenu by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Bug Memo") },
+                title = {
+                    val label = folders.firstOrNull { it.id == filterFolderId }?.name
+                    Text(if (label != null) "Bug Memo — $label" else "Bug Memo")
+                },
                 actions = {
-                    // ★ Changed: TopBar の TextField 検索は削除し、アイコン遷移に一本化
-                    IconButton(onClick = onOpenSearch) { // ★ Added
+                    if (filterFolderId != null) {
+                        IconButton(onClick = { vm.setFolderFilter(null) }) {
+                            Icon(Icons.Filled.Clear, contentDescription = "Clear folder filter")
+                        }
+                    }
+                    IconButton(onClick = onOpenFolders) {
+                        Icon(Icons.Filled.Folder, contentDescription = "Folders")
+                    }
+                    IconButton(onClick = onOpenSearch) {
                         Icon(Icons.Filled.Search, contentDescription = "Search")
                     }
                 }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { vm.newNote() }) {
-                Icon(Icons.Filled.Add, contentDescription = "New")
+            FloatingActionButton(onClick = { vm.newNote(); onOpenEditor() }) {
+                Icon(Icons.AutoMirrored.Filled.List, contentDescription = "New")
             }
         }
     ) { inner ->
@@ -93,12 +110,12 @@ fun BugsScreen(
                     contentPadding = PaddingValues(12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(notes, key = { it.id }) { note ->
+                    items(notes, key = { n -> n.id }) { note ->   // ★ 明示引数名で 'it' 依存を排除
                         NoteRow(
                             note = note,
                             onClick = {
-                                vm.loadNote(note.id) // 編集対象をロード
-                                onOpenEditor()       // Editor へ遷移
+                                vm.loadNote(note.id)
+                                onOpenEditor()
                             },
                             onToggleStar = { vm.toggleStar(note.id, note.isStarred) }
                         )
@@ -106,25 +123,24 @@ fun BugsScreen(
                 }
             }
 
-            // 区切り
             VerticalDivider(
                 modifier = Modifier.fillMaxHeight(),
                 thickness = 1.dp
             )
 
-            // 右：簡易エディタ（現編集状態のプレビュー/編集）
+            // 右：エディタ（★ EditorPane を本ファイル内に定義して解決）
             EditorPane(
                 editing = editing,
                 folders = folders,
-                onTitleChange = { vm.setEditingTitle(it) },
-                onContentChange = { vm.setEditingContent(it) },
-                onFolderPick = { vm.setEditingFolder(it) },
+                onTitleChange = { text -> vm.setEditingTitle(text) },       // ★ 明示引数
+                onContentChange = { text -> vm.setEditingContent(text) },   // ★ 明示引数
+                onFolderPick = { id -> vm.setEditingFolder(id) },           // ★ 明示引数
                 onSave = { vm.saveEditing() },
                 onDelete = { vm.deleteEditing() },
-                onAddFolder = { name -> vm.addFolder(name) },
-                onDeleteFolder = { id -> vm.deleteFolder(id) },
+                onAddFolder = { name -> vm.addFolder(name) },               // ★ 明示引数
+                onDeleteFolder = { id -> vm.deleteFolder(id) },             // ★ 明示引数
                 showFolderMenu = showFolderMenu,
-                setShowFolderMenu = { showFolderMenu = it }
+                setShowFolderMenu = { flag -> showFolderMenu = flag }       // ★ 明示引数（'it'排除）
             )
         }
     }
@@ -173,6 +189,7 @@ private fun NoteRow(
     }
 }
 
+/* ▼▼ ここから EditorPane（本ファイルに復帰） ▼▼ */
 @Composable
 private fun EditorPane(
     editing: Note?,
@@ -214,9 +231,11 @@ private fun EditorPane(
 
         HorizontalDivider(thickness = 1.dp)
 
+        // フォルダ選択
         Box {
             OutlinedButton(onClick = { setShowFolderMenu(true) }) {
-                Text(folders.firstOrNull { it.id == editing?.folderId }?.name ?: "フォルダ未選択")
+                val current = folders.firstOrNull { it.id == editing?.folderId }?.name
+                Text(current ?: "フォルダ未選択")
             }
             DropdownMenu(
                 expanded = showFolderMenu,
@@ -246,12 +265,30 @@ private fun EditorPane(
             }
         }
 
+        // 保存・削除・フォルダ追加
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(onClick = onSave, enabled = editing != null) { Text("保存") }
             OutlinedButton(
                 onClick = onDelete,
                 enabled = (editing?.id ?: 0L) != 0L
             ) { Text("削除") }
+
+            var newFolder by remember { mutableStateOf("") }
+            OutlinedTextField(
+                value = newFolder,
+                onValueChange = { text -> newFolder = text },  // ★ 明示引数
+                label = { Text("新規フォルダ名") },
+                singleLine = true,
+                modifier = Modifier.weight(1f)
+            )
+            Button(
+                onClick = {
+                    val name = newFolder.trim()
+                    if (name.isNotEmpty()) onAddFolder(name)
+                    newFolder = ""
+                }
+            ) { Text("追加") }
         }
     }
 }
+/* ▲▲ ここまで EditorPane ▲▲ */

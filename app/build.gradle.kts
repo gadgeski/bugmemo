@@ -72,6 +72,8 @@ dependencies {
     // （必要なときだけ残す）
     // implementation(libs.androidx.lifecycle.runtime.ktx)
 
+    // DataStore
+    implementation(libs.androidx.datastore.preferences) // ★ Added: Preferences DataStore
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

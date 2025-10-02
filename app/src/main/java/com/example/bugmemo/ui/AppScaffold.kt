@@ -2,35 +2,36 @@
 package com.example.bugmemo.ui
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding                         // ★ Added: inner を消費
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List        // ★ Added: AutoMirrored List アイコン
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Map                      // MindMap 代替
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost                         // ★ Added: SnackbarHost
-import androidx.compose.material3.SnackbarHostState                    // ★ Added
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect                          // ★ Added: collectLatest 用
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember                                // ★ Added
-import androidx.compose.ui.Modifier                                     // ★ Added: Modifier を使用
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.bugmemo.ui.navigation.AppNavHost
 import com.example.bugmemo.ui.navigation.NavRoutes
-import kotlinx.coroutines.flow.collectLatest                            // ★ Added: イベント購読
+import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppScaffold(
-    vm: NotesViewModel = viewModel()
+    vm: NotesViewModel = androidx.lifecycle.viewmodel.compose.viewModel( // ★ Changed: Factory 指定に変更
+        factory = NotesViewModel.factory()
+    )
 ) {
     val nav = rememberNavController()
     val backstack by nav.currentBackStackEntryAsState()
