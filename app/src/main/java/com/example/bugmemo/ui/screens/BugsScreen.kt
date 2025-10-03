@@ -61,7 +61,7 @@ fun BugsScreen(
     vm: NotesViewModel = viewModel(),
     onOpenEditor: () -> Unit = {},
     onOpenSearch: () -> Unit = {},
-    onOpenFolders: () -> Unit = {}          // （任意導線）
+    onOpenFolders: () -> Unit = {}
 ) {
     val notes by vm.notes.collectAsStateWithLifecycle(initialValue = emptyList())
     val folders by vm.folders.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -105,20 +105,24 @@ fun BugsScreen(
         ) {
             // 左：一覧
             Box(Modifier.weight(1f)) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(notes, key = { n -> n.id }) { note ->   // ★ 明示引数名で 'it' 依存を排除
-                        NoteRow(
-                            note = note,
-                            onClick = {
-                                vm.loadNote(note.id)
-                                onOpenEditor()
-                            },
-                            onToggleStar = { vm.toggleStar(note.id, note.isStarred) }
-                        )
+                if (notes.isEmpty()) {
+                    EmptyMessage() // ★ Changed: 引数なしの固定表示に変更
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(notes, key = { n -> n.id }) {
+                            NoteRow(
+                                note = it,
+                                onClick = {
+                                    vm.loadNote(it.id)
+                                    onOpenEditor()
+                                },
+                                onToggleStar = { vm.toggleStar(it.id, it.isStarred) }
+                            )
+                        }
                     }
                 }
             }
@@ -128,19 +132,19 @@ fun BugsScreen(
                 thickness = 1.dp
             )
 
-            // 右：エディタ（★ EditorPane を本ファイル内に定義して解決）
+            // 右：エディタ
             EditorPane(
                 editing = editing,
                 folders = folders,
-                onTitleChange = { text -> vm.setEditingTitle(text) },       // ★ 明示引数
-                onContentChange = { text -> vm.setEditingContent(text) },   // ★ 明示引数
-                onFolderPick = { id -> vm.setEditingFolder(id) },           // ★ 明示引数
+                onTitleChange = { text -> vm.setEditingTitle(text) },
+                onContentChange = { text -> vm.setEditingContent(text) },
+                onFolderPick = { id -> vm.setEditingFolder(id) },
                 onSave = { vm.saveEditing() },
                 onDelete = { vm.deleteEditing() },
-                onAddFolder = { name -> vm.addFolder(name) },               // ★ 明示引数
-                onDeleteFolder = { id -> vm.deleteFolder(id) },             // ★ 明示引数
+                onAddFolder = { name -> vm.addFolder(name) },
+                onDeleteFolder = { id -> vm.deleteFolder(id) },
                 showFolderMenu = showFolderMenu,
-                setShowFolderMenu = { flag -> showFolderMenu = flag }       // ★ 明示引数（'it'排除）
+                setShowFolderMenu = { flag -> showFolderMenu = flag }
             )
         }
     }
@@ -189,7 +193,7 @@ private fun NoteRow(
     }
 }
 
-/* ▼▼ ここから EditorPane（本ファイルに復帰） ▼▼ */
+/* ▼▼ ここから EditorPane（既存） ▼▼ */
 @Composable
 private fun EditorPane(
     editing: Note?,
@@ -276,7 +280,7 @@ private fun EditorPane(
             var newFolder by remember { mutableStateOf("") }
             OutlinedTextField(
                 value = newFolder,
-                onValueChange = { text -> newFolder = text },  // ★ 明示引数
+                onValueChange = { text -> newFolder = text },
                 label = { Text("新規フォルダ名") },
                 singleLine = true,
                 modifier = Modifier.weight(1f)
@@ -292,3 +296,28 @@ private fun EditorPane(
     }
 }
 /* ▲▲ ここまで EditorPane ▲▲ */
+
+/* ▼▼ ここから EmptyMessage（引数なし・固定表示版） ▼▼ */
+@Composable
+private fun EmptyMessage() { // ★ Added: 引数を廃止し、この画面専用の固定文言に
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 32.dp),
+        tonalElevation = 0.dp
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("メモがありません", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "右下の + から作成しましょう",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+/* ▲▲ ここまで EmptyMessage ▲▲ */

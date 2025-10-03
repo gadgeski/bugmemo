@@ -1,150 +1,105 @@
 // app/src/main/java/com/example/bugmemo/ui/screens/NoteEditorScreen.kt
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class) // ★ Added: Material3の一部APIにOpt-in
+
 package com.example.bugmemo.ui.screens
 
-// ★ Removed: エイリアス import はやめる
-// import androidx.compose.material.icons.automirrored.filled.ArrowBack as AutoMirroredArrowBack
-// ★ Added: 通常 import にして、本体では Icons.AutoMirrored... で参照
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.automirrored.filled.ArrowBack     // ★ Added: AutoMirroredな戻るアイコン
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle           // ★ Added: collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bugmemo.ui.NotesViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * 単一ノートの編集画面（最小版）
+ * - TopAppBarの戻るボタンで onBack() を呼ぶ
+ * - タイトル/本文の編集、保存
+ */
 @Composable
 fun NoteEditorScreen(
-    vm: NotesViewModel,
-    onClose: () -> Unit = {}
+    vm: NotesViewModel = viewModel(),            // 既存VMを利用（FactoryはNav側/親側で指定していればOK）
+    onBack: () -> Unit = {}                      // ★ Added: Navから受け取る戻るコールバック
 ) {
-    val editing = vm.editing.collectAsStateWithLifecycle(initialValue = null).value
-    // ★ 型推論で OK（明示型引数は不要）
-    val folders = vm.folders.collectAsStateWithLifecycle(initialValue = emptyList()).value
-
-    var showFolderMenu by remember { mutableStateOf(false) }
+    val note by vm.editing.collectAsStateWithLifecycle(initialValue = null)
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(editing?.title?.ifBlank { "(新規メモ)" } ?: "(新規メモ)") },
+                title = {
+                    Text(note?.title?.ifBlank { "(無題)" } ?: "新規ノート")
+                },
                 navigationIcon = {
-                    IconButton(onClick = onClose) {
-                        // ★ Changed: Icons.AutoMirrored.Filled.ArrowBack を直接使用
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    IconButton(onClick = { onBack() }) {          // ★ Added: 戻る押下で呼び出し
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "戻る"
+                        )
                     }
                 },
                 actions = {
                     IconButton(
-                        onClick = {
-                            val id = editing?.id ?: 0L
-                            if (id != 0L) vm.deleteEditing()
-                            onClose()
-                        },
-                        enabled = (editing?.id ?: 0L) != 0L
+                        onClick = { vm.saveEditing() }             // ひとまず“保存”のみ配置
                     ) {
-                        Icon(Icons.Filled.Delete, contentDescription = "Delete")
+                        Icon(Icons.Filled.Save, contentDescription = "保存")
                     }
                 }
             )
         }
     ) { inner ->
-        Column(
-            Modifier
-                .padding(inner)
-                .padding(16.dp)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            OutlinedTextField(
-                value = editing?.title.orEmpty(),
-                onValueChange = { vm.setEditingTitle(it) },
-                label = { Text("タイトル") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
+        EditorContent(                                     // 本文
+            inner = inner,
+            vm = vm
+        )
+    }
+}
 
-            OutlinedTextField(
-                value = editing?.content.orEmpty(),
-                onValueChange = { vm.setEditingContent(it) },
-                label = { Text("内容") },
-                minLines = 8,
-                modifier = Modifier.fillMaxWidth()
-            )
+@Composable
+private fun EditorContent(
+    inner: PaddingValues,
+    vm: NotesViewModel
+) {
+    val note by vm.editing.collectAsStateWithLifecycle(initialValue = null)
 
-            // フォルダ選択
-            Box {
-                OutlinedButton(onClick = { showFolderMenu = true }) {
-                    val name = folders.firstOrNull { it.id == editing?.folderId }?.name ?: "フォルダ未選択"
-                    Text(name)
-                }
-                DropdownMenu(
-                    expanded = showFolderMenu,
-                    onDismissRequest = { showFolderMenu = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("未選択（なし）") },
-                        onClick = {
-                            vm.setEditingFolder(null)
-                            showFolderMenu = false
-                        }
-                    )
-                    folders.forEach { f ->
-                        DropdownMenuItem(
-                            text = { Text(f.name) },
-                            onClick = {
-                                vm.setEditingFolder(f.id)
-                                showFolderMenu = false
-                            }
-                        )
-                    }
-                }
-            }
+    Column(
+        modifier = Modifier
+            .padding(inner)
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        OutlinedTextField(
+            value = note?.title.orEmpty(),
+            onValueChange = { vm.setEditingTitle(it) },
+            label = { Text("タイトル") },
+            singleLine = true,
+            modifier = Modifier.fillMaxSize().weight(0f, fill = false)
+        )
 
-            Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(12.dp))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(
-                    onClick = {
-                        vm.saveEditing()
-                        onClose()
-                    },
-                    enabled = editing != null
-                ) { Text("保存") }
+        OutlinedTextField(
+            value = note?.content.orEmpty(),
+            onValueChange = { vm.setEditingContent(it) },
+            label = { Text("内容") },
+            minLines = 8,
+            modifier = Modifier
+                .fillMaxSize()
+                .weight(1f, fill = true)
+        )
 
-                OutlinedButton(
-                    onClick = {
-                        vm.deleteEditing()
-                        onClose()
-                    },
-                    enabled = (editing?.id ?: 0L) != 0L
-                ) { Text("削除") }
-            }
-        }
+        Spacer(Modifier.height(12.dp))
+
+        // ここにフォルダ選択やスター切替、削除ボタン等を順次追加予定
+        // 例：
+        // Row { Button(onClick = { vm.deleteEditing(); onBack() }) { Text("削除") } }
     }
 }

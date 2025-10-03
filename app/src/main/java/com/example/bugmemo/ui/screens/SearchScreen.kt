@@ -13,15 +13,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -31,12 +32,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -44,37 +42,49 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.ui.NotesViewModel
-import kotlinx.coroutines.flow.collectLatest
 
 /**
- * SearchScreen（完成版）
- * - 0件プレースホルダ
- * - IME アクション = Search（Enterでフォーカス解除）
- * - クリアボタン（×）で query を空に
- * - スクロール開始でキーボードを閉じる
- * - a11y: contentDescription を付与
+ * 検索画面（Bugs のクエリと同じ状態を共有）
+ * - クエリ入力で VM の setQuery を更新
+ * - 表示は VM.notes（内部で observeNotes/searchNotes を切替）
+ * - 結果タップで編集画面へ遷移（onOpenEditor）
  */
 @Composable
 fun SearchScreen(
     vm: NotesViewModel = viewModel(),
-    onOpenEditor: () -> Unit = {}                               // ★ Added: 検索結果からエディタへ
+    onOpenEditor: () -> Unit = {}                   // ★ Added: Editor に遷移するコールバック（Nav から受け取る）
 ) {
-    val query by vm.query.collectAsStateWithLifecycle("")        // ★ Added: 既存 VM の状態を利用
-    val results by vm.notes.collectAsStateWithLifecycle(emptyList()) // ★ Added: フィルタ×検索後の一覧を再利用
-    val focusManager = LocalFocusManager.current                 // ★ Added
-    val listState = rememberLazyListState()                      // ★ Added
-
-    // ★ Added: スクロール開始でキーボードを閉じる
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.isScrollInProgress }.collectLatest { scrolling ->
-            if (scrolling) focusManager.clearFocus()
-        }
-    }
+    val query by vm.query.collectAsStateWithLifecycle(initialValue = "")
+    val results by vm.notes.collectAsStateWithLifecycle(initialValue = emptyList())
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Search") }
+                title = { Text("Search") },
+                actions = {
+                    // 検索フィールド（シンプル版）
+                    OutlinedTextField(
+                        value = query,
+                        onValueChange = { vm.setQuery(it) },
+                        singleLine = true,
+                        placeholder = { Text("キーワードを入力") },
+                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
+                        trailingIcon = {
+                            if (query.isNotEmpty()) {
+                                IconButton(onClick = { vm.setQuery("") }) {
+                                    Icon(Icons.Filled.Clear, contentDescription = "Clear")
+                                }
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),   // ★ Added
+                        keyboardActions = KeyboardActions(                                  // ★ Added
+                            onSearch = { /* 特に何もしなくても Flow が反映 */ }
+                        ),
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                            .width(280.dp)
+                    )
+                }
             )
         }
     ) { inner ->
@@ -82,74 +92,32 @@ fun SearchScreen(
             Modifier
                 .padding(inner)
                 .fillMaxSize()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // ───────────────── 検索ボックス ─────────────────
-            OutlinedTextField(
-                value = query,
-                onValueChange = { vm.setQuery(it) },             // ★ Added: 入力のたびに保存（DataStore連携）
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                placeholder = { Text("キーワードを入力") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Filled.Search,
-                        contentDescription = "検索"               // ★ a11y
-                    )
-                },
-                trailingIcon = {
-                    if (query.isNotEmpty()) {
-                        IconButton(
-                            onClick = { vm.setQuery(""); focusManager.clearFocus() } // ★ クリア
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Clear,
-                                contentDescription = "検索ワードをクリア" // ★ a11y
-                            )
-                        }
-                    }
-                },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), // ★ IME Search
-                keyboardActions = KeyboardActions(
-                    onSearch = { focusManager.clearFocus() }      // ★ Enterで閉じる
+            if (query.isBlank()) {
+                EmptyHint(
+                    title = "検索ワードを入力してください",
+                    subtitle = "例: クラッシュ / Retrofit / Compose"
                 )
-            )
-
-            HorizontalDivider()
-
-            // ───────────────── 検索結果 ─────────────────
-            when {
-                query.isBlank() && results.isEmpty() -> {
-                    // ★ 0件プレースホルダ（未入力）
-                    EmptyMessage(
-                        title = "検索キーワードを入力してください",
-                        subtitle = "例: 「クラッシュ」「500」「Compose」など"
-                    )
-                }
-                query.isNotBlank() && results.isEmpty() -> {
-                    // ★ 0件プレースホルダ（ヒットなし）
-                    EmptyMessage(
-                        title = "該当するメモはありません",
-                        subtitle = "条件を変えるか、別のキーワードを試してください"
-                    )
-                }
-                else -> {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = 4.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(results, key = { it.id }) { note ->
-                            SearchResultRow(
-                                note = note,
-                                onClick = {
-                                    vm.loadNote(note.id)
-                                    onOpenEditor()
-                                }
-                            )
-                        }
+            } else if (results.isEmpty()) {
+                EmptyHint(
+                    title = "0件でした",
+                    subtitle = "キーワードを変えて試してみましょう"
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(results, key = { it.id }) { note ->
+                        ResultRow(
+                            note = note,
+                            onClick = {
+                                vm.loadNote(note.id)     // 編集対象をロード
+                                onOpenEditor()           // ★ Added: Editor へ遷移
+                            },
+                            onToggleStar = { vm.toggleStar(note.id, note.isStarred) }
+                        )
                     }
                 }
             }
@@ -158,19 +126,20 @@ fun SearchScreen(
 }
 
 @Composable
-private fun SearchResultRow(
+private fun ResultRow(
     note: Note,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onToggleStar: () -> Unit
 ) {
     Surface(
-        tonalElevation = 1.dp,
+        tonalElevation = 2.dp,
         shape = MaterialTheme.shapes.medium,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            Modifier
+                .clickable(onClick = onClick)
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(Modifier.weight(1f)) {
@@ -188,12 +157,19 @@ private fun SearchResultRow(
                     overflow = TextOverflow.Ellipsis
                 )
             }
+            IconButton(onClick = onToggleStar) {
+                if (note.isStarred) {
+                    Icon(Icons.Filled.Star, contentDescription = "Starred")
+                } else {
+                    Icon(Icons.Outlined.StarBorder, contentDescription = "Not starred")
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun EmptyMessage(
+private fun EmptyHint(
     title: String,
     subtitle: String
 ) {
@@ -209,7 +185,11 @@ private fun EmptyMessage(
         ) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(4.dp))
-            Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
