@@ -1,105 +1,110 @@
 // app/src/main/java/com/example/bugmemo/ui/screens/NoteEditorScreen.kt
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class) // ★ Added: Material3の一部APIにOpt-in
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 package com.example.bugmemo.ui.screens
 
+// ▼▼ アイコン解決の“最小修正” ▼▼
+// ▲▲ ここまで最小修正 ▲▲
+
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.automirrored.filled.ArrowBack     // ★ Added: AutoMirroredな戻るアイコン
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle           // ★ Added: collectAsStateWithLifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bugmemo.ui.NotesViewModel
 
 /**
- * 単一ノートの編集画面（最小版）
- * - TopAppBarの戻るボタンで onBack() を呼ぶ
- * - タイトル/本文の編集、保存
+ * NoteEditorScreen（最小修正版）
+ * - Icons の未解決を解消（Icons を import し、Icons.Xxx 参照に統一）
+ * - TextField：タイトルは fillMaxWidth、本文は weight(1f) で縦に拡張（0 は使わない）
  */
 @Composable
 fun NoteEditorScreen(
-    vm: NotesViewModel = viewModel(),            // 既存VMを利用（FactoryはNav側/親側で指定していればOK）
-    onBack: () -> Unit = {}                      // ★ Added: Navから受け取る戻るコールバック
+    vm: NotesViewModel = viewModel(),
+    onBack: () -> Unit = {}
 ) {
-    val note by vm.editing.collectAsStateWithLifecycle(initialValue = null)
+    val editing by vm.editing.collectAsStateWithLifecycle(initialValue = null)
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(note?.title?.ifBlank { "(無題)" } ?: "新規ノート")
+                    Text(
+                        text = editing?.title?.ifBlank { "(無題)" } ?: "新規メモ",
+                        style = MaterialTheme.typography.titleLarge
+                    )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { onBack() }) {          // ★ Added: 戻る押下で呼び出し
+                    IconButton(onClick = onBack) {
+                        // ★ Changed: 正しい参照パスで呼ぶ（AutoMirrored 推奨）
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "戻る"
+                            contentDescription = "Back"
                         )
                     }
                 },
                 actions = {
                     IconButton(
-                        onClick = { vm.saveEditing() }             // ひとまず“保存”のみ配置
+                        onClick = {
+                            vm.saveEditing()
+                            // 必要なら保存後に戻る
+                            // onBack()
+                        }
                     ) {
-                        Icon(Icons.Filled.Save, contentDescription = "保存")
+                        // ★ Changed: Icons.Filled.Save を利用（Icons を import 済み）
+                        Icon(
+                            imageVector = Icons.Filled.Save,
+                            contentDescription = "Save"
+                        )
                     }
                 }
             )
         }
     ) { inner ->
-        EditorContent(                                     // 本文
-            inner = inner,
-            vm = vm
-        )
-    }
-}
-
-@Composable
-private fun EditorContent(
-    inner: PaddingValues,
-    vm: NotesViewModel
-) {
-    val note by vm.editing.collectAsStateWithLifecycle(initialValue = null)
-
-    Column(
-        modifier = Modifier
-            .padding(inner)
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        OutlinedTextField(
-            value = note?.title.orEmpty(),
-            onValueChange = { vm.setEditingTitle(it) },
-            label = { Text("タイトル") },
-            singleLine = true,
-            modifier = Modifier.fillMaxSize().weight(0f, fill = false)
-        )
-
-        Spacer(Modifier.height(12.dp))
-
-        OutlinedTextField(
-            value = note?.content.orEmpty(),
-            onValueChange = { vm.setEditingContent(it) },
-            label = { Text("内容") },
-            minLines = 8,
+        Column(
             modifier = Modifier
+                .padding(inner)
                 .fillMaxSize()
-                .weight(1f, fill = true)
-        )
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // タイトル
+            OutlinedTextField(
+                value = editing?.title.orEmpty(),
+                onValueChange = { vm.setEditingTitle(it) },
+                label = { Text("タイトル") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        Spacer(Modifier.height(12.dp))
-
-        // ここにフォルダ選択やスター切替、削除ボタン等を順次追加予定
-        // 例：
-        // Row { Button(onClick = { vm.deleteEditing(); onBack() }) { Text("削除") } }
+            // 本文：縦方向に広がる（0 を渡さない → weight(1f)）
+            OutlinedTextField(
+                value = editing?.content.orEmpty(),
+                onValueChange = { vm.setEditingContent(it) },
+                label = { Text("内容") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)                // ★ Changed: > 0 を保証（0 は不可）
+                    .heightIn(min = 160.dp),   // 読みやすさのため最低高（任意）
+                minLines = 8
+            )
+        }
     }
 }

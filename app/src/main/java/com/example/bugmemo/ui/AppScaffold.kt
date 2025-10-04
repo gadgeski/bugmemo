@@ -14,8 +14,10 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -24,6 +26,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.bugmemo.ui.navigation.AppNavHost
 import com.example.bugmemo.ui.navigation.Routes
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun AppScaffold(
@@ -35,12 +38,30 @@ fun AppScaffold(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // （任意）VM から UI メッセージ Flow を受け取って Snackbar 表示したい場合はここで
-    // LaunchedEffect(Unit) {
-    //     vm.uiMessages.collect { msg ->
-    //         snackbarHostState.showSnackbar(message = msg, withDismissAction = true)
-    //     }
-    // }
+    // ★ Changed: when を網羅させるため 'else' を削除。
+    // ★ Changed: UndoDelete はタイトル非参照の汎用メッセージに変更（title 未定義エラー回避）
+    LaunchedEffect(Unit) {
+        vm.events.collectLatest { e ->
+            when (e) {
+                is NotesViewModel.UiEvent.Message -> {
+                    snackbarHostState.showSnackbar(
+                        message = e.text,
+                        withDismissAction = true
+                    )
+                }
+                is NotesViewModel.UiEvent.UndoDelete -> {
+                    val result = snackbarHostState.showSnackbar(
+                        message = "削除しました",               // ★ Changed: タイトルを使わない
+                        actionLabel = "取り消す",
+                        withDismissAction = true
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        vm.undoDelete()
+                    }
+                }
+            }
+        }
+    }
 
     val navItems = listOf(
         NavItem("Bugs",    Routes.BUGS)    { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Bugs") },
@@ -74,11 +95,10 @@ fun AppScaffold(
             }
         }
     ) { innerPadding ->
-        // ★ Changed: onShowMessage を渡すのをやめ、既存の引数だけで呼ぶ
         AppNavHost(
             navController = navController,
             vm = vm,
-            modifier = Modifier.padding(innerPadding)   // ★ keep: padding を Nav 側に伝搬
+            modifier = Modifier.padding(innerPadding)
         )
     }
 }
