@@ -38,7 +38,7 @@ import kotlinx.coroutines.launch
  * NotesViewModel
  * - 検索クエリ / フォルダ絞り込みを DataStore へ保存・復元
  * - 一覧は（検索 × フォルダ）で動的フィルタ
- * - ★ 削除 → Undo 対応を追加
+ * - 削除→Undo / 失敗時のSnackbar通知
  */
 class NotesViewModel(
     private val repo: NotesRepository,
@@ -48,7 +48,7 @@ class NotesViewModel(
     // ─────────── UIイベント（Snackbar など）───────────
     sealed interface UiEvent {
         data class Message(val text: String) : UiEvent
-        data class UndoDelete(val text: String) : UiEvent   // ★ Added: Undo 用イベント
+        data class UndoDelete(val text: String) : UiEvent
     }
     private val _events = MutableSharedFlow<UiEvent>(extraBufferCapacity = 1)
     val events: SharedFlow<UiEvent> = _events.asSharedFlow()
@@ -62,8 +62,13 @@ class NotesViewModel(
 
     fun setQuery(q: String) {
         _query.value = q
-        // ★ Added: 入力のたびに DataStore へ保存
-        viewModelScope.launch { settings.setLastQuery(q) }
+        // ★ Added: 入力のたびに DataStore へ保存（失敗をSnackbar通知）
+        viewModelScope.launch {
+            runCatching { settings.setLastQuery(q) }               // ★ Added
+                .onFailure { e ->
+                    _events.tryEmit(UiEvent.Message("検索語の保存に失敗しました: ${e.message ?: "不明なエラー"}"))
+                }
+        }
     }
 
     // ─────────── フォルダ絞り込み（保存・復元対応）──────────
@@ -72,8 +77,13 @@ class NotesViewModel(
 
     fun setFolderFilter(id: Long?) {
         _filterFolderId.value = id
-        // ★ Added: 変更を DataStore に保存
-        viewModelScope.launch { settings.setFilterFolderId(id) }
+        // ★ Added: 変更を DataStore に保存（失敗時通知）
+        viewModelScope.launch {
+            runCatching { settings.setFilterFolderId(id) }        // ★ Added
+                .onFailure { e ->
+                    _events.tryEmit(UiEvent.Message("絞り込みの保存に失敗しました: ${e.message ?: "不明なエラー"}"))
+                }
+        }
     }
 
     // ★ Added: 起動時に DataStore から query / filter を復元
@@ -95,9 +105,13 @@ class NotesViewModel(
     }
 
     // ─────────── 一覧（検索＋フォルダ絞り込み）───────────
+    // ★ Changed: query のみ debounce → trim してから combine
+    //            こうするとフォルダ切替時は即時に反映され、タイプ中の揺れだけ抑制。
     val notes: StateFlow<List<Note>> =
-        combine(query, _filterFolderId) { q, folderId -> q.trim() to folderId }
-            .debounce(150)
+        combine(
+            query.debounce(150).map { it.trim() },   // ★ Changed
+            _filterFolderId
+        ) { q, folderId -> q to folderId }
             .flatMapLatest { (q, folderId) ->
                 val base = if (q.isEmpty()) repo.observeNotes() else repo.searchNotes(q)
                 if (folderId == null) base
@@ -114,7 +128,13 @@ class NotesViewModel(
     val editing: StateFlow<Note?> = _editing.asStateFlow()
 
     fun loadNote(id: Long) {
-        viewModelScope.launch { _editing.value = repo.getNote(id) }
+        viewModelScope.launch {
+            runCatching { repo.getNote(id) }                      // ★ Added
+                .onSuccess { _editing.value = it }
+                .onFailure { e ->
+                    _events.tryEmit(UiEvent.Message("ノート読込に失敗しました: ${e.message ?: "不明なエラー"}"))
+                }
+        }
     }
 
     fun newNote() {
@@ -137,58 +157,83 @@ class NotesViewModel(
     fun saveEditing() {
         val note = _editing.value ?: return
         viewModelScope.launch {
-            val id = repo.upsert(note)
-            if (note.id == 0L && id != 0L) _editing.value = note.copy(id = id)
-            _events.tryEmit(UiEvent.Message("保存しました"))
+            runCatching {                                           // ★ Added
+                val id = repo.upsert(note)
+                if (note.id == 0L && id != 0L) _editing.value = note.copy(id = id)
+                _events.tryEmit(UiEvent.Message("保存しました"))
+            }.onFailure { e ->
+                _events.tryEmit(UiEvent.Message("保存に失敗しました: ${e.message ?: "不明なエラー"}"))
+            }
         }
     }
 
-    // ★ Changed: 削除時に退避＋Undo 可能なイベントを発行
+    // ★ Changed: 削除時に退避＋Undo 可能なイベントを発行（失敗時通知を追加）
     fun deleteEditing() {
         val id = _editing.value?.id ?: return
         viewModelScope.launch {
-            lastDeleted = _editing.value                 // ★ 退避
-            repo.deleteNote(id)
-            _editing.value = null
-            _events.tryEmit(UiEvent.UndoDelete("削除しました（元に戻す）")) // ★ Snackbar 側でアクション表示
+            runCatching {
+                lastDeleted = _editing.value                 // ★ 退避
+                repo.deleteNote(id)
+                _editing.value = null
+                _events.tryEmit(UiEvent.UndoDelete("削除しました（元に戻す）"))
+            }.onFailure { e ->
+                _events.tryEmit(UiEvent.Message("削除に失敗しました: ${e.message ?: "不明なエラー"}"))
+            }
         }
     }
 
-    // ★ Added: Undo 実行（Snackbar のアクションから呼ぶ）
+    // ★ Added: Undo 実行（Snackbar のアクションから呼ぶ）— 失敗時通知追加
     fun undoDelete() {
         val note = lastDeleted ?: return
         lastDeleted = null
         viewModelScope.launch {
-            // 新規として復元（IDはDB側で再採番）
-            repo.upsert(
-                note.copy(
-                    id = 0L,
-                    updatedAt = System.currentTimeMillis()
+            runCatching {
+                // 新規として復元（IDはDB側で再採番）
+                repo.upsert(
+                    note.copy(
+                        id = 0L,
+                        updatedAt = System.currentTimeMillis()
+                    )
                 )
-            )
-            _events.tryEmit(UiEvent.Message("復元しました"))
+                _events.tryEmit(UiEvent.Message("復元しました"))
+            }.onFailure { e ->
+                _events.tryEmit(UiEvent.Message("復元に失敗しました: ${e.message ?: "不明なエラー"}"))
+            }
         }
     }
 
     fun toggleStar(noteId: Long, current: Boolean) {
         viewModelScope.launch {
-            repo.setStarred(noteId, !current)
-            _events.tryEmit(UiEvent.Message(if (current) "スターを外しました" else "スターを付けました"))
+            runCatching {                                           // ★ Added
+                repo.setStarred(noteId, !current)
+                _events.tryEmit(UiEvent.Message(if (current) "スターを外しました" else "スターを付けました"))
+            }.onFailure { e ->
+                _events.tryEmit(UiEvent.Message("スター変更に失敗しました: ${e.message ?: "不明なエラー"}"))
+            }
         }
     }
 
     fun addFolder(name: String) {
         viewModelScope.launch {
-            val res = repo.addFolder(name)
-            if (res != 0L) _events.tryEmit(UiEvent.Message("フォルダを追加しました"))
-            else _events.tryEmit(UiEvent.Message("フォルダ名が不正、または重複しています"))
+            runCatching {                                           // ★ Added
+                val res = repo.addFolder(name)
+                if (res != 0L) _events.tryEmit(UiEvent.Message("フォルダを追加しました"))
+                else _events.tryEmit(UiEvent.Message("フォルダ名が不正、または重複しています"))
+            }.onFailure { e ->
+                _events.tryEmit(UiEvent.Message("フォルダ追加に失敗しました: ${e.message ?: "不明なエラー"}"))
+            }
         }
     }
 
     fun deleteFolder(id: Long) {
         viewModelScope.launch {
-            repo.deleteFolder(id)
-            _events.tryEmit(UiEvent.Message("フォルダを削除しました"))
+            runCatching {                                           // ★ Added
+                repo.deleteFolder(id)
+                if (filterFolderId.value == id) _filterFolderId.value = null
+                _events.tryEmit(UiEvent.Message("フォルダを削除しました"))
+            }.onFailure { e ->
+                _events.tryEmit(UiEvent.Message("フォルダ削除に失敗しました: ${e.message ?: "不明なエラー"}"))
+            }
         }
     }
 
