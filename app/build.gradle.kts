@@ -1,11 +1,10 @@
+// app/build.gradle.kts — 確認済みフル版（Lint 最小設定を追加）
 plugins {
     alias(libs.plugins.android.application)      // OK
     alias(libs.plugins.kotlin.android)           // OK
     alias(libs.plugins.kotlin.compose)           // OK（Compose Compiler DSL）
-    alias(libs.plugins.ksp)                      // OK（Room の KSP） // ★ Fixed: 重複を削除
-    // ★ Fixed: 下の2行は重複だったので削除
-    // alias(libs.plugins.android.application)
-    // alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.ksp)                      // OK（Room の KSP）
+    // ★ 重複なし：先頭で二重に同じ alias を適用しないこと
 }
 
 android {
@@ -29,38 +28,66 @@ android {
                 "proguard-rules.pro"
             )
         }
+        // debug { } // 必要になったら追加
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17   // そのままOK
+        sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlin {
-        jvmToolchain(17)                               // そのままOK
+        jvmToolchain(17)
     }
+
     buildFeatures {
         compose = true
+    }
+
+    // ───────────── Lint 最小設定（CI/ローカル共通）─────────────
+    lint {
+        abortOnError = true                 // ★ 重大な指摘でビルド失敗（推奨）
+        warningsAsErrors = false            // ★ 警告はまず許容。整備後 true に上げるのがおすすめ
+        baseline = file("lint-baseline.xml")// ★ 既存指摘を固定化（ファイルが無ければ無視される）
+        // 必要に応じてルール個別調整も可能：
+        // disable += setOf("OldTargetApi")
+        // enable  += setOf("Interoperability")
+        // レポート出力を明示したくなったら：
+        // xmlOutput  = file("$buildDir/reports/lint/lint-result.xml")
+        // htmlOutput = file("$buildDir/reports/lint/lint-result.html")
+        // sarifReport = true
+        // sarifOutput = file("$buildDir/reports/lint/lint.sarif")
     }
 }
 
 dependencies {
-
+    // Core
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.activity.compose)           // setContent{}
+
+    // Compose（BOM 配下）
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
 
-    // ★ 注意: Version Catalog に "androidx-compose-material-icons-extended" が無いと赤くなります
+    // ★ 注意：Version Catalog に "androidx-compose-material-icons-extended" がある前提
     implementation(libs.androidx.compose.material.icons.extended)
 
-    // Compose連携
-    implementation(libs.androidx.navigation.compose)
+    // Activity / Lifecycle / Navigation（BOM外のため catalog で版管理）
+    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.navigation.compose)
 
+    // DataStore（フォルダ絞り込み・検索語の保存/復元で使用）
+    implementation(libs.androidx.datastore.preferences)
+
+    // Room
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)  // ★ KSP 構成で呼び出す。版は libs.versions.toml の room に従う
+
+    // Test
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -69,13 +96,6 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
-    // （必要なときだけ残す）
+    // （必要時のみ残す）
     // implementation(libs.androidx.lifecycle.runtime.ktx)
-
-    // DataStore
-    implementation(libs.androidx.datastore.preferences) // ★ Added: Preferences DataStore
-    // Room
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)  // ← ここは “ksp 構成”で呼ぶだけ。版は TOML の room に従う
 }
