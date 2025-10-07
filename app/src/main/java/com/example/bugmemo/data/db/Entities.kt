@@ -1,6 +1,6 @@
 package com.example.bugmemo.data.db
 
-// import は必要なものだけに整理（重複/ワイルドカードを排除） // ★ 整理
+// 必要最小の import のみ（ワイルドカード・重複なし）
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
@@ -20,9 +20,14 @@ data class NoteEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val title: String,
     val content: String,
-    val folderId: Long?,            // null = 未分類
+
+    // 未分類は null（外部キー未設定）
+    val folderId: Long?,
+
     val createdAt: Long,
     val updatedAt: Long,
-    @ColumnInfo(name = "isStarred", defaultValue = "0") // ★ 追加: v2で追加した列（DBは0/1, KotlinはBoolean）
-    val isStarred: Boolean = false                      // ★ 追加: デフォルトは false
+
+    // v2 で追加した列。DB では 0/1、Kotlin 側は Boolean。
+    @ColumnInfo(name = "isStarred", defaultValue = "0")
+    val isStarred: Boolean = false
 )

@@ -1,7 +1,7 @@
 // app/src/main/java/com/example/bugmemo/ui/NotesViewModel.kt
 @file:OptIn(
     kotlinx.coroutines.FlowPreview::class,
-    kotlinx.coroutines.ExperimentalCoroutinesApi::class
+    kotlinx.coroutines.ExperimentalCoroutinesApi::class,
 )
 
 package com.example.bugmemo.ui
@@ -42,14 +42,19 @@ import kotlinx.coroutines.launch
  */
 class NotesViewModel(
     private val repo: NotesRepository,
-    private val settings: SettingsRepository
+    private val settings: SettingsRepository,
 ) : ViewModel() {
-
     // ─────────── UIイベント（Snackbar など）───────────
     sealed interface UiEvent {
-        data class Message(val text: String) : UiEvent
-        data class UndoDelete(val text: String) : UiEvent
+        data class Message(
+            val text: String,
+        ) : UiEvent
+
+        data class UndoDelete(
+            val text: String,
+        ) : UiEvent
     }
+
     private val _events = MutableSharedFlow<UiEvent>(extraBufferCapacity = 1)
     val events: SharedFlow<UiEvent> = _events.asSharedFlow()
 
@@ -64,7 +69,7 @@ class NotesViewModel(
         _query.value = q
         // ★ Added: 入力のたびに DataStore へ保存（失敗をSnackbar通知）
         viewModelScope.launch {
-            runCatching { settings.setLastQuery(q) }               // ★ Added
+            runCatching { settings.setLastQuery(q) } // ★ Added
                 .onFailure { e ->
                     _events.tryEmit(UiEvent.Message("検索語の保存に失敗しました: ${e.message ?: "不明なエラー"}"))
                 }
@@ -79,7 +84,7 @@ class NotesViewModel(
         _filterFolderId.value = id
         // ★ Added: 変更を DataStore に保存（失敗時通知）
         viewModelScope.launch {
-            runCatching { settings.setFilterFolderId(id) }        // ★ Added
+            runCatching { settings.setFilterFolderId(id) } // ★ Added
                 .onFailure { e ->
                     _events.tryEmit(UiEvent.Message("絞り込みの保存に失敗しました: ${e.message ?: "不明なエラー"}"))
                 }
@@ -109,15 +114,17 @@ class NotesViewModel(
     //            こうするとフォルダ切替時は即時に反映され、タイプ中の揺れだけ抑制。
     val notes: StateFlow<List<Note>> =
         combine(
-            query.debounce(150).map { it.trim() },   // ★ Changed
-            _filterFolderId
+            query.debounce(150).map { it.trim() }, // ★ Changed
+            _filterFolderId,
         ) { q, folderId -> q to folderId }
             .flatMapLatest { (q, folderId) ->
                 val base = if (q.isEmpty()) repo.observeNotes() else repo.searchNotes(q)
-                if (folderId == null) base
-                else base.map { list -> list.filter { it.folderId == folderId } }
-            }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+                if (folderId == null) {
+                    base
+                } else {
+                    base.map { list -> list.filter { it.folderId == folderId } }
+                }
+            }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // ─────────── フォルダ一覧 ───────────
     val folders: StateFlow<List<Folder>> =
@@ -129,7 +136,7 @@ class NotesViewModel(
 
     fun loadNote(id: Long) {
         viewModelScope.launch {
-            runCatching { repo.getNote(id) }                      // ★ Added
+            runCatching { repo.getNote(id) } // ★ Added
                 .onSuccess { _editing.value = it }
                 .onFailure { e ->
                     _events.tryEmit(UiEvent.Message("ノート読込に失敗しました: ${e.message ?: "不明なエラー"}"))
@@ -139,25 +146,35 @@ class NotesViewModel(
 
     fun newNote() {
         val now = System.currentTimeMillis()
-        _editing.value = Note(
-            id = 0L,
-            title = "",
-            content = "",
-            folderId = null,
-            createdAt = now,
-            updatedAt = now,
-            isStarred = false
-        )
+        _editing.value =
+            Note(
+                id = 0L,
+                title = "",
+                content = "",
+                folderId = null,
+                createdAt = now,
+                updatedAt = now,
+                isStarred = false,
+            )
     }
 
-    fun setEditingTitle(text: String) { _editing.update { it?.copy(title = text) } }
-    fun setEditingContent(text: String) { _editing.update { it?.copy(content = text) } }
-    fun setEditingFolder(folderId: Long?) { _editing.update { it?.copy(folderId = folderId) } }
+    fun setEditingTitle(text: String) {
+        _editing.update { it?.copy(title = text) }
+    }
+
+    fun setEditingContent(text: String) {
+        _editing.update { it?.copy(content = text) }
+    }
+
+    fun setEditingFolder(folderId: Long?) {
+        _editing.update { it?.copy(folderId = folderId) }
+    }
 
     fun saveEditing() {
         val note = _editing.value ?: return
         viewModelScope.launch {
-            runCatching {                                           // ★ Added
+            runCatching {
+                // ★ Added
                 val id = repo.upsert(note)
                 if (note.id == 0L && id != 0L) _editing.value = note.copy(id = id)
                 _events.tryEmit(UiEvent.Message("保存しました"))
@@ -172,7 +189,7 @@ class NotesViewModel(
         val id = _editing.value?.id ?: return
         viewModelScope.launch {
             runCatching {
-                lastDeleted = _editing.value                 // ★ 退避
+                lastDeleted = _editing.value // ★ 退避
                 repo.deleteNote(id)
                 _editing.value = null
                 _events.tryEmit(UiEvent.UndoDelete("削除しました（元に戻す）"))
@@ -192,8 +209,8 @@ class NotesViewModel(
                 repo.upsert(
                     note.copy(
                         id = 0L,
-                        updatedAt = System.currentTimeMillis()
-                    )
+                        updatedAt = System.currentTimeMillis(),
+                    ),
                 )
                 _events.tryEmit(UiEvent.Message("復元しました"))
             }.onFailure { e ->
@@ -202,9 +219,13 @@ class NotesViewModel(
         }
     }
 
-    fun toggleStar(noteId: Long, current: Boolean) {
+    fun toggleStar(
+        noteId: Long,
+        current: Boolean,
+    ) {
         viewModelScope.launch {
-            runCatching {                                           // ★ Added
+            runCatching {
+                // ★ Added
                 repo.setStarred(noteId, !current)
                 _events.tryEmit(UiEvent.Message(if (current) "スターを外しました" else "スターを付けました"))
             }.onFailure { e ->
@@ -215,10 +236,14 @@ class NotesViewModel(
 
     fun addFolder(name: String) {
         viewModelScope.launch {
-            runCatching {                                           // ★ Added
+            runCatching {
+                // ★ Added
                 val res = repo.addFolder(name)
-                if (res != 0L) _events.tryEmit(UiEvent.Message("フォルダを追加しました"))
-                else _events.tryEmit(UiEvent.Message("フォルダ名が不正、または重複しています"))
+                if (res != 0L) {
+                    _events.tryEmit(UiEvent.Message("フォルダを追加しました"))
+                } else {
+                    _events.tryEmit(UiEvent.Message("フォルダ名が不正、または重複しています"))
+                }
             }.onFailure { e ->
                 _events.tryEmit(UiEvent.Message("フォルダ追加に失敗しました: ${e.message ?: "不明なエラー"}"))
             }
@@ -227,7 +252,8 @@ class NotesViewModel(
 
     fun deleteFolder(id: Long) {
         viewModelScope.launch {
-            runCatching {                                           // ★ Added
+            runCatching {
+                // ★ Added
                 repo.deleteFolder(id)
                 if (filterFolderId.value == id) _filterFolderId.value = null
                 _events.tryEmit(UiEvent.Message("フォルダを削除しました"))
@@ -240,14 +266,15 @@ class NotesViewModel(
     // ─────────── Factory（DI 最小）──────────
     companion object {
         // アプリから DB / Settings を引き当てて VM を作る Factory
-        fun factory(): ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                val app = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as Application
-                val db = AppDatabase.get(app)
-                val notesRepo = RoomNotesRepository(db.noteDao(), db.folderDao())
-                val settingsRepo = SettingsRepository.get(app)
-                NotesViewModel(notesRepo, settingsRepo)
+        fun factory(): ViewModelProvider.Factory =
+            viewModelFactory {
+                initializer {
+                    val app = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as Application
+                    val db = AppDatabase.get(app)
+                    val notesRepo = RoomNotesRepository(db.noteDao(), db.folderDao())
+                    val settingsRepo = SettingsRepository.get(app)
+                    NotesViewModel(notesRepo, settingsRepo)
+                }
             }
-        }
     }
 }

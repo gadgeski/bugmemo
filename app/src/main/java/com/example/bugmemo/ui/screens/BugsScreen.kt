@@ -51,14 +51,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+// import androidx.lifecycle.viewmodel.compose.viewModel  // ★ Removed: デフォルト生成をやめたため不要
 import com.example.bugmemo.data.Folder
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.ui.NotesViewModel
 
 @Composable
 fun BugsScreen(
-    vm: NotesViewModel = viewModel(),
+    vm: NotesViewModel,                   // ★ Changed: デフォルト値 `= viewModel()` を削除して必須受け取りに
     onOpenEditor: () -> Unit = {},
     onOpenSearch: () -> Unit = {},
     onOpenFolders: () -> Unit = {}
@@ -106,7 +106,7 @@ fun BugsScreen(
             // 左：一覧
             Box(Modifier.weight(1f)) {
                 if (notes.isEmpty()) {
-                    EmptyMessage() // ★ Changed: 引数なしの固定表示に変更
+                    EmptyMessage() // ★ 画面固定文言の空状態表示
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
@@ -299,7 +299,7 @@ private fun EditorPane(
 
 /* ▼▼ ここから EmptyMessage（引数なし・固定表示版） ▼▼ */
 @Composable
-private fun EmptyMessage() { // ★ Added: 引数を廃止し、この画面専用の固定文言に
+private fun EmptyMessage() {
     Surface(
         modifier = Modifier
             .fillMaxWidth()

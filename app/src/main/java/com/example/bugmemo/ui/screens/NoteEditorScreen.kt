@@ -3,8 +3,7 @@
 
 package com.example.bugmemo.ui.screens
 
-// ▼▼ アイコン解決の“最小修正” ▼▼
-// ▲▲ ここまで最小修正 ▲▲
+// ▼ 不要だったプレースホルダコメントを削除（lint対策） // ★ Removed
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -30,11 +29,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bugmemo.ui.NotesViewModel
 
-/**
- * NoteEditorScreen（最小修正版）
- * - Icons の未解決を解消（Icons を import し、Icons.Xxx 参照に統一）
- * - TextField：タイトルは fillMaxWidth、本文は weight(1f) で縦に拡張（0 は使わない）
- */
 @Composable
 fun NoteEditorScreen(
     vm: NotesViewModel = viewModel(),
@@ -53,7 +47,6 @@ fun NoteEditorScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        // ★ Changed: 正しい参照パスで呼ぶ（AutoMirrored 推奨）
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
@@ -62,13 +55,9 @@ fun NoteEditorScreen(
                 },
                 actions = {
                     IconButton(
-                        onClick = {
-                            vm.saveEditing()
-                            // 必要なら保存後に戻る
-                            // onBack()
-                        }
+                        onClick = { vm.saveEditing() },
+                        enabled = editing != null // ★ Added: 編集対象が無いときは保存を無効化（任意）
                     ) {
-                        // ★ Changed: Icons.Filled.Save を利用（Icons を import 済み）
                         Icon(
                             imageVector = Icons.Filled.Save,
                             contentDescription = "Save"
@@ -94,15 +83,15 @@ fun NoteEditorScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // 本文：縦方向に広がる（0 を渡さない → weight(1f)）
+            // 本文
             OutlinedTextField(
                 value = editing?.content.orEmpty(),
                 onValueChange = { vm.setEditingContent(it) },
                 label = { Text("内容") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)                // ★ Changed: > 0 を保証（0 は不可）
-                    .heightIn(min = 160.dp),   // 読みやすさのため最低高（任意）
+                    .weight(1f)              // ★ keep: 縦に広がる
+                    .heightIn(min = 160.dp), // 読みやすさのための最小高さ
                 minLines = 8
             )
         }

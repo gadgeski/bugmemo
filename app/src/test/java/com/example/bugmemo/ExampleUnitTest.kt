@@ -1,8 +1,9 @@
+// app/src/test/java/com/example/bugmemo/ExampleUnitTest.kt
+
 package com.example.bugmemo
 
-import org.junit.Test
-
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals // ★ Changed: ワイルドカードを個別 import に変更
+import org.junit.Test               // （そのまま利用）
 
 /**
  * Example local unit test, which will execute on the development machine (host).

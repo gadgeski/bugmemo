@@ -30,7 +30,8 @@ import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun AppScaffold(
-    vm: NotesViewModel = viewModel()
+    // ★ Changed: Factory 経由で VM を取得（AppDatabase / DataStore を一元注入）
+    vm: NotesViewModel = viewModel(factory = NotesViewModel.factory())
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -38,8 +39,7 @@ fun AppScaffold(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // ★ Changed: when を網羅させるため 'else' を削除。
-    // ★ Changed: UndoDelete はタイトル非参照の汎用メッセージに変更（title 未定義エラー回避）
+    // VM からの UI イベントを Snackbar に反映
     LaunchedEffect(Unit) {
         vm.events.collectLatest { e ->
             when (e) {
@@ -51,7 +51,7 @@ fun AppScaffold(
                 }
                 is NotesViewModel.UiEvent.UndoDelete -> {
                     val result = snackbarHostState.showSnackbar(
-                        message = "削除しました",               // ★ Changed: タイトルを使わない
+                        message = "削除しました",   // タイトルに依存しない汎用メッセージ
                         actionLabel = "取り消す",
                         withDismissAction = true
                     )
@@ -98,7 +98,7 @@ fun AppScaffold(
         AppNavHost(
             navController = navController,
             vm = vm,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding) // コンテンツパディングをNav側へ伝搬
         )
     }
 }

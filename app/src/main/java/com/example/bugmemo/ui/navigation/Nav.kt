@@ -3,11 +3,9 @@ package com.example.bugmemo.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.example.bugmemo.ui.NotesViewModel
 import com.example.bugmemo.ui.screens.BugsScreen
 import com.example.bugmemo.ui.screens.FoldersScreen
@@ -24,8 +22,8 @@ object Routes {
 @Composable
 fun AppNavHost(
     modifier: Modifier = Modifier,
-    navController: NavHostController = rememberNavController(),
-    vm: NotesViewModel = viewModel(factory = NotesViewModel.factory())
+    navController: NavHostController,                 // ★ Changed: デフォルトを削除（AppScaffold から受け取る）
+    vm: NotesViewModel                                // ★ Changed: デフォルトを削除（AppScaffold から受け取る）
 ) {
     NavHost(
         navController = navController,
@@ -37,7 +35,7 @@ fun AppNavHost(
             BugsScreen(
                 vm = vm,
                 onOpenEditor = {
-                    // ★ Added: 一覧からエディタへ
+                    // ★ keep: 一覧からエディタへ
                     navController.navigate(Routes.EDITOR)
                 }
             )
@@ -48,7 +46,7 @@ fun AppNavHost(
             SearchScreen(
                 vm = vm,
                 onOpenEditor = {
-                    // ★ Added: 検索結果からエディタへ
+                    // ★ keep: 検索結果からエディタへ
                     navController.navigate(Routes.EDITOR)
                 }
             )
@@ -59,7 +57,7 @@ fun AppNavHost(
             FoldersScreen(
                 vm = vm,
                 onOpenEditor = {
-                    // ★ Optional: ここからもエディタへ遷移可能に
+                    // ★ keep: フォルダ画面からも遷移可能
                     navController.navigate(Routes.EDITOR)
                 }
             )
@@ -69,10 +67,7 @@ fun AppNavHost(
         composable(Routes.EDITOR) {
             NoteEditorScreen(
                 vm = vm,
-                onBack = {
-                    // ★ Added: 戻る
-                    navController.navigateUp()
-                }
+                onBack = { navController.navigateUp() } // ★ keep: 戻る
             )
         }
     }

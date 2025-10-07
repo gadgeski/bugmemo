@@ -6,20 +6,36 @@ package com.example.bugmemo.ui.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme     // ★ Added: 動的カラー（ダーク）
+import androidx.compose.material3.dynamicLightColorScheme    // ★ Added: 動的カラー（ライト）
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext              // ★ Added: dynamic color に必要
+// import android.os.Build                                   // ★ Removed: minSdk=34 なので分岐を削除、未使用に
 
-// カスタムカラーパレット（落ち着いたオレンジ系）
-private val BugMemoOrange = Color(0xFFD84315)      // 深いオレンジ（プライマリー）
-private val BugMemoOrangeLight = Color(0xFFFF7043) // ライトオレンジ
-private val BugMemoAccent = Color(0xFFFF9800)      // アクセントオレンジ
-private val BugMemoBackground = Color(0xFFFFF8F5)  // 暖かみのある背景
-private val BugMemoSurface = Color(0xFFFFFBFA)     // サーフェス色
-private val BugMemoOnPrimary = Color(0xFFFFFFFF)   // プライマリー上のテキスト
-private val BugMemoOnSurface = Color(0xFF1C1B1F)   // サーフェス上のテキスト
+/* ===============================
+   カスタムカラーパレット（落ち着いたオレンジ系）
+   =============================== */
 
-// ライトテーマ
+// 深いオレンジ（プライマリー）
+private val BugMemoOrange = Color(0xFFD84315)
+// ライトオレンジ
+private val BugMemoOrangeLight = Color(0xFFFF7043)
+// アクセントオレンジ
+private val BugMemoAccent = Color(0xFFFF9800)
+// 暖かみのある背景
+private val BugMemoBackground = Color(0xFFFFF8F5)
+// サーフェス色
+private val BugMemoSurface = Color(0xFFFFFBFA)
+// プライマリー上のテキスト
+private val BugMemoOnPrimary = Color(0xFFFFFFFF)
+// サーフェス上のテキスト
+private val BugMemoOnSurface = Color(0xFF1C1B1F)
+
+/* ===============================
+   ライトテーマ
+   =============================== */
 private val LightColors = lightColorScheme(
     primary = BugMemoOrange,
     onPrimary = BugMemoOnPrimary,
@@ -51,7 +67,9 @@ private val LightColors = lightColorScheme(
     inversePrimary = Color(0xFFFFB599)
 )
 
-// ダークテーマ
+/* ===============================
+   ダークテーマ
+   =============================== */
 private val DarkColors = darkColorScheme(
     primary = Color(0xFFFFB599),
     onPrimary = Color(0xFF4A1C00),
@@ -83,16 +101,24 @@ private val DarkColors = darkColorScheme(
     inversePrimary = BugMemoOrange
 )
 
+/* ===============================
+   テーマ適用
+   - ★ Changed: SDK バージョン分岐を削除（minSdk=34 のため常に true 側になるチェックは不要）
+   - ★ Added: dynamicDarkColorScheme / dynamicLightColorScheme を直接利用
+   =============================== */
 @Composable
 fun AppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    useDynamicColor: Boolean = true,                  // ★ Added: 呼び出し側で動的カラーのON/OFFを選べる
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) {
-        DarkColors
-    } else {
-        LightColors
-    }
+    val context = LocalContext.current                // ★ Added: dynamic color に必要
+    val colorScheme =
+        if (useDynamicColor) {
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        } else {
+            if (darkTheme) DarkColors else LightColors
+        }
 
     MaterialTheme(
         colorScheme = colorScheme,

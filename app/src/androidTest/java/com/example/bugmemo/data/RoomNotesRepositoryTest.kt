@@ -35,19 +35,20 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class RoomNotesRepositoryTest {
-
     private lateinit var context: Context
     private lateinit var db: AppDatabase
     private lateinit var noteDao: NoteDao
     private lateinit var folderDao: FolderDao
-    private lateinit var repo: RoomNotesRepository   // ★ Added: テスト対象
+    private lateinit var repo: RoomNotesRepository // ★ Added: テスト対象
 
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
-        db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
-            .allowMainThreadQueries() // ★ Added: テスト簡略化
-            .build()
+        db =
+            Room
+                .inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+                .allowMainThreadQueries() // ★ Added: テスト簡略化
+                .build()
         noteDao = db.noteDao()
         folderDao = db.folderDao()
         repo = RoomNotesRepository(noteDao, folderDao)
@@ -59,92 +60,99 @@ class RoomNotesRepositoryTest {
     }
 
     @Test
-    fun upsert_insert_then_update() = runBlocking {
-        val now = System.currentTimeMillis()
+    fun upsert_insert_then_update() =
+        runBlocking {
+            val now = System.currentTimeMillis()
 
-        // ★ 新規作成（id=0L）→ upsert
-        val newId = repo.upsert(
-            Note(
-                id = 0L,
-                title = "first",
-                content = "content",
-                folderId = null,
-                createdAt = now,
-                updatedAt = now,
-                isStarred = false
-            )
-        )
-        assertTrue(newId > 0L)
+            // ★ 新規作成（id=0L）→ upsert
+            val newId =
+                repo.upsert(
+                    Note(
+                        id = 0L,
+                        title = "first",
+                        content = "content",
+                        folderId = null,
+                        createdAt = now,
+                        updatedAt = now,
+                        isStarred = false,
+                    ),
+                )
+            assertTrue(newId > 0L)
 
-        // 取得して確認
-        val loaded1 = repo.getNote(newId)
-        assertNotNull(loaded1)
-        assertEquals("first", loaded1!!.title)
-        assertEquals(false, loaded1.isStarred)
+            // 取得して確認
+            val loaded1 = repo.getNote(newId)
+            assertNotNull(loaded1)
+            assertEquals("first", loaded1!!.title)
+            assertEquals(false, loaded1.isStarred)
 
-        // ★ 更新して上書き（id=採番済み）
-        val updatedId = repo.upsert(
-            loaded1.copy(
-                title = "updated",
-                content = "changed"
-            )
-        )
-        assertEquals(newId, updatedId)
+            // ★ 更新して上書き（id=採番済み）
+            val updatedId =
+                repo.upsert(
+                    loaded1.copy(
+                        title = "updated",
+                        content = "changed",
+                    ),
+                )
+            assertEquals(newId, updatedId)
 
-        val loaded2 = repo.getNote(newId)
-        assertNotNull(loaded2)
-        assertEquals("updated", loaded2!!.title)
-        assertEquals("changed", loaded2.content)
-    }
-
-    @Test
-    fun setStarred_toggles_flag() = runBlocking {
-        val now = System.currentTimeMillis()
-        val id = repo.upsert(
-            Note(
-                id = 0L,
-                title = "star",
-                content = "",
-                folderId = null,
-                createdAt = now,
-                updatedAt = now,
-                isStarred = false
-            )
-        )
-        // ★ true に変更
-        repo.setStarred(id, true)
-        val afterTrue = repo.getNote(id)
-        assertNotNull(afterTrue)
-        assertTrue(afterTrue!!.isStarred)
-
-        // ★ false に戻す
-        repo.setStarred(id, false)
-        val afterFalse = repo.getNote(id)
-        assertNotNull(afterFalse)
-        assertFalse(afterFalse!!.isStarred)
-    }
+            val loaded2 = repo.getNote(newId)
+            assertNotNull(loaded2)
+            assertEquals("updated", loaded2!!.title)
+            assertEquals("changed", loaded2.content)
+        }
 
     @Test
-    fun deleteNote_then_getNote_returns_null() = runBlocking {
-        val now = System.currentTimeMillis()
-        val id = repo.upsert(
-            Note(
-                id = 0L,
-                title = "to delete",
-                content = "",
-                folderId = null,
-                createdAt = now,
-                updatedAt = now,
-                isStarred = false
-            )
-        )
-        assertNotNull(repo.getNote(id))
+    fun setStarred_toggles_flag() =
+        runBlocking {
+            val now = System.currentTimeMillis()
+            val id =
+                repo.upsert(
+                    Note(
+                        id = 0L,
+                        title = "star",
+                        content = "",
+                        folderId = null,
+                        createdAt = now,
+                        updatedAt = now,
+                        isStarred = false,
+                    ),
+                )
+            // ★ true に変更
+            repo.setStarred(id, true)
+            val afterTrue = repo.getNote(id)
+            assertNotNull(afterTrue)
+            assertTrue(afterTrue!!.isStarred)
 
-        // ★ 削除
-        repo.deleteNote(id)
+            // ★ false に戻す
+            repo.setStarred(id, false)
+            val afterFalse = repo.getNote(id)
+            assertNotNull(afterFalse)
+            assertFalse(afterFalse!!.isStarred)
+        }
 
-        // 取得できないことを確認
-        val after = repo.getNote(id)
-        assertNull(after)
-    }
+    @Test
+    fun deleteNote_then_getNote_returns_null() =
+        runBlocking {
+            val now = System.currentTimeMillis()
+            val id =
+                repo.upsert(
+                    Note(
+                        id = 0L,
+                        title = "to delete",
+                        content = "",
+                        folderId = null,
+                        createdAt = now,
+                        updatedAt = now,
+                        isStarred = false,
+                    ),
+                )
+            assertNotNull(repo.getNote(id))
+
+            // ★ 削除
+            repo.deleteNote(id)
+
+            // 取得できないことを確認
+            val after = repo.getNote(id)
+            assertNull(after)
+        }
 }

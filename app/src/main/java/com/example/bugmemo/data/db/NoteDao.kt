@@ -22,7 +22,6 @@ interface FolderDao {
 
 @Dao
 interface NoteDao {
-
     @Query("SELECT * FROM notes ORDER BY updatedAt DESC")
     fun observeNotes(): Flow<List<NoteEntity>>
 
@@ -34,7 +33,7 @@ interface NoteDao {
         SELECT * FROM notes
         WHERE title LIKE :q OR content LIKE :q
         ORDER BY updatedAt DESC
-        """
+        """,
     )
     fun search(q: String): Flow<List<NoteEntity>>
     // Repository 側で "%$query%" の形にして渡す想定（そのままでOK）
@@ -50,5 +49,9 @@ interface NoteDao {
 
     // ★ 追加: スター状態だけを更新したい時に便利（部分更新）
     @Query("UPDATE notes SET isStarred = :starred, updatedAt = :updatedAt WHERE id = :id")
-    suspend fun updateStarred(id: Long, starred: Boolean, updatedAt: Long)
+    suspend fun updateStarred(
+        id: Long,
+        starred: Boolean,
+        updatedAt: Long,
+    )
 }

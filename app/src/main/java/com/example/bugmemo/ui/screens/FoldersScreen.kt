@@ -1,5 +1,4 @@
 // app/src/main/java/com/example/bugmemo/ui/screens/FoldersScreen.kt
-// FoldersScreen.kt の先頭行に追加
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 package com.example.bugmemo.ui.screens
@@ -62,7 +61,7 @@ fun FoldersScreen(
     val currentFilter by vm.filterFolderId.collectAsStateWithLifecycle(initialValue = null)
 
     var newFolder by remember { mutableStateOf("") }
-    val scope = rememberCoroutineScope() // ★ Added: suspend API を呼ぶためのコルーチン
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -98,14 +97,13 @@ fun FoldersScreen(
                 Button(
                     onClick = {
                         val name = newFolder.trim()
-                        if (name.isNotEmpty()) {
-                            // ★ Changed: onClick 内は Composable ではないので、コルーチンで suspend を呼ぶ
-                            scope.launch {
-                                vm.addFolder(name)
-                                newFolder = ""
-                            }
+                        // ここでは成功後にクリアするポリシーを採用
+                        scope.launch {
+                            vm.addFolder(name)
+                            newFolder = ""
                         }
-                    }
+                    },
+                    enabled = newFolder.isNotBlank() // ★ Added: 空文字のときは無効化して押せないようにする
                 ) { Text("追加") }
             }
 
@@ -123,12 +121,12 @@ fun FoldersScreen(
                             isActive = (folder.id == currentFilter),
                             onSetFilter = { id -> vm.setFolderFilter(id) },
                             onDelete = { id ->
-                                scope.launch { vm.deleteFolder(id) } // ★ suspend を安全に呼ぶ
+                                scope.launch { vm.deleteFolder(id) }
                             },
                             onCreateNoteHere = { id ->
                                 vm.newNote()
                                 vm.setEditingFolder(id)
-                                onOpenEditor() // ★ Added: エディタへ遷移
+                                onOpenEditor()
                             }
                         )
                     }

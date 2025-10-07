@@ -1,4 +1,4 @@
-// app/build.gradle.kts — 確認済みフル版（Lint 最小設定を追加）
+// app/build.gradle.kts — フル版（Lint最小 + Roomスキーマ出力/読込を追加）
 plugins {
     alias(libs.plugins.android.application)      // OK
     alias(libs.plugins.kotlin.android)           // OK
@@ -47,16 +47,17 @@ android {
     lint {
         abortOnError = true                 // ★ 重大な指摘でビルド失敗（推奨）
         warningsAsErrors = false            // ★ 警告はまず許容。整備後 true に上げるのがおすすめ
-        baseline = file("lint-baseline.xml")// ★ 既存指摘を固定化（ファイルが無ければ無視される）
-        // 必要に応じてルール個別調整も可能：
-        // disable += setOf("OldTargetApi")
-        // enable  += setOf("Interoperability")
-        // レポート出力を明示したくなったら：
-        // xmlOutput  = file("$buildDir/reports/lint/lint-result.xml")
-        // htmlOutput = file("$buildDir/reports/lint/lint-result.html")
-        // sarifReport = true
-        // sarifOutput = file("$buildDir/reports/lint/lint.sarif")
+        baseline = file("lint-baseline.xml")// ★ 既存指摘を固定化（ファイルが無ければ無視）
     }
+
+    // ★ Added: Room のスキーマを androidTest の assets に含める
+    //   （exportSchema = true を活かして、マイグレーションの回帰テストがしやすくなります）
+    sourceSets["androidTest"].assets.srcDirs(files("$projectDir/schemas"))
+}
+
+// ★ Added: KSP に Room スキーマ出力先を指示（exportSchema = true とセットで）
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {
@@ -85,7 +86,7 @@ dependencies {
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)  // ★ KSP 構成で呼び出す。版は libs.versions.toml の room に従う
+    ksp(libs.androidx.room.compiler)  // ★ KSP 構成で呼ぶ。版は libs.versions.toml の room に従う
 
     // Test
     testImplementation(libs.junit)
