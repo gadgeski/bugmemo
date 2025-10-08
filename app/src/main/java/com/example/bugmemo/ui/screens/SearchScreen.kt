@@ -51,8 +51,9 @@ import com.example.bugmemo.ui.NotesViewModel
  */
 @Composable
 fun SearchScreen(
+    // ★ Added: Editor に遷移するコールバック（Nav から受け取る）
     vm: NotesViewModel = viewModel(),
-    onOpenEditor: () -> Unit = {}                   // ★ Added: Editor に遷移するコールバック（Nav から受け取る）
+    onOpenEditor: () -> Unit = {},
 ) {
     val query by vm.query.collectAsStateWithLifecycle(initialValue = "")
     val results by vm.notes.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -76,47 +77,50 @@ fun SearchScreen(
                                 }
                             }
                         },
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),   // ★ Added
-                        keyboardActions = KeyboardActions(                                  // ★ Added
-                            onSearch = { /* 特に何もしなくても Flow が反映 */ }
+                        // ★ Added
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(
+                            onSearch = { /* 特に何もしなくても Flow が反映 */ },
                         ),
                         modifier = Modifier
                             .padding(end = 8.dp)
-                            .width(280.dp)
+                            .width(280.dp),
                     )
-                }
+                },
             )
-        }
+        },
     ) { inner ->
         Column(
             Modifier
                 .padding(inner)
-                .fillMaxSize()
+                .fillMaxSize(),
         ) {
             if (query.isBlank()) {
                 EmptyHint(
                     title = "検索ワードを入力してください",
-                    subtitle = "例: クラッシュ / Retrofit / Compose"
+                    subtitle = "例: クラッシュ / Retrofit / Compose",
                 )
             } else if (results.isEmpty()) {
                 EmptyHint(
                     title = "0件でした",
-                    subtitle = "キーワードを変えて試してみましょう"
+                    subtitle = "キーワードを変えて試してみましょう",
                 )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(results, key = { it.id }) { note ->
                         ResultRow(
                             note = note,
                             onClick = {
-                                vm.loadNote(note.id)     // 編集対象をロード
-                                onOpenEditor()           // ★ Added: Editor へ遷移
+                                // 編集対象をロード
+                                vm.loadNote(note.id)
+                                // ★ Added: Editor へ遷移
+                                onOpenEditor()
                             },
-                            onToggleStar = { vm.toggleStar(note.id, note.isStarred) }
+                            onToggleStar = { vm.toggleStar(note.id, note.isStarred) },
                         )
                     }
                 }
@@ -129,32 +133,32 @@ fun SearchScreen(
 private fun ResultRow(
     note: Note,
     onClick: () -> Unit,
-    onToggleStar: () -> Unit
+    onToggleStar: () -> Unit,
 ) {
     Surface(
         tonalElevation = 2.dp,
         shape = MaterialTheme.shapes.medium,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
             Modifier
                 .clickable(onClick = onClick)
                 .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
                     text = note.title.ifBlank { "(無題)" },
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = note.content,
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             IconButton(onClick = onToggleStar) {
@@ -171,24 +175,24 @@ private fun ResultRow(
 @Composable
 private fun EmptyHint(
     title: String,
-    subtitle: String
+    subtitle: String,
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 32.dp),
-        tonalElevation = 0.dp
+        tonalElevation = 0.dp,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(4.dp))
             Text(
                 subtitle,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

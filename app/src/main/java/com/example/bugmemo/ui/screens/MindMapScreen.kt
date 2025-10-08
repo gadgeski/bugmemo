@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MindMapScreen(
-    onClose: () -> Unit = {}
+    onClose: () -> Unit = {},
 ) {
     Scaffold(
         topBar = {
@@ -29,15 +29,15 @@ fun MindMapScreen(
                     IconButton(onClick = onClose) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
             )
-        }
+        },
     ) { inner ->
         Column(
             Modifier
                 .padding(inner)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text("（プレースホルダ）ここにマインドマップUIを載せていきます。")
             Text("最初はノードの一覧や簡単な追加ボタンだけでもOK。")

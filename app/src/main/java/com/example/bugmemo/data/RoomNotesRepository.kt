@@ -73,14 +73,13 @@ class RoomNotesRepository(
         notes.updateStarred(id = id, starred = starred, updatedAt = now)
     }
 
-    private fun toDomain(e: NoteEntity) =
-        Note(
-            id = e.id,
-            title = e.title,
-            content = e.content,
-            folderId = e.folderId,
-            createdAt = e.createdAt,
-            updatedAt = e.updatedAt,
-            isStarred = e.isStarred,
-        )
+    private fun toDomain(e: NoteEntity) = Note(
+        id = e.id,
+        title = e.title,
+        content = e.content,
+        folderId = e.folderId,
+        createdAt = e.createdAt,
+        updatedAt = e.updatedAt,
+        isStarred = e.isStarred,
+    )
 }

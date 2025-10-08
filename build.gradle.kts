@@ -2,9 +2,9 @@
 
 plugins {
     alias(libs.plugins.android.application) apply false
-    alias(libs.plugins.kotlin.android)      apply false
-    alias(libs.plugins.kotlin.compose)      apply false
-    alias(libs.plugins.ksp)                 apply false
+    alias(libs.plugins.kotlin.android) apply false
+    alias(libs.plugins.kotlin.compose) apply false
+    alias(libs.plugins.ksp) apply false
 
     alias(libs.plugins.spotless) // Spotless をルートで適用
 }
@@ -19,8 +19,8 @@ spotless {
             .editorConfigOverride(
                 mapOf(
                     // @Composable / @Preview の PascalCase を許容
-                    "ktlint_function_naming_ignore_when_annotated_with" to "Composable,Preview"
-                )
+                    "ktlint_function_naming_ignore_when_annotated_with" to "Composable,Preview",
+                ),
             )
 
         // 例：他のルールを無効化したくなったら下記を追加
@@ -35,8 +35,8 @@ spotless {
         ktlint()
             .editorConfigOverride(
                 mapOf(
-                    "ktlint_function_naming_ignore_when_annotated_with" to "Composable,Preview"
-                )
+                    "ktlint_function_naming_ignore_when_annotated_with" to "Composable,Preview",
+                ),
             )
     }
 

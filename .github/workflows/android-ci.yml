@@ -1,3 +1,4 @@
+# .github/workflows/android-ci.yml
 name: Android CI (lint & unit test)
 
 on:
@@ -8,28 +9,49 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    # ★ Changed: macOS→Ubuntu（速い・安定）
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
+          # ★ Added: Gradleキャッシュ
           cache: gradle
 
-      - name: Grant execute permission for gradlew
+      - name: Gradle Wrapper Permissions
         run: chmod +x ./gradlew
 
-      # ★ Lint / フォーマット / ユニットテスト（計測テストは後で）
-      - name: Run Spotless (format check)
-        run: ./gradlew spotlessCheck
+      # ---- Spotless（フォーマット検査）----
+      - name: Spotless (format check)
+        # ★ Changed: --stacktrace で詳細
+        run: ./gradlew spotlessCheck --stacktrace
 
-      - name: Run Android Lint
-        run: ./gradlew lint
+      # ---- Lint（モジュールを明示）----
+      - name: Android Lint (debug)
+        # ★ Changed: :app:lintDebug に限定
+        run: ./gradlew :app:lintDebug --stacktrace
+      - name: Upload Lint Reports
+        if: always()
+        # ★ Added: レポートをアーティファクト化
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: app/build/reports/lint/*
 
-      - name: Run unit tests
-        run: ./gradlew test
+      # ---- Unit Test（モジュールを明示）----
+      - name: Unit tests (debug)
+        # ★ Changed: タスクを明示
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
+      - name: Upload Test Reports
+        if: always()
+        # ★ Added: テストレポートも取得
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: app/build/test-results/testDebugUnitTest/

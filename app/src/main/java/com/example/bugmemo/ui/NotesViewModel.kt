@@ -266,15 +266,14 @@ class NotesViewModel(
     // ─────────── Factory（DI 最小）──────────
     companion object {
         // アプリから DB / Settings を引き当てて VM を作る Factory
-        fun factory(): ViewModelProvider.Factory =
-            viewModelFactory {
-                initializer {
-                    val app = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as Application
-                    val db = AppDatabase.get(app)
-                    val notesRepo = RoomNotesRepository(db.noteDao(), db.folderDao())
-                    val settingsRepo = SettingsRepository.get(app)
-                    NotesViewModel(notesRepo, settingsRepo)
-                }
+        fun factory(): ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val app = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as Application
+                val db = AppDatabase.get(app)
+                val notesRepo = RoomNotesRepository(db.noteDao(), db.folderDao())
+                val settingsRepo = SettingsRepository.get(app)
+                NotesViewModel(notesRepo, settingsRepo)
             }
+        }
     }
 }

@@ -18,7 +18,7 @@ import com.example.bugmemo.data.Note
 @Composable
 fun NoteFolderLabel(
     note: Note,
-    folders: List<Folder>
+    folders: List<Folder>,
 ) {
     val folderName = folders.firstOrNull { it.id == note.folderId }?.name ?: "未選択"
     AssistChip(onClick = { /* no-op */ }, label = { Text(folderName) })
@@ -40,7 +40,8 @@ fun SectionSeparator() {
  */
 @Composable
 fun AnchorExample(
-    modifier: Modifier = Modifier // ★ Changed: 規約どおり `modifier` に戻す
+    // ★ Changed: 規約どおり `modifier` に戻す
+    modifier: Modifier = Modifier,
 ) {
     // ★ Added: 実際に modifier を使って「未使用」警告を消す
     //   ここでは簡易的に Text にそのまま渡しています。
@@ -70,7 +71,7 @@ private fun Preview_NoteFolderLabel() {
             folderId = 1L,
             createdAt = System.currentTimeMillis(),
             updatedAt = System.currentTimeMillis(),
-            isStarred = false
+            isStarred = false,
         )
     }
     NoteFolderLabel(note = note, folders = folders)

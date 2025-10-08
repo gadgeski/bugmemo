@@ -54,8 +54,9 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun FoldersScreen(
+    // Nav から受け取るエディタ遷移のコールバック
     vm: NotesViewModel = viewModel(),
-    onOpenEditor: () -> Unit = {}  // Nav から受け取るエディタ遷移のコールバック
+    onOpenEditor: () -> Unit = {},
 ) {
     val folders by vm.folders.collectAsStateWithLifecycle(initialValue = emptyList())
     val currentFilter by vm.filterFolderId.collectAsStateWithLifecycle(initialValue = null)
@@ -73,16 +74,16 @@ fun FoldersScreen(
                             Icon(Icons.Filled.Clear, contentDescription = "Clear filter")
                         }
                     }
-                }
+                },
             )
-        }
+        },
     ) { inner ->
         Column(
             Modifier
                 .padding(inner)
                 .fillMaxSize()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // 新規フォルダ追加
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -91,7 +92,7 @@ fun FoldersScreen(
                     onValueChange = { newFolder = it },
                     label = { Text("新規フォルダ名") },
                     singleLine = true,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
                 Spacer(Modifier.width(8.dp))
                 Button(
@@ -103,7 +104,8 @@ fun FoldersScreen(
                             newFolder = ""
                         }
                     },
-                    enabled = newFolder.isNotBlank() // ★ Added: 空文字のときは無効化して押せないようにする
+                    // ★ Added: 空文字のときは無効化して押せないようにする
+                    enabled = newFolder.isNotBlank(),
                 ) { Text("追加") }
             }
 
@@ -113,7 +115,7 @@ fun FoldersScreen(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp)
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
                 ) {
                     items(folders, key = { it.id }) { folder ->
                         FolderRow(
@@ -127,7 +129,7 @@ fun FoldersScreen(
                                 vm.newNote()
                                 vm.setEditingFolder(id)
                                 onOpenEditor()
-                            }
+                            },
                         )
                     }
                 }
@@ -142,18 +144,18 @@ private fun FolderRow(
     isActive: Boolean,
     onSetFilter: (Long?) -> Unit,
     onDelete: (Long) -> Unit,
-    onCreateNoteHere: (Long) -> Unit
+    onCreateNoteHere: (Long) -> Unit,
 ) {
     Surface(
         tonalElevation = if (isActive) 4.dp else 1.dp,
         shape = MaterialTheme.shapes.medium,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
             Modifier
                 .clickable { onSetFilter(if (isActive) null else folder.id) }
                 .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(Icons.Filled.Folder, contentDescription = null)
             Spacer(Modifier.width(12.dp))
@@ -162,13 +164,13 @@ private fun FolderRow(
                     text = folder.name,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 if (isActive) {
                     Text(
                         text = "（絞り込み中）",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
@@ -188,18 +190,18 @@ private fun EmptyFoldersMessage() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 32.dp),
-        tonalElevation = 0.dp
+        tonalElevation = 0.dp,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Text("フォルダがありません", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(4.dp))
             Text(
                 "上の入力欄から追加できます",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

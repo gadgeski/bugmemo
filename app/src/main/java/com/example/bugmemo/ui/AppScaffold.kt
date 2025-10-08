@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun AppScaffold(
     // ★ Changed: Factory 経由で VM を取得（AppDatabase / DataStore を一元注入）
-    vm: NotesViewModel = viewModel(factory = NotesViewModel.factory())
+    vm: NotesViewModel = viewModel(factory = NotesViewModel.factory()),
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -46,14 +46,15 @@ fun AppScaffold(
                 is NotesViewModel.UiEvent.Message -> {
                     snackbarHostState.showSnackbar(
                         message = e.text,
-                        withDismissAction = true
+                        withDismissAction = true,
                     )
                 }
                 is NotesViewModel.UiEvent.UndoDelete -> {
                     val result = snackbarHostState.showSnackbar(
-                        message = "削除しました",   // タイトルに依存しない汎用メッセージ
+                        // タイトルに依存しない汎用メッセージ
+                        message = "削除しました",
                         actionLabel = "取り消す",
-                        withDismissAction = true
+                        withDismissAction = true,
                     )
                     if (result == SnackbarResult.ActionPerformed) {
                         vm.undoDelete()
@@ -64,9 +65,9 @@ fun AppScaffold(
     }
 
     val navItems = listOf(
-        NavItem("Bugs",    Routes.BUGS)    { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Bugs") },
-        NavItem("Search",  Routes.SEARCH)  { Icon(Icons.Filled.Search, contentDescription = "Search") },
-        NavItem("Folders", Routes.FOLDERS) { Icon(Icons.Filled.Folder, contentDescription = "Folders") }
+        NavItem("Bugs", Routes.BUGS) { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Bugs") },
+        NavItem("Search", Routes.SEARCH) { Icon(Icons.Filled.Search, contentDescription = "Search") },
+        NavItem("Folders", Routes.FOLDERS) { Icon(Icons.Filled.Folder, contentDescription = "Folders") },
     )
 
     Scaffold(
@@ -89,16 +90,17 @@ fun AppScaffold(
                             }
                         },
                         icon = { item.icon() },
-                        label = { Text(item.label) }
+                        label = { Text(item.label) },
                     )
                 }
             }
-        }
+        },
     ) { innerPadding ->
         AppNavHost(
             navController = navController,
             vm = vm,
-            modifier = Modifier.padding(innerPadding) // コンテンツパディングをNav側へ伝搬
+            // コンテンツパディングをNav側へ伝搬
+            modifier = Modifier.padding(innerPadding),
         )
     }
 }
@@ -107,5 +109,5 @@ fun AppScaffold(
 private data class NavItem(
     val label: String,
     val route: String,
-    val icon: @Composable () -> Unit
+    val icon: @Composable () -> Unit,
 )

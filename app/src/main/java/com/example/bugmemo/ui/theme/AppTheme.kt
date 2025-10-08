@@ -6,13 +6,14 @@ package com.example.bugmemo.ui.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme     // ★ Added: 動的カラー（ダーク）
-import androidx.compose.material3.dynamicLightColorScheme    // ★ Added: 動的カラー（ライト）
+import androidx.compose.material3.dynamicDarkColorScheme // ★ Added: 動的カラー（ダーク）
+import androidx.compose.material3.dynamicLightColorScheme // ★ Added: 動的カラー（ライト）
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext              // ★ Added: dynamic color に必要
-// import android.os.Build                                   // ★ Removed: minSdk=34 なので分岐を削除、未使用に
+import androidx.compose.ui.platform.LocalContext // ★ Added: dynamic color に必要
+// import android.os.Build
+// ★ Removed: minSdk=34 なので分岐を削除、未使用に
 
 /* ===============================
    カスタムカラーパレット（落ち着いたオレンジ系）
@@ -20,16 +21,22 @@ import androidx.compose.ui.platform.LocalContext              // ★ Added: dyna
 
 // 深いオレンジ（プライマリー）
 private val BugMemoOrange = Color(0xFFD84315)
+
 // ライトオレンジ
 private val BugMemoOrangeLight = Color(0xFFFF7043)
+
 // アクセントオレンジ
 private val BugMemoAccent = Color(0xFFFF9800)
+
 // 暖かみのある背景
 private val BugMemoBackground = Color(0xFFFFF8F5)
+
 // サーフェス色
 private val BugMemoSurface = Color(0xFFFFFBFA)
+
 // プライマリー上のテキスト
 private val BugMemoOnPrimary = Color(0xFFFFFFFF)
+
 // サーフェス上のテキスト
 private val BugMemoOnSurface = Color(0xFF1C1B1F)
 
@@ -64,7 +71,7 @@ private val LightColors = lightColorScheme(
     scrim = Color.Black,
     inverseSurface = Color(0xFF34302A),
     inverseOnSurface = Color(0xFFF9EFE7),
-    inversePrimary = Color(0xFFFFB599)
+    inversePrimary = Color(0xFFFFB599),
 )
 
 /* ===============================
@@ -98,7 +105,7 @@ private val DarkColors = darkColorScheme(
     scrim = Color.Black,
     inverseSurface = Color(0xFFF0E0D0),
     inverseOnSurface = Color(0xFF34302A),
-    inversePrimary = BugMemoOrange
+    inversePrimary = BugMemoOrange,
 )
 
 /* ===============================
@@ -109,10 +116,12 @@ private val DarkColors = darkColorScheme(
 @Composable
 fun AppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    useDynamicColor: Boolean = true,                  // ★ Added: 呼び出し側で動的カラーのON/OFFを選べる
-    content: @Composable () -> Unit
+    // ★ Added: 呼び出し側で動的カラーのON/OFFを選べる
+    useDynamicColor: Boolean = true,
+    content: @Composable () -> Unit,
 ) {
-    val context = LocalContext.current                // ★ Added: dynamic color に必要
+    // ★ Added: dynamic color に必要
+    val context = LocalContext.current
     val colorScheme =
         if (useDynamicColor) {
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
@@ -124,6 +133,6 @@ fun AppTheme(
         colorScheme = colorScheme,
         typography = MaterialTheme.typography,
         shapes = MaterialTheme.shapes,
-        content = content
+        content = content,
     )
 }

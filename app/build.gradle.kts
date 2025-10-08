@@ -1,9 +1,9 @@
 // app/build.gradle.kts — フル版（Lint最小 + Roomスキーマ出力/読込を追加）
 plugins {
-    alias(libs.plugins.android.application)      // OK
-    alias(libs.plugins.kotlin.android)           // OK
-    alias(libs.plugins.kotlin.compose)           // OK（Compose Compiler DSL）
-    alias(libs.plugins.ksp)                      // OK（Room の KSP）
+    alias(libs.plugins.android.application) // OK
+    alias(libs.plugins.kotlin.android) // OK
+    alias(libs.plugins.kotlin.compose) // OK（Compose Compiler DSL）
+    alias(libs.plugins.ksp) // OK（Room の KSP）
     // ★ 重複なし：先頭で二重に同じ alias を適用しないこと
 }
 
@@ -25,7 +25,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
         // debug { } // 必要になったら追加
@@ -45,9 +45,9 @@ android {
 
     // ───────────── Lint 最小設定（CI/ローカル共通）─────────────
     lint {
-        abortOnError = true                 // ★ 重大な指摘でビルド失敗（推奨）
-        warningsAsErrors = false            // ★ 警告はまず許容。整備後 true に上げるのがおすすめ
-        baseline = file("lint-baseline.xml")// ★ 既存指摘を固定化（ファイルが無ければ無視）
+        abortOnError = true // ★ 重大な指摘でビルド失敗（推奨）
+        warningsAsErrors = false // ★ 警告はまず許容。整備後 true に上げるのがおすすめ
+        baseline = file("lint-baseline.xml") // ★ 既存指摘を固定化（ファイルが無ければ無視）
     }
 
     // ★ Added: Room のスキーマを androidTest の assets に含める
@@ -86,7 +86,7 @@ dependencies {
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)  // ★ KSP 構成で呼ぶ。版は libs.versions.toml の room に従う
+    ksp(libs.androidx.room.compiler) // ★ KSP 構成で呼ぶ。版は libs.versions.toml の room に従う
 
     // Test
     testImplementation(libs.junit)

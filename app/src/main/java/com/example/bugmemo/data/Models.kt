@@ -13,10 +13,10 @@ data class Note(
     val updatedAt: Long,
 
     // v2 で追加（既定: 未スター）
-    val isStarred: Boolean = false
+    val isStarred: Boolean = false,
 )
 
 data class Folder(
     val id: Long = 0L,
-    val name: String
+    val name: String,
 )

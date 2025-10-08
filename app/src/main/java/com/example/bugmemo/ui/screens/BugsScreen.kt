@@ -51,17 +51,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-// import androidx.lifecycle.viewmodel.compose.viewModel  // ★ Removed: デフォルト生成をやめたため不要
 import com.example.bugmemo.data.Folder
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.ui.NotesViewModel
 
+// import androidx.lifecycle.viewmodel.compose.viewModel
+// ★ Removed: デフォルト生成をやめたため不要
+
 @Composable
 fun BugsScreen(
-    vm: NotesViewModel,                   // ★ Changed: デフォルト値 `= viewModel()` を削除して必須受け取りに
+    // ★ Changed: デフォルト値 `= viewModel()` を削除して必須受け取りに
+    vm: NotesViewModel,
     onOpenEditor: () -> Unit = {},
     onOpenSearch: () -> Unit = {},
-    onOpenFolders: () -> Unit = {}
+    onOpenFolders: () -> Unit = {},
 ) {
     val notes by vm.notes.collectAsStateWithLifecycle(initialValue = emptyList())
     val folders by vm.folders.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -89,29 +92,33 @@ fun BugsScreen(
                     IconButton(onClick = onOpenSearch) {
                         Icon(Icons.Filled.Search, contentDescription = "Search")
                     }
-                }
+                },
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { vm.newNote(); onOpenEditor() }) {
+            FloatingActionButton(onClick = {
+                vm.newNote()
+                onOpenEditor()
+            }) {
                 Icon(Icons.AutoMirrored.Filled.List, contentDescription = "New")
             }
-        }
+        },
     ) { inner ->
         Row(
             Modifier
                 .padding(inner)
-                .fillMaxSize()
+                .fillMaxSize(),
         ) {
             // 左：一覧
             Box(Modifier.weight(1f)) {
                 if (notes.isEmpty()) {
-                    EmptyMessage() // ★ 画面固定文言の空状態表示
+                    // ★ 画面固定文言の空状態表示
+                    EmptyMessage()
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(notes, key = { n -> n.id }) {
                             NoteRow(
@@ -120,7 +127,7 @@ fun BugsScreen(
                                     vm.loadNote(it.id)
                                     onOpenEditor()
                                 },
-                                onToggleStar = { vm.toggleStar(it.id, it.isStarred) }
+                                onToggleStar = { vm.toggleStar(it.id, it.isStarred) },
                             )
                         }
                     }
@@ -129,7 +136,7 @@ fun BugsScreen(
 
             VerticalDivider(
                 modifier = Modifier.fillMaxHeight(),
-                thickness = 1.dp
+                thickness = 1.dp,
             )
 
             // 右：エディタ
@@ -144,7 +151,7 @@ fun BugsScreen(
                 onAddFolder = { name -> vm.addFolder(name) },
                 onDeleteFolder = { id -> vm.deleteFolder(id) },
                 showFolderMenu = showFolderMenu,
-                setShowFolderMenu = { flag -> showFolderMenu = flag }
+                setShowFolderMenu = { flag -> showFolderMenu = flag },
             )
         }
     }
@@ -159,27 +166,27 @@ private fun NoteRow(
     Surface(
         tonalElevation = 2.dp,
         shape = MaterialTheme.shapes.medium,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
             Modifier
                 .clickable(onClick = onClick)
                 .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
                     text = note.title.ifBlank { "(無題)" },
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = note.content,
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             IconButton(onClick = onToggleStar) {
@@ -206,14 +213,14 @@ private fun EditorPane(
     onAddFolder: (String) -> Unit,
     onDeleteFolder: (Long) -> Unit,
     showFolderMenu: Boolean,
-    setShowFolderMenu: (Boolean) -> Unit
+    setShowFolderMenu: (Boolean) -> Unit,
 ) {
     Column(
         Modifier
             .widthIn(min = 340.dp)
             .fillMaxHeight()
             .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text("編集", style = MaterialTheme.typography.titleLarge)
 
@@ -222,7 +229,7 @@ private fun EditorPane(
             onValueChange = onTitleChange,
             label = { Text("タイトル") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         )
 
         OutlinedTextField(
@@ -230,7 +237,7 @@ private fun EditorPane(
             onValueChange = onContentChange,
             label = { Text("内容") },
             minLines = 6,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         )
 
         HorizontalDivider(thickness = 1.dp)
@@ -243,14 +250,14 @@ private fun EditorPane(
             }
             DropdownMenu(
                 expanded = showFolderMenu,
-                onDismissRequest = { setShowFolderMenu(false) }
+                onDismissRequest = { setShowFolderMenu(false) },
             ) {
                 DropdownMenuItem(
                     text = { Text("未選択（なし）") },
                     onClick = {
                         onFolderPick(null)
                         setShowFolderMenu(false)
-                    }
+                    },
                 )
                 folders.forEach { f ->
                     DropdownMenuItem(
@@ -263,7 +270,7 @@ private fun EditorPane(
                             IconButton(onClick = { onDeleteFolder(f.id) }) {
                                 Icon(Icons.Filled.Delete, contentDescription = "Delete folder")
                             }
-                        }
+                        },
                     )
                 }
             }
@@ -274,7 +281,7 @@ private fun EditorPane(
             Button(onClick = onSave, enabled = editing != null) { Text("保存") }
             OutlinedButton(
                 onClick = onDelete,
-                enabled = (editing?.id ?: 0L) != 0L
+                enabled = (editing?.id ?: 0L) != 0L,
             ) { Text("削除") }
 
             var newFolder by remember { mutableStateOf("") }
@@ -283,14 +290,14 @@ private fun EditorPane(
                 onValueChange = { text -> newFolder = text },
                 label = { Text("新規フォルダ名") },
                 singleLine = true,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
             Button(
                 onClick = {
                     val name = newFolder.trim()
                     if (name.isNotEmpty()) onAddFolder(name)
                     newFolder = ""
-                }
+                },
             ) { Text("追加") }
         }
     }
@@ -304,18 +311,18 @@ private fun EmptyMessage() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 32.dp),
-        tonalElevation = 0.dp
+        tonalElevation = 0.dp,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Text("メモがありません", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(4.dp))
             Text(
                 "右下の + から作成しましょう",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

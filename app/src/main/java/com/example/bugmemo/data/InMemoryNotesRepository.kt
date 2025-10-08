@@ -60,17 +60,16 @@ class InMemoryNotesRepository : NotesRepository {
     override fun observeNotes(): Flow<List<Note>> = notesFlow.map { it.sortedByDescending { n -> n.updatedAt } }
 
     // 検索（タイトル/本文を部分一致、更新日時降順）
-    override fun searchNotes(query: String): Flow<List<Note>> =
-        notesFlow.map { list ->
-            val q = query.trim()
-            if (q.isEmpty()) {
-                list.sortedByDescending { it.updatedAt }
-            } else {
-                list
-                    .filter { it.title.contains(q, true) || it.content.contains(q, true) }
-                    .sortedByDescending { it.updatedAt }
-            }
+    override fun searchNotes(query: String): Flow<List<Note>> = notesFlow.map { list ->
+        val q = query.trim()
+        if (q.isEmpty()) {
+            list.sortedByDescending { it.updatedAt }
+        } else {
+            list
+                .filter { it.title.contains(q, true) || it.content.contains(q, true) }
+                .sortedByDescending { it.updatedAt }
         }
+    }
 
     // フォルダ一覧
     override fun observeFolders(): Flow<List<Folder>> = foldersFlow

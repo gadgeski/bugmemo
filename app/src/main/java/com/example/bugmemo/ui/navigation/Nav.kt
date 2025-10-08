@@ -21,14 +21,15 @@ object Routes {
 
 @Composable
 fun AppNavHost(
+    // ★ Changed: デフォルトを削除（AppScaffold から受け取る）
     modifier: Modifier = Modifier,
-    navController: NavHostController,                 // ★ Changed: デフォルトを削除（AppScaffold から受け取る）
-    vm: NotesViewModel                                // ★ Changed: デフォルトを削除（AppScaffold から受け取る）
+    navController: NavHostController,
+    vm: NotesViewModel,
 ) {
     NavHost(
         navController = navController,
         startDestination = Routes.BUGS,
-        modifier = modifier
+        modifier = modifier,
     ) {
         // 一覧（バグメモ）
         composable(Routes.BUGS) {
@@ -37,7 +38,7 @@ fun AppNavHost(
                 onOpenEditor = {
                     // ★ keep: 一覧からエディタへ
                     navController.navigate(Routes.EDITOR)
-                }
+                },
             )
         }
 
@@ -48,7 +49,7 @@ fun AppNavHost(
                 onOpenEditor = {
                     // ★ keep: 検索結果からエディタへ
                     navController.navigate(Routes.EDITOR)
-                }
+                },
             )
         }
 
@@ -59,7 +60,7 @@ fun AppNavHost(
                 onOpenEditor = {
                     // ★ keep: フォルダ画面からも遷移可能
                     navController.navigate(Routes.EDITOR)
-                }
+                },
             )
         }
 
@@ -67,7 +68,7 @@ fun AppNavHost(
         composable(Routes.EDITOR) {
             NoteEditorScreen(
                 vm = vm,
-                onBack = { navController.navigateUp() } // ★ keep: 戻る
+                onBack = { navController.navigateUp() }, // ★ keep: 戻る
             )
         }
     }

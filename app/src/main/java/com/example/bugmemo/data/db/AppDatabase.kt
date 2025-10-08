@@ -11,16 +11,18 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 @Database(
     entities = [NoteEntity::class, FolderEntity::class],
     version = 2,
-    exportSchema = true // 将来の自動マイグレーション用にスキーマを出力
+    // 将来の自動マイグレーション用にスキーマを出力
+    exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun noteDao(): NoteDao
     abstract fun folderDao(): FolderDao
 
     companion object {
-        @Volatile private var INSTANCE: AppDatabase? = null
+        // ★ Changed: ktlint(property-naming) 回避 — UPPER_SNAKE から lowerCamel へ
+        @Volatile private var instance: AppDatabase? = null
 
-        // ★ Changed: lint(property-naming) 回避のため小文字キャメルケースへ
+        // ★ OK: 既に lowerCamel。命名問題なし
         private val migration1to2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // 既存データを壊さないために DEFAULT を付与＆ NOT NULL を維持
@@ -28,23 +30,24 @@ abstract class AppDatabase : RoomDatabase() {
                     """
                     ALTER TABLE notes 
                     ADD COLUMN isStarred INTEGER NOT NULL DEFAULT 0
-                    """.trimIndent()
+                    """.trimIndent(),
                 )
             }
         }
 
-        fun get(context: Context): AppDatabase =
-            INSTANCE ?: synchronized(this) {
-                INSTANCE ?: Room.databaseBuilder(
+        fun get(context: Context): AppDatabase = // ★ Changed: 参照先を INSTANCE → instance に統一
+            instance ?: synchronized(this) {
+                instance ?: Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "bugmemo.db"
+                    "bugmemo.db",
                 )
-                    // ★ Changed: リネーム後のマイグレーションを登録
+                    // ★ keep: リネーム後のマイグレーションを登録
                     .addMigrations(migration1to2)
                     // .fallbackToDestructiveMigration() // データ消去になるため原則使わない
                     .build()
-                    .also { INSTANCE = it }
+                    // ★ Changed: 代入先も instance へ
+                    .also { instance = it }
             }
     }
 }

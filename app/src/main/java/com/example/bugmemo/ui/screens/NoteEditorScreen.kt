@@ -32,7 +32,7 @@ import com.example.bugmemo.ui.NotesViewModel
 @Composable
 fun NoteEditorScreen(
     vm: NotesViewModel = viewModel(),
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
 ) {
     val editing by vm.editing.collectAsStateWithLifecycle(initialValue = null)
 
@@ -42,37 +42,38 @@ fun NoteEditorScreen(
                 title = {
                     Text(
                         text = editing?.title?.ifBlank { "(無題)" } ?: "新規メモ",
-                        style = MaterialTheme.typography.titleLarge
+                        style = MaterialTheme.typography.titleLarge,
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
                         )
                     }
                 },
                 actions = {
                     IconButton(
                         onClick = { vm.saveEditing() },
-                        enabled = editing != null // ★ Added: 編集対象が無いときは保存を無効化（任意）
+                        // ★ Added: 編集対象が無いときは保存を無効化（任意）
+                        enabled = editing != null,
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Save,
-                            contentDescription = "Save"
+                            contentDescription = "Save",
                         )
                     }
-                }
+                },
             )
-        }
+        },
     ) { inner ->
         Column(
             modifier = Modifier
                 .padding(inner)
                 .fillMaxSize()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // タイトル
             OutlinedTextField(
@@ -80,7 +81,7 @@ fun NoteEditorScreen(
                 onValueChange = { vm.setEditingTitle(it) },
                 label = { Text("タイトル") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
 
             // 本文
@@ -90,9 +91,11 @@ fun NoteEditorScreen(
                 label = { Text("内容") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)              // ★ keep: 縦に広がる
-                    .heightIn(min = 160.dp), // 読みやすさのための最小高さ
-                minLines = 8
+                    // ★ keep: 縦に広がる
+                    .weight(1f)
+                    // 読みやすさのための最小高さ
+                    .heightIn(min = 160.dp),
+                minLines = 8,
             )
         }
     }
