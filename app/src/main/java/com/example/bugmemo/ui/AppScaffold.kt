@@ -3,6 +3,7 @@
 
 package com.example.bugmemo.ui
 
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -21,7 +22,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.bugmemo.ui.navigation.AppNavHost
@@ -30,8 +30,9 @@ import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun AppScaffold(
-    // ★ Changed: Factory 経由で VM を取得（AppDatabase / DataStore を一元注入）
-    vm: NotesViewModel = viewModel(factory = NotesViewModel.factory()),
+    // ★ Changed: VM を必須引数に。内部で viewModel() しないことで“二重インスタンス”を防止
+    // ★ Changed: 呼び出し側（MainActivity 等）で factory 済みの同一 VM を渡してください
+    vm: NotesViewModel
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -39,22 +40,22 @@ fun AppScaffold(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // VM からの UI イベントを Snackbar に反映
+    // ★ keep: Snackbar（Message / UndoDelete）を受ける
     LaunchedEffect(Unit) {
         vm.events.collectLatest { e ->
             when (e) {
                 is NotesViewModel.UiEvent.Message -> {
                     snackbarHostState.showSnackbar(
                         message = e.text,
-                        withDismissAction = true,
+                        withDismissAction = true
                     )
                 }
                 is NotesViewModel.UiEvent.UndoDelete -> {
                     val result = snackbarHostState.showSnackbar(
-                        // タイトルに依存しない汎用メッセージ
+                        // ★ keep: タイトル非依存の文言で安全側に
                         message = "削除しました",
                         actionLabel = "取り消す",
-                        withDismissAction = true,
+                        withDismissAction = true
                     )
                     if (result == SnackbarResult.ActionPerformed) {
                         vm.undoDelete()
@@ -65,9 +66,9 @@ fun AppScaffold(
     }
 
     val navItems = listOf(
-        NavItem("Bugs", Routes.BUGS) { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Bugs") },
-        NavItem("Search", Routes.SEARCH) { Icon(Icons.Filled.Search, contentDescription = "Search") },
-        NavItem("Folders", Routes.FOLDERS) { Icon(Icons.Filled.Folder, contentDescription = "Folders") },
+        NavItem("Bugs",    Routes.BUGS)    { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Bugs") },
+        NavItem("Search",  Routes.SEARCH)  { Icon(Icons.Filled.Search, contentDescription = "Search") },
+        NavItem("Folders", Routes.FOLDERS) { Icon(Icons.Filled.Folder, contentDescription = "Folders") }
     )
 
     Scaffold(
@@ -90,17 +91,21 @@ fun AppScaffold(
                             }
                         },
                         icon = { item.icon() },
-                        label = { Text(item.label) },
+                        label = { Text(item.label) }
                     )
                 }
             }
-        },
+        }
     ) { innerPadding ->
+        // ★ Added: imePadding を付与してキーボード表示時の安全マージンを確保
+        // ★ keep : innerPadding は Nav 側へ伝搬
         AppNavHost(
             navController = navController,
             vm = vm,
-            // コンテンツパディングをNav側へ伝搬
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier
+                .padding(innerPadding)
+                .imePadding()
+            // 上が追加したモノ
         )
     }
 }
@@ -109,5 +114,5 @@ fun AppScaffold(
 private data class NavItem(
     val label: String,
     val route: String,
-    val icon: @Composable () -> Unit,
+    val icon: @Composable () -> Unit
 )

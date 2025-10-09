@@ -3,8 +3,6 @@
 
 package com.example.bugmemo.ui.screens
 
-// ▼ 不要だったプレースホルダコメントを削除（lint対策） // ★ Removed
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +20,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -35,6 +34,14 @@ fun NoteEditorScreen(
     onBack: () -> Unit = {},
 ) {
     val editing by vm.editing.collectAsStateWithLifecycle(initialValue = null)
+
+    // ★ Changed: 初回だけ newNote() を呼ぶ（編集中データが無い場合の自動初期化）
+    LaunchedEffect(Unit) {
+        if (editing == null) vm.newNote()
+    }
+
+    // ★ keep: 編集対象が準備できるまで入力や保存を無効化
+    val enabled = editing != null
 
     Scaffold(
         topBar = {
@@ -56,8 +63,8 @@ fun NoteEditorScreen(
                 actions = {
                     IconButton(
                         onClick = { vm.saveEditing() },
-                        // ★ Added: 編集対象が無いときは保存を無効化（任意）
-                        enabled = editing != null,
+                        // ★ keep: 編集対象が無いときは保存を無効化
+                        enabled = enabled,
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Save,
@@ -78,17 +85,31 @@ fun NoteEditorScreen(
             // タイトル
             OutlinedTextField(
                 value = editing?.title.orEmpty(),
-                onValueChange = { vm.setEditingTitle(it) },
+                // ★ Added: ここで typing 開始時にも保険として初期化をかける
+                onValueChange = { text ->
+                    // ★ Added: まだ null なら即時に newNote() を呼ぶ（LaunchedEffect の取りこぼし対策）
+                    if (editing == null) vm.newNote()
+                    vm.setEditingTitle(text)
+                },
                 label = { Text("タイトル") },
                 singleLine = true,
+                // ★ keep: 準備完了まで入力不可
+                enabled = enabled,
                 modifier = Modifier.fillMaxWidth(),
             )
 
             // 本文
             OutlinedTextField(
                 value = editing?.content.orEmpty(),
-                onValueChange = { vm.setEditingContent(it) },
+                // ★ Added: こちらも同様に保険で初期化
+                onValueChange = { text ->
+                    // ★ Added: まだ null なら即時に newNote() を呼ぶ
+                    if (editing == null) vm.newNote()
+                    vm.setEditingContent(text)
+                },
                 label = { Text("内容") },
+                // ★ keep: 準備完了まで入力不可
+                enabled = enabled,
                 modifier = Modifier
                     .fillMaxWidth()
                     // ★ keep: 縦に広がる
