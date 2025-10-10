@@ -30,8 +30,7 @@ import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun AppScaffold(
-    // ★ Changed: VM を必須引数に。内部で viewModel() しないことで“二重インスタンス”を防止
-    // ★ Changed: 呼び出し側（MainActivity 等）で factory 済みの同一 VM を渡してください
+    // ★ keep: 呼び出し側で生成した VM を受け取る
     vm: NotesViewModel,
 ) {
     val navController = rememberNavController()
@@ -40,7 +39,6 @@ fun AppScaffold(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // ★ keep: Snackbar（Message / UndoDelete）を受ける
     LaunchedEffect(Unit) {
         vm.events.collectLatest { e ->
             when (e) {
@@ -52,7 +50,6 @@ fun AppScaffold(
                 }
                 is NotesViewModel.UiEvent.UndoDelete -> {
                     val result = snackbarHostState.showSnackbar(
-                        // ★ keep: タイトル非依存の文言で安全側に
                         message = "削除しました",
                         actionLabel = "取り消す",
                         withDismissAction = true,
@@ -66,9 +63,17 @@ fun AppScaffold(
     }
 
     val navItems = listOf(
-        NavItem("Bugs",    Routes.BUGS)    { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Bugs") },
-        NavItem("Search",  Routes.SEARCH)  { Icon(Icons.Filled.Search, contentDescription = "Search") },
-        NavItem("Folders", Routes.FOLDERS) { Icon(Icons.Filled.Folder, contentDescription = "Folders") },
+        NavItem("Bugs", Routes.BUGS) {
+            // ★ Fixed: カンマ後の余計なスペースを削除（1スペースに）
+            Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Bugs")
+        },
+        NavItem("Search", Routes.SEARCH) {
+            // ★ Fixed: 同上
+            Icon(Icons.Filled.Search, contentDescription = "Search")
+        },
+        NavItem("Folders", Routes.FOLDERS) {
+            Icon(Icons.Filled.Folder, contentDescription = "Folders")
+        },
     )
 
     Scaffold(
@@ -95,17 +100,16 @@ fun AppScaffold(
                     )
                 }
             }
-        }
+        },
+        // ★ Added: bottomBar 引数の後ろにトレーリングカンマを追加（マルチライン呼び出し推奨）
     ) { innerPadding ->
-        // ★ Added: imePadding を付与してキーボード表示時の安全マージンを確保
-        // ★ keep : innerPadding は Nav 側へ伝搬
+        // ★ keep: imePadding でキーボード重なりを回避
         AppNavHost(
             navController = navController,
             vm = vm,
             modifier = Modifier
                 .padding(innerPadding)
-                .imePadding()
-            // 上が追加したモノ
+                .imePadding(),
         )
     }
 }
@@ -114,5 +118,5 @@ fun AppScaffold(
 private data class NavItem(
     val label: String,
     val route: String,
-    val icon: @Composable () -> Unit
+    val icon: @Composable () -> Unit,
 )
