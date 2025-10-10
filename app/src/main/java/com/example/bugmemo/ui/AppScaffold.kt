@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.collectLatest
 fun AppScaffold(
     // ★ Changed: VM を必須引数に。内部で viewModel() しないことで“二重インスタンス”を防止
     // ★ Changed: 呼び出し側（MainActivity 等）で factory 済みの同一 VM を渡してください
-    vm: NotesViewModel
+    vm: NotesViewModel,
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -47,7 +47,7 @@ fun AppScaffold(
                 is NotesViewModel.UiEvent.Message -> {
                     snackbarHostState.showSnackbar(
                         message = e.text,
-                        withDismissAction = true
+                        withDismissAction = true,
                     )
                 }
                 is NotesViewModel.UiEvent.UndoDelete -> {
@@ -55,7 +55,7 @@ fun AppScaffold(
                         // ★ keep: タイトル非依存の文言で安全側に
                         message = "削除しました",
                         actionLabel = "取り消す",
-                        withDismissAction = true
+                        withDismissAction = true,
                     )
                     if (result == SnackbarResult.ActionPerformed) {
                         vm.undoDelete()
@@ -68,7 +68,7 @@ fun AppScaffold(
     val navItems = listOf(
         NavItem("Bugs",    Routes.BUGS)    { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Bugs") },
         NavItem("Search",  Routes.SEARCH)  { Icon(Icons.Filled.Search, contentDescription = "Search") },
-        NavItem("Folders", Routes.FOLDERS) { Icon(Icons.Filled.Folder, contentDescription = "Folders") }
+        NavItem("Folders", Routes.FOLDERS) { Icon(Icons.Filled.Folder, contentDescription = "Folders") },
     )
 
     Scaffold(
@@ -91,7 +91,7 @@ fun AppScaffold(
                             }
                         },
                         icon = { item.icon() },
-                        label = { Text(item.label) }
+                        label = { Text(item.label) },
                     )
                 }
             }
