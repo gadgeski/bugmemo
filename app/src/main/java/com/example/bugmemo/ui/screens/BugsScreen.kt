@@ -3,6 +3,7 @@
 
 package com.example.bugmemo.ui.screens
 
+// ★ Changed: import を辞書順に並べ替え（途中にコメントを挟まない：ktlint対応）
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -51,20 +52,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.bugmemo.core.FeatureFlags
 import com.example.bugmemo.data.Folder
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.ui.NotesViewModel
 
-// import androidx.lifecycle.viewmodel.compose.viewModel
+// ★ Removed: BuildConfig 直接参照は不要
+// import com.example.bugmemo.BuildConfig
 // ★ Removed: デフォルト生成をやめたため不要
+// import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun BugsScreen(
-    // ★ Changed: デフォルト値 `= viewModel()` を削除して必須受け取りに
     vm: NotesViewModel,
+    // ★ keep: 必須受け取り（重複VM防止）
     onOpenEditor: () -> Unit = {},
     onOpenSearch: () -> Unit = {},
     onOpenFolders: () -> Unit = {},
+    onOpenMindMap: () -> Unit = {},
+    // ★ keep: MindMap への導線（Nav から渡す）
 ) {
     val notes by vm.notes.collectAsStateWithLifecycle(initialValue = emptyList())
     val folders by vm.folders.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -92,14 +98,26 @@ fun BugsScreen(
                     IconButton(onClick = onOpenSearch) {
                         Icon(Icons.Filled.Search, contentDescription = "Search")
                     }
+                    // ★ Changed: BuildConfig.DEBUG → FeatureFlags.ENABLE_MIND_MAP_DEBUG
+                    if (FeatureFlags.ENABLE_MIND_MAP_DEBUG) {
+                        // ★ keep: 開発時のみ Mind Map(Dev) へのショートカットを表示（UI非破壊）
+                        IconButton(onClick = onOpenMindMap) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.List,
+                                contentDescription = "Mind Map (dev)",
+                            )
+                        }
+                    }
                 },
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                vm.newNote()
-                onOpenEditor()
-            }) {
+            FloatingActionButton(
+                onClick = {
+                    vm.newNote()
+                    onOpenEditor()
+                },
+            ) {
                 Icon(Icons.AutoMirrored.Filled.List, contentDescription = "New")
             }
         },
@@ -112,7 +130,7 @@ fun BugsScreen(
             // 左：一覧
             Box(Modifier.weight(1f)) {
                 if (notes.isEmpty()) {
-                    // ★ 画面固定文言の空状態表示
+                    // ★ keep: 固定文言の空状態表示
                     EmptyMessage()
                 } else {
                     LazyColumn(

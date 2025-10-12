@@ -1,4 +1,4 @@
-// app/build.gradle.kts — フル版（Lint最小 + Roomスキーマ出力/読込を追加）
+// app/build.gradle.kts — フル版（Lint最小 + Roomスキーマ出力/読込 + BuildConfig 生成を明示）
 plugins {
     alias(libs.plugins.android.application) // OK
     alias(libs.plugins.kotlin.android) // OK
@@ -27,8 +27,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            // ★ Added: Release では MindMap をデフォルト OFF
+            buildConfigField("boolean", "ENABLE_MIND_MAP", "false")
         }
-        // debug { } // 必要になったら追加
+        debug {
+            // ★ Added: Debug では MindMap を ON
+            buildConfigField("boolean", "ENABLE_MIND_MAP", "true")
+        }
+        // ★ Note: 他の buildType を追加する場合は同様に buildConfigField を定義
     }
 
     compileOptions {
@@ -41,6 +47,8 @@ android {
 
     buildFeatures {
         compose = true
+        // ★ Added: BuildConfig を明示的に生成（BuildConfig.* を安全に使うため）
+        buildConfig = true
     }
 
     // ───────────── Lint 最小設定（CI/ローカル共通）─────────────
