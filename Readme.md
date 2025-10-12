@@ -72,7 +72,7 @@
 
 Lint で baseline created と出た場合はローカルで baseline をコミットして再実行してください。
 
-##開発メモ（Architecture 概要）
+## 開発メモ（Architecture 概要）
 
 - NotesViewModel
   - UiEvent による Snackbar 通知（メッセージ／Undo）
@@ -87,7 +87,7 @@ Lint で baseline created と出た場合はローカルで baseline をコミ�
 
 ---
 
-##CI
+## CI
 
 GitHub Actions で以下をチェックします。
 
@@ -95,7 +95,7 @@ GitHub Actions で以下をチェックします。
 - lint
 - test
 
-##失敗時のよくある原因：
+## 失敗時のよくある原因：
 
 - README など “misc” 対象ファイルの末尾スペース／改行
 - ktlint の import 並び順／命名規約
