@@ -64,9 +64,9 @@ fun MindMapScreen(
                     IconButton(onClick = onClose) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
             )
-        }
+        },
     ) { inner ->
         Column(
             Modifier
