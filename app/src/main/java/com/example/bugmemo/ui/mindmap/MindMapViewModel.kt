@@ -16,7 +16,7 @@ data class MindNode(
     val title: String,
     val parentId: Long? = null,
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
 )
 
 class MindMapViewModel : ViewModel() {

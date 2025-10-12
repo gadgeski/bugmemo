@@ -43,7 +43,7 @@ import com.example.bugmemo.ui.mindmap.MindNode
 @Composable
 fun MindMapScreen(
     onClose: () -> Unit = {},
-    vm: MindMapViewModel = viewModel()
+    vm: MindMapViewModel = viewModel(),
 ) {
     // ★ Added: ViewModel が公開する nodes を購読（未使用警告の解消＆再描画トリガ）
     val nodes by vm.nodes.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -73,7 +73,7 @@ fun MindMapScreen(
                 .padding(inner)
                 .fillMaxSize()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // ★ Added: ルートノードの追加（最小）
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -82,7 +82,7 @@ fun MindMapScreen(
                     onValueChange = { newTitle = it },
                     singleLine = true,
                     label = { Text("新規ノード（ルート）") },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
                 Button(
                     onClick = {
@@ -96,7 +96,7 @@ fun MindMapScreen(
             // ★ keep: 簡易ツリー（インデント表示）
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(flat, key = { (n, _) -> n.id }) { (node, depth) ->
                     MindNodeRow(
@@ -125,7 +125,7 @@ private fun MindNodeRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = (depth * 16).dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (edit) {
             OutlinedTextField(
@@ -133,7 +133,7 @@ private fun MindNodeRow(
                 onValueChange = { title = it },
                 singleLine = true,
                 label = { Text("名称") },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
             IconButton(
                 onClick = {
@@ -146,7 +146,7 @@ private fun MindNodeRow(
             Text(
                 text = node.title,
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
             Button(onClick = { edit = true }) { Text("編集") }
         }
