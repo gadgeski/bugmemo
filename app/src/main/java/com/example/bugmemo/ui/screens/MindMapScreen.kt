@@ -89,7 +89,7 @@ fun MindMapScreen(
                         vm.addRootNode(newTitle)
                         newTitle = ""
                     },
-                    enabled = newTitle.isNotBlank()
+                    enabled = newTitle.isNotBlank(),
                 ) { Text("追加") }
             }
 
@@ -103,7 +103,7 @@ fun MindMapScreen(
                         node = node,
                         depth = depth,
                         onRename = { title -> vm.renameNode(node.id, title) },
-                        onDelete = { vm.deleteNode(node.id) }
+                        onDelete = { vm.deleteNode(node.id) },
                     )
                 }
             }
@@ -116,7 +116,7 @@ private fun MindNodeRow(
     node: MindNode,
     depth: Int,
     onRename: (String) -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
 ) {
     var edit by remember { mutableStateOf(false) }
     var title by remember(node.id) { mutableStateOf(node.title) }
@@ -140,7 +140,7 @@ private fun MindNodeRow(
                     onRename(title)
                     edit = false
                 },
-                enabled = title.isNotBlank()
+                enabled = title.isNotBlank(),
             ) { Icon(Icons.Filled.Save, contentDescription = "Save") }
         } else {
             Text(
