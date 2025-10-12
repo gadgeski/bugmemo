@@ -1,9 +1,10 @@
-#BugMemo (Android / Kotlin / Compose)
+# BugMemo (Android / Kotlin / Compose)
+
 モバイル開発中の バグやメモを素早く記録 するシンプルなノートアプリ。フォルダ分け・検索・（将来）マインドマップ表示に対応。
 
 ---
 
-##主な機能
+## 主な機能
 
 - バグメモの作成・編集・削除（Undo で復元可）
 - フォルダ管理（作成・削除・絞り込み）
@@ -12,13 +13,13 @@
 - DataStore による検索語・絞り込みの永続化
 - Room によるローカル永続化（マイグレーション対応）
 
-##画面構成
+## 画面構成
 
 - Bugs: 一覧＋右ペイン編集（FAB から新規）
 - Search: クエリ入力でリアルタイム検索、結果から編集へ
 - Folders: フォルダ一覧・作成・削除、選択で絞り込み
 
-##技術スタック
+## 技術スタック
 
 - Kotlin / Coroutines / Flow
 - Jetpack Compose (Material 3, Navigation, Lifecycle)
@@ -29,7 +30,7 @@
 
 ---
 
-##セットアップ
+## セットアップ
 
 # 依存解決・同期
 
