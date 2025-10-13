@@ -3,12 +3,15 @@
 
 package com.example.bugmemo.ui.screens
 
+// ★ Added: スクロール対応のため foundation の API を使用（import ブロックにはコメントを挟まない）
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Save
@@ -26,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.bugmemo.ui.NotesViewModel
 
-// ★ Removed: LaunchedEffect の import（自動 newNote 初期化を廃止）
+// ★ Removed: LaunchedEffect の import（自動 newNote 初期化は廃止）
 // import androidx.compose.runtime.LaunchedEffect
 // ★ Removed: 画面内での viewModel() 生成は廃止（呼び出し側から受け取るため）
 // import androidx.lifecycle.viewmodel.compose.viewModel
@@ -39,8 +42,7 @@ fun NoteEditorScreen(
 ) {
     val editing by vm.editing.collectAsStateWithLifecycle(initialValue = null)
 
-    // ★ Removed: 入場時の自動 newNote() 初期化。
-    // （検索→編集遷移直後に上書きされる事故を防ぐため。新規は呼び出し側で vm.newNote() 後に遷移する運用へ統一）
+    // ★ Removed: 入場時の自動 newNote() 初期化（検索→編集直後の上書き事故を防止）
 
     // ★ keep: 編集対象が準備できるまで入力や保存を無効化
     val enabled = editing != null
@@ -81,10 +83,11 @@ fun NoteEditorScreen(
             modifier = Modifier
                 .padding(inner)
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            // ★ Added: 画面全体（エディタ領域）を縦スクロール可能に
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            // ★ Changed: onValueChange 内の newNote() 呼び出しは削除（不要かつ副作用の原因）
             // タイトル
             OutlinedTextField(
                 value = editing?.title.orEmpty(),
@@ -96,7 +99,6 @@ fun NoteEditorScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            // ★ Changed: onValueChange 内の newNote() 呼び出しは削除（不要かつ副作用の原因）
             // 本文
             OutlinedTextField(
                 value = editing?.content.orEmpty(),
@@ -106,7 +108,7 @@ fun NoteEditorScreen(
                 enabled = enabled,
                 modifier = Modifier
                     .fillMaxWidth()
-                    // ★ keep: 縦に広がる
+                    // ★ keep: エディタ内である程度の高さを確保
                     .weight(1f)
                     // 読みやすさのための最小高さ
                     .heightIn(min = 160.dp),
