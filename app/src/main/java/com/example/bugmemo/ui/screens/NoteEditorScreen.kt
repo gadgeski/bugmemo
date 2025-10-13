@@ -20,25 +20,27 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bugmemo.ui.NotesViewModel
+
+// ★ Removed: LaunchedEffect の import（自動 newNote 初期化を廃止）
+// import androidx.compose.runtime.LaunchedEffect
+// ★ Removed: 画面内での viewModel() 生成は廃止（呼び出し側から受け取るため）
+// import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun NoteEditorScreen(
-    vm: NotesViewModel = viewModel(),
+    // ★ Changed: デフォルトの viewModel() を削除。呼び出し側（Nav/AppScaffold）から同一 VM を受け取る。
+    vm: NotesViewModel,
     onBack: () -> Unit = {},
 ) {
     val editing by vm.editing.collectAsStateWithLifecycle(initialValue = null)
 
-    // ★ Changed: 初回だけ newNote() を呼ぶ（編集中データが無い場合の自動初期化）
-    LaunchedEffect(Unit) {
-        if (editing == null) vm.newNote()
-    }
+    // ★ Removed: 入場時の自動 newNote() 初期化。
+    // （検索→編集遷移直後に上書きされる事故を防ぐため。新規は呼び出し側で vm.newNote() 後に遷移する運用へ統一）
 
     // ★ keep: 編集対象が準備できるまで入力や保存を無効化
     val enabled = editing != null
@@ -82,15 +84,11 @@ fun NoteEditorScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // ★ Changed: onValueChange 内の newNote() 呼び出しは削除（不要かつ副作用の原因）
             // タイトル
             OutlinedTextField(
                 value = editing?.title.orEmpty(),
-                // ★ Added: ここで typing 開始時にも保険として初期化をかける
-                onValueChange = { text ->
-                    // ★ Added: まだ null なら即時に newNote() を呼ぶ（LaunchedEffect の取りこぼし対策）
-                    if (editing == null) vm.newNote()
-                    vm.setEditingTitle(text)
-                },
+                onValueChange = { text -> vm.setEditingTitle(text) },
                 label = { Text("タイトル") },
                 singleLine = true,
                 // ★ keep: 準備完了まで入力不可
@@ -98,15 +96,11 @@ fun NoteEditorScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
+            // ★ Changed: onValueChange 内の newNote() 呼び出しは削除（不要かつ副作用の原因）
             // 本文
             OutlinedTextField(
                 value = editing?.content.orEmpty(),
-                // ★ Added: こちらも同様に保険で初期化
-                onValueChange = { text ->
-                    // ★ Added: まだ null なら即時に newNote() を呼ぶ
-                    if (editing == null) vm.newNote()
-                    vm.setEditingContent(text)
-                },
+                onValueChange = { text -> vm.setEditingContent(text) },
                 label = { Text("内容") },
                 // ★ keep: 準備完了まで入力不可
                 enabled = enabled,
