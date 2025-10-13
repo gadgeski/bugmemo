@@ -5,6 +5,8 @@ package com.example.bugmemo.ui.screens
 
 // ★ Changed: import を辞書順に並べ替え（途中にコメントを挟まない：ktlint対応）
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,6 +59,8 @@ import com.example.bugmemo.data.Folder
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.ui.NotesViewModel
 
+// ★ Added: スクロール用の状態を追加(androidx.compose.foundation.rememberScrollState)
+// ★ Added: 縦スクロール修飾子を追加(androidx.compose.foundation.verticalScroll)
 // ★ Removed: BuildConfig 直接参照は不要
 // import com.example.bugmemo.BuildConfig
 // ★ Removed: デフォルト生成をやめたため不要
@@ -218,7 +222,7 @@ private fun NoteRow(
     }
 }
 
-/* ▼▼ ここから EditorPane（既存） ▼▼ */
+/* ▼▼ ここから EditorPane（スクロール付与版） ▼▼ */
 @Composable
 private fun EditorPane(
     editing: Note?,
@@ -237,7 +241,9 @@ private fun EditorPane(
         Modifier
             .widthIn(min = 340.dp)
             .fillMaxHeight()
-            .padding(12.dp),
+            .padding(12.dp)
+            .verticalScroll(rememberScrollState()),
+        // ★ Added: 編集ペイン全体を縦スクロール可能に
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text("編集", style = MaterialTheme.typography.titleLarge)
