@@ -3,8 +3,7 @@
 
 package com.example.bugmemo.ui.screens
 
-// ★ Changed: フェーズ0の実 UI（InMemory CRUD）に差し替え
-// ★ Changed: 既存アプリ機能に影響しない“単独画面”として動作
+// ★ keep: フェーズ0→1へ。既存機能に影響しない“単独画面”として動作
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -45,10 +44,10 @@ fun MindMapScreen(
     onClose: () -> Unit = {},
     vm: MindMapViewModel = viewModel(),
 ) {
-    // ★ Added: ViewModel が公開する nodes を購読（未使用警告の解消＆再描画トリガ）
+    // ★ Added: ViewModel が公開する nodes(StateFlow) を購読（未使用警告の解消＆再描画トリガ）
     val nodes by vm.nodes.collectAsStateWithLifecycle(initialValue = emptyList())
 
-    // ★ Changed: flatList() の再計算を nodes の変化に結びつける（remember(nodes)）
+    // ★ Changed: flatList() の再計算を nodes の変化に結びつける（remember(nodes) でメモ化）
     val flat = remember(nodes) { vm.flatList() }
 
     var newTitle by remember { mutableStateOf("") }
@@ -57,7 +56,7 @@ fun MindMapScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    // ★ Added: 件数を軽く表示して購読を明示
+                    // ★ Added: 件数を簡易表示して購読を明示
                     Text("Mind Map（${nodes.size}）")
                 },
                 navigationIcon = {
@@ -75,7 +74,7 @@ fun MindMapScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            // ★ Added: ルートノードの追加（最小）
+            // ★ keep: ルートノードの追加（最小 UI）
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = newTitle,
@@ -93,7 +92,7 @@ fun MindMapScreen(
                 ) { Text("追加") }
             }
 
-            // ★ keep: 簡易ツリー（インデント表示）
+            // ★ keep: 簡易ツリー（インデント表示；(node, depth) を表示）
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
