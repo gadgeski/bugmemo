@@ -1,10 +1,9 @@
 // app/src/main/java/com/example/bugmemo/ui/mindmap/MindMapViewModel.kt
 package com.example.bugmemo.ui.mindmap
 
-// ★ Added: フェーズ0の最小実装（InMemory で CRUD だけ）
-//
-// ★ Added: 今は Room 連携なし。ノードはプロセス終了で消えます。
-// ★ Added: CI 影響を避けるため、既存コードには依存しない独立 ViewModel にしています。
+// ★ keep: フェーズ0の最小実装（InMemory で CRUD だけ）
+// ★ keep: 今は Room 連携なし。ノードはプロセス終了で消えます。
+// ★ keep: CI 影響を避けるため、既存コードには依存しない独立 ViewModel にしています。
 
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,16 +20,16 @@ data class MindNode(
 
 class MindMapViewModel : ViewModel() {
 
-    // ★ Added: InMemory のノード一覧
+    // ★ keep: InMemory のノード一覧
     private val _nodes = MutableStateFlow<List<MindNode>>(emptyList())
 
-    // ★ Added: UI から購読する StateFlow
+    // ★ keep: UI から購読する StateFlow
     val nodes: StateFlow<List<MindNode>> = _nodes
 
-    // ★ Added: ID 採番（簡易）
+    // ★ keep: ID 採番（簡易）
     private var nextId = 1L
 
-    // ★ Added: ルートにノードを追加
+    // ★ keep: ルートにノードを追加
     fun addRootNode(title: String) {
         val t = title.trim()
         if (t.isEmpty()) return
@@ -39,7 +38,20 @@ class MindMapViewModel : ViewModel() {
         _nodes.update { it + node }
     }
 
-    // ★ Added: タイトル編集
+    // ★ Added: 子ノード追加 API（親ID直下に1件追加）
+    // ★ Added: 親が存在しない場合は何もしない（安全側）
+    fun addChildNode(parentId: Long, title: String) {
+        val t = title.trim()
+        if (t.isEmpty()) return
+        val current = _nodes.value
+        if (current.none { it.id == parentId }) return // ★ Added: 親存在チェック
+
+        val now = System.currentTimeMillis()
+        val node = MindNode(id = nextId++, title = t, parentId = parentId, createdAt = now, updatedAt = now)
+        _nodes.update { it + node }
+    }
+
+    // ★ keep: タイトル編集
     fun renameNode(id: Long, newTitle: String) {
         val t = newTitle.trim()
         if (t.isEmpty()) return
@@ -49,14 +61,14 @@ class MindMapViewModel : ViewModel() {
         }
     }
 
-    // ★ Added: 子を持つ親ごと再帰削除（最小）
+    // ★ keep: 子を持つ親ごと再帰削除（最小）
     fun deleteNode(id: Long) {
         val all = _nodes.value
         val toDelete = collectWithChildren(all, id)
         _nodes.value = all.filterNot { n -> n.id in toDelete }
     }
 
-    // ★ Added: 階層構造をインデント付きフラットリストに変換（簡易ツリー表示用）
+    // ★ keep: 階層構造をインデント付きフラットリストに変換（簡易ツリー表示用）
     fun flatList(): List<Pair<MindNode, Int>> {
         val children = _nodes.value.groupBy { it.parentId }
         val result = mutableListOf<Pair<MindNode, Int>>()
@@ -71,7 +83,7 @@ class MindMapViewModel : ViewModel() {
         return result
     }
 
-    // ★ Added: ヘルパー（id とその子孫を集める）
+    // ★ keep: ヘルパー（id とその子孫を集める）
     private fun collectWithChildren(all: List<MindNode>, rootId: Long): Set<Long> {
         val children = all.groupBy { it.parentId }
         val bag = linkedSetOf<Long>()
