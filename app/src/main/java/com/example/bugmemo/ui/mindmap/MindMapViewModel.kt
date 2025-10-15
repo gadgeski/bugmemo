@@ -29,6 +29,16 @@ class MindMapViewModel : ViewModel() {
     // ★ keep: ID 採番（簡易）
     private var nextId = 1L
 
+    // ★ Added: 直近で削除したサブツリーのスナップショット（Undo 用）
+    // ★ Added: 単発Undo（1段階）想定。必要なら List<Snapshot> にしてスタック化可能。
+    private var lastDeletedSnapshot: List<MindNode> = emptyList()
+
+    // ★ Added: 現在のノード集合から nextId を再計算（復元後の衝突防止）
+    private fun recalcNextIdFromCurrent() {
+        val maxId = _nodes.value.maxOfOrNull { it.id } ?: 0L
+        if (nextId <= maxId) nextId = maxId + 1
+    }
+
     // ★ keep: ルートにノードを追加
     fun addRootNode(title: String) {
         val t = title.trim()
@@ -38,13 +48,14 @@ class MindMapViewModel : ViewModel() {
         _nodes.update { it + node }
     }
 
-    // ★ Added: 子ノード追加 API（親ID直下に1件追加）
-    // ★ Added: 親が存在しない場合は何もしない（安全側）
+    // ★ keep: 子ノード追加 API（親ID直下に1件追加）
+    // ★ keep: 親が存在しない場合は何もしない（安全側）
     fun addChildNode(parentId: Long, title: String) {
         val t = title.trim()
         if (t.isEmpty()) return
         val current = _nodes.value
-        if (current.none { it.id == parentId }) return // ★ Added: 親存在チェック
+        if (current.none { it.id == parentId }) return
+        // 親存在チェック
 
         val now = System.currentTimeMillis()
         val node = MindNode(id = nextId++, title = t, parentId = parentId, createdAt = now, updatedAt = now)
@@ -61,11 +72,40 @@ class MindMapViewModel : ViewModel() {
         }
     }
 
-    // ★ keep: 子を持つ親ごと再帰削除（最小）
+    // ★ Changed: 子を持つ親ごと再帰削除 → スナップショットを保持（Undo 対応）
     fun deleteNode(id: Long) {
         val all = _nodes.value
         val toDelete = collectWithChildren(all, id)
+
+        // ★ Added: 復元のために削除対象サブツリーを保持
+        lastDeletedSnapshot = all.filter { it.id in toDelete }
+        // 順序は createdAt でなく現状の並びを保持
+
+        // 実削除
         _nodes.value = all.filterNot { n -> n.id in toDelete }
+
+        // ★ Added: 復元時のID衝突を避けるため nextId を調整
+        recalcNextIdFromCurrent()
+    }
+
+    // ★ Added: 直前削除を復元。成功時 true / 復元対象なし false を返す。
+    fun undoDelete(): Boolean {
+        if (lastDeletedSnapshot.isEmpty()) return false
+
+        // ★ Added: 復元前に現在集合とID衝突しないことを確認し、衝突があれば nextId を進める
+        val currentIds = _nodes.value.map { it.id }.toHashSet()
+        if (lastDeletedSnapshot.any { it.id in currentIds }) {
+            // 本来は ID 変更などのマージ戦略が必要だが、本アプリでは
+            // 「削除後に同じIDが再採番されることはない」運用のため nextId を上げ直すだけで十分
+            recalcNextIdFromCurrent()
+        }
+
+        // 復元：単純結合（IDは元のまま）。distinct は不要な想定（削除直後に限るため）
+        _nodes.value = _nodes.value + lastDeletedSnapshot
+
+        // 復元後はスナップショットをクリア
+        lastDeletedSnapshot = emptyList()
+        return true
     }
 
     // ★ keep: 階層構造をインデント付きフラットリストに変換（簡易ツリー表示用）
@@ -94,4 +134,7 @@ class MindMapViewModel : ViewModel() {
         rec(rootId)
         return bag
     }
+
+    // ★ Added: UI からボタン活性/非活性判断に使える補助
+    fun canUndoDelete(): Boolean = lastDeletedSnapshot.isNotEmpty()
 }

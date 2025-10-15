@@ -5,6 +5,7 @@ package com.example.bugmemo.ui.screens
 
 // ★ keep: フェーズ0→1へ。既存機能に影響しない“単独画面”として動作
 
+// ★ keep: フォーカス/IME対応・Snackbar用のimport
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -23,21 +26,31 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bugmemo.ui.mindmap.MindMapViewModel
 import com.example.bugmemo.ui.mindmap.MindNode
+import kotlinx.coroutines.launch
 
 // ★ keep: StateFlow を Compose で購読するための拡張関数を使用（collectAsStateWithLifecycle）
+// ★ Added: Undo アクション結果の判定に使用(androidx.compose.material3.SnackbarResult)
 
 @Composable
 fun MindMapScreen(
@@ -52,7 +65,12 @@ fun MindMapScreen(
 
     var newTitle by remember { mutableStateOf("") }
 
+    // ★ keep: Snackbar
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -82,11 +100,24 @@ fun MindMapScreen(
                     singleLine = true,
                     label = { Text("新規ノード（ルート）") },
                     modifier = Modifier.weight(1f),
+                    // ★ keep: Enterで確定できるよう IME アクションを設定
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            val t = newTitle.trim()
+                            if (t.isNotEmpty()) {
+                                vm.addRootNode(t)
+                                newTitle = ""
+                                scope.launch { snackbarHostState.showSnackbar("ルートに追加しました") }
+                            }
+                        },
+                    ),
                 )
                 Button(
                     onClick = {
                         vm.addRootNode(newTitle)
                         newTitle = ""
+                        scope.launch { snackbarHostState.showSnackbar("ルートに追加しました") }
                     },
                     enabled = newTitle.isNotBlank(),
                 ) { Text("追加") }
@@ -101,11 +132,30 @@ fun MindMapScreen(
                     MindNodeRow(
                         node = node,
                         depth = depth,
-                        onRename = { title -> vm.renameNode(node.id, title) },
-                        onDelete = { vm.deleteNode(node.id) },
-                        // ★ Added: 子追加ハンドラを渡す（VM の addChildNode を呼ぶ）
-                        onAddChild = { title -> vm.addChildNode(node.id, title) },
-                        // ★ Added
+                        onRename = { title ->
+                            vm.renameNode(node.id, title)
+                            scope.launch { snackbarHostState.showSnackbar("名称を更新しました") }
+                        },
+                        onDelete = {
+                            // ★ Changed: 削除 → Snackbar で「取り消す」アクションを提示し、押下で vm.undoDelete() を呼ぶ
+                            vm.deleteNode(node.id)
+                            scope.launch {
+                                val result = snackbarHostState.showSnackbar(
+                                    message = "削除しました",
+                                    actionLabel = if (vm.canUndoDelete()) "取り消す" else null, // ★ Added
+                                    withDismissAction = true,
+                                    // ★ Added: 明示的に閉じる操作も可
+                                )
+                                if (result == SnackbarResult.ActionPerformed) {
+                                    vm.undoDelete()
+                                    // ★ Added: 取り消し実行
+                                }
+                            }
+                        },
+                        onAddChild = { title ->
+                            vm.addChildNode(node.id, title)
+                            scope.launch { snackbarHostState.showSnackbar("子ノードを追加しました") }
+                        },
                     )
                 }
             }
@@ -119,19 +169,25 @@ private fun MindNodeRow(
     depth: Int,
     onRename: (String) -> Unit,
     onDelete: () -> Unit,
-    // ★ Added: 子ノード追加用コールバックを受け取る
+    // ★ keep: 子ノード追加用コールバック
     onAddChild: (String) -> Unit,
-    // ★ Added
 ) {
     var edit by remember { mutableStateOf(false) }
     var title by remember(node.id) { mutableStateOf(node.title) }
 
-    // ★ Added: 子追加用の編集状態と入力値（行内に最小表示）
+    // ★ keep: 子追加用の編集状態と入力値（行内に最小表示）
     var addingChild by remember { mutableStateOf(false) }
     var childTitle by remember { mutableStateOf("") }
-    // ★ Added
 
-    Column( // ★ Changed: 一行構成 → Column 化して下に子追加 UI をぶら下げる
+    // ★ keep: 子追加行の自動フォーカス用
+    val childFocusRequester = remember { FocusRequester() }
+    LaunchedEffect(addingChild) {
+        // トグルで表示された直後にフォーカスを当てる
+        if (addingChild) childFocusRequester.requestFocus()
+    }
+
+    Column(
+        // ★ keep: 一行構成 → Column 化して下に子追加 UI をぶら下げる
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = (depth * 16).dp),
@@ -148,10 +204,21 @@ private fun MindNodeRow(
                     singleLine = true,
                     label = { Text("名称") },
                     modifier = Modifier.weight(1f),
+                    // ★ keep: Enterで名称確定できるようIMEアクション
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            val t = title.trim()
+                            if (t.isNotEmpty()) {
+                                onRename(t)
+                                edit = false
+                            }
+                        },
+                    ),
                 )
                 IconButton(
                     onClick = {
-                        onRename(title)
+                        onRename(title.trim())
                         edit = false
                     },
                     enabled = title.isNotBlank(),
@@ -163,16 +230,15 @@ private fun MindNodeRow(
                     modifier = Modifier.weight(1f),
                 )
                 Button(onClick = { edit = true }) { Text("編集") }
-                // ★ Added: 子追加トグル
+                // ★ keep: 子追加トグル（開いたら入力→自動フォーカス）
                 Button(onClick = { addingChild = !addingChild }) {
                     Text(if (addingChild) "子追加を閉じる" else "子追加")
                 }
-                // ★ Added
             }
             IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, contentDescription = "Delete") }
         }
 
-        // ★ Added: 子追加の入力行（トグルで表示）
+        // ★ keep: 子追加の入力行（トグルで表示）
         if (addingChild) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
@@ -180,18 +246,35 @@ private fun MindNodeRow(
                     onValueChange = { childTitle = it },
                     singleLine = true,
                     label = { Text("子ノード名") },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        // ★ keep: トグル直後に自動フォーカス
+                        .focusRequester(childFocusRequester),
+                    // ★ keep: Enterで確定→即クローズ
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            val t = childTitle.trim()
+                            if (t.isNotEmpty()) {
+                                onAddChild(t)
+                                childTitle = ""
+                                addingChild = false
+                            }
+                        },
+                    ),
                 )
                 Button(
                     onClick = {
-                        onAddChild(childTitle)
-                        childTitle = ""
-                        addingChild = false
+                        val t = childTitle.trim()
+                        if (t.isNotEmpty()) {
+                            onAddChild(t)
+                            childTitle = ""
+                            addingChild = false
+                        }
                     },
                     enabled = childTitle.isNotBlank(),
                 ) { Text("追加") }
             }
         }
-        // ★ Added
     }
 }
