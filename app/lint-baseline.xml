@@ -24,6 +24,50 @@
     </issue>
 
     <issue
+        id="GradleDependency"
+        message="A newer version of androidx.room:room-compiler than 2.8.1 is available: 2.8.2"
+        errorLine1="room = &quot;2.8.1&quot;               # KSP とは別（Room 本体のバージョン）"
+        errorLine2="       ~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="12"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.room:room-ktx than 2.8.1 is available: 2.8.2"
+        errorLine1="room = &quot;2.8.1&quot;               # KSP とは別（Room 本体のバージョン）"
+        errorLine2="       ~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="12"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.room:room-runtime than 2.8.1 is available: 2.8.2"
+        errorLine1="room = &quot;2.8.1&quot;               # KSP とは別（Room 本体のバージョン）"
+        errorLine2="       ~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="12"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose:compose-bom than 2025.09.01 is available: 2025.10.00"
+        errorLine1="composeBom = &quot;2025.09.01&quot;"
+        errorLine2="             ~~~~~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="15"
+            column="14"/>
+    </issue>
+
+    <issue
         id="ObsoleteSdkInt"
         message="This folder configuration (`v26`) is unnecessary; `minSdkVersion` is 34. Merge all the resources in this folder into `mipmap-anydpi`.">
         <location
