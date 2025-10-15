@@ -1,3 +1,40 @@
+<!-- app/src/main/res/values/strings.xml -->
 <resources>
-    <string name="app_name">bugmemo</string>
+    <!-- アプリ名（既存想定） -->
+    <string name="app_name">Bug Memo</string>
+
+    <!-- 画面タイトル -->
+    <string name="title_bugmemo_with_label">Bug Memo — %1$s</string> <!-- ★ Added -->
+    <string name="title_mindmap_with_count">Mind Map（%1$d）</string> <!-- ★ Added -->
+
+    <!-- アクション / ボタン -->
+    <string name="action_add">追加</string> <!-- ★ Added -->
+    <string name="action_edit">編集</string> <!-- ★ Added -->
+    <string name="action_child_add_open">子ノードを追加</string> <!-- ★ Added -->
+    <string name="action_child_add_close">閉じる</string> <!-- ★ Added -->
+    <string name="action_folders">フォルダ</string> <!-- ★ Added -->
+    <string name="action_search">検索</string> <!-- ★ Added -->
+    <string name="action_mindmap_dev">Mind Map（試験機能）</string> <!-- ★ Added -->
+
+    <!-- 入力ラベル -->
+    <string name="label_new_root_node">新規ノード（ルート）</string> <!-- ★ Added -->
+    <string name="label_name">名称</string> <!-- ★ Added -->
+    <string name="label_child_name">子ノード名</string> <!-- ★ Added -->
+    <string name="label_no_folder">フォルダ未選択</string> <!-- 既存画面と表現合わせに利用可 -->
+
+    <!-- Snackbar / トースト -->
+    <string name="snack_root_added">ルートに追加しました</string> <!-- ★ Added -->
+    <string name="snack_renamed">名称を更新しました</string> <!-- ★ Added -->
+    <string name="snack_deleted">削除しました</string> <!-- ★ Added -->
+    <string name="snack_child_added">子ノードを追加しました</string> <!-- ★ Added -->
+    <string name="snack_undo">取り消す</string> <!-- ★ Added -->
+
+    <!-- contentDescription（アクセシビリティ） -->
+    <string name="cd_back">戻る</string> <!-- ★ Added -->
+    <string name="cd_save">保存</string> <!-- ★ Added -->
+    <string name="cd_delete">削除</string> <!-- ★ Added -->
+    <string name="cd_new_note">新規作成</string> <!-- ★ Added -->
+    <string name="cd_open_folders">フォルダ</string> <!-- ★ Added -->
+    <string name="cd_open_search">検索</string> <!-- ★ Added -->
+    <string name="cd_open_mindmap_dev">Mind Map（試験機能）</string> <!-- ★ Added -->
 </resources>

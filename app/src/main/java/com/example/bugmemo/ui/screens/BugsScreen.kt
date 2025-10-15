@@ -51,14 +51,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.bugmemo.R
 import com.example.bugmemo.core.FeatureFlags
 import com.example.bugmemo.data.Folder
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.ui.NotesViewModel
 
+// ★ Added: 文字列リソース参照(androidx.compose.ui.res.stringResource)
+// ★ Added: R を参照(com.example.bugmemo.R)
 // ★ Added: スクロール用の状態を追加(androidx.compose.foundation.rememberScrollState)
 // ★ Added: 縦スクロール修飾子を追加(androidx.compose.foundation.verticalScroll)
 // ★ Removed: BuildConfig 直接参照は不要
@@ -88,27 +92,38 @@ fun BugsScreen(
             TopAppBar(
                 title = {
                     val label = folders.firstOrNull { it.id == filterFolderId }?.name
-                    Text(if (label != null) "Bug Memo — $label" else "Bug Memo")
+                    // ★ Changed: タイトルをリソース化（フォルダ選択時は "Bug Memo — %s"）
+                    Text(
+                        text = if (label != null) {
+                            stringResource(R.string.title_bugmemo_with_label, label)
+                        } else {
+                            stringResource(R.string.app_name)
+                        },
+                    )
                 },
                 actions = {
                     if (filterFolderId != null) {
                         IconButton(onClick = { vm.setFolderFilter(null) }) {
-                            Icon(Icons.Filled.Clear, contentDescription = "Clear folder filter")
+                            // ★ Changed: CD をリソース化（クリア→delete の文言を流用）
+                            Icon(Icons.Filled.Clear, contentDescription = stringResource(R.string.cd_delete))
                         }
                     }
                     IconButton(onClick = onOpenFolders) {
-                        Icon(Icons.Filled.Folder, contentDescription = "Folders")
+                        // ★ Changed: CD をリソース化
+                        Icon(Icons.Filled.Folder, contentDescription = stringResource(R.string.cd_open_folders))
                     }
                     IconButton(onClick = onOpenSearch) {
-                        Icon(Icons.Filled.Search, contentDescription = "Search")
+                        // ★ Changed: CD をリソース化
+                        Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.cd_open_search))
                     }
                     // ★ Changed: BuildConfig.DEBUG → FeatureFlags.ENABLE_MIND_MAP_DEBUG
                     if (FeatureFlags.ENABLE_MIND_MAP_DEBUG) {
                         // ★ keep: 開発時のみ Mind Map(Dev) へのショートカットを表示（UI非破壊）
                         IconButton(onClick = onOpenMindMap) {
+                            // ★ Changed: CD をリソース化
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.List,
-                                contentDescription = "Mind Map (dev)",
+                                contentDescription = stringResource(R.string.cd_open_mindmap_dev),
                             )
                         }
                     }
@@ -122,7 +137,8 @@ fun BugsScreen(
                     onOpenEditor()
                 },
             ) {
-                Icon(Icons.AutoMirrored.Filled.List, contentDescription = "New")
+                // ★ Changed: CD をリソース化
+                Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.cd_new_note))
             }
         },
     ) { inner ->
@@ -213,9 +229,9 @@ private fun NoteRow(
             }
             IconButton(onClick = onToggleStar) {
                 if (note.isStarred) {
-                    Icon(Icons.Filled.Star, contentDescription = "Starred")
+                    Icon(Icons.Filled.Star, contentDescription = null)
                 } else {
-                    Icon(Icons.Outlined.StarBorder, contentDescription = "Not starred")
+                    Icon(Icons.Outlined.StarBorder, contentDescription = null)
                 }
             }
         }
@@ -243,7 +259,7 @@ private fun EditorPane(
             .fillMaxHeight()
             .padding(12.dp)
             .verticalScroll(rememberScrollState()),
-        // ★ Added: 編集ペイン全体を縦スクロール可能に
+        // ★ keep: 編集ペイン全体を縦スクロール可能に
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text("編集", style = MaterialTheme.typography.titleLarge)
