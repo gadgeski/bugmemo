@@ -25,8 +25,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource // ★ Added: stringResource を使うため追加
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.bugmemo.R // ★ Added: R参照（strings.xml のキー参照に必要）
 import com.example.bugmemo.ui.NotesViewModel
 
 // ★ Removed: LaunchedEffect の import（自動 newNote 初期化は廃止）
@@ -36,7 +38,7 @@ import com.example.bugmemo.ui.NotesViewModel
 
 @Composable
 fun NoteEditorScreen(
-    // ★ Changed: デフォルトの viewModel() を削除。呼び出し側（Nav/AppScaffold）から同一 VM を受け取る。
+    // ★ keep: デフォルトの viewModel() は削除済み。呼び出し側（Nav/AppScaffold）から同一 VM を受け取る。
     vm: NotesViewModel,
     onBack: () -> Unit = {},
 ) {
@@ -51,8 +53,13 @@ fun NoteEditorScreen(
         topBar = {
             TopAppBar(
                 title = {
+                    // ★ Changed: ハードコードを stringResource に置換
+                    //   - 空タイトル時: label_untitled（例: "(無題)"）
+                    //   - 新規時(null): title_new_note（例: "新規メモ"）
+                    val titleText = editing?.title?.ifBlank { stringResource(R.string.label_untitled) }
+                        ?: stringResource(R.string.title_new_note) // ★ Changed
                     Text(
-                        text = editing?.title?.ifBlank { "(無題)" } ?: "新規メモ",
+                        text = titleText, // ★ Changed
                         style = MaterialTheme.typography.titleLarge,
                     )
                 },
@@ -60,7 +67,8 @@ fun NoteEditorScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.cd_back),
+                            // ★ Changed: "Back" → リソース
                         )
                     }
                 },
@@ -72,7 +80,8 @@ fun NoteEditorScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Save,
-                            contentDescription = "Save",
+                            contentDescription = stringResource(R.string.cd_save),
+                            // ★ Changed: "Save" → リソース
                         )
                     }
                 },
@@ -85,14 +94,15 @@ fun NoteEditorScreen(
                 .fillMaxSize()
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
-            // ★ Added: 画面全体（エディタ領域）を縦スクロール可能に
+            // ★ keep: 画面全体（エディタ領域）を縦スクロール可能に
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // タイトル
             OutlinedTextField(
                 value = editing?.title.orEmpty(),
                 onValueChange = { text -> vm.setEditingTitle(text) },
-                label = { Text("タイトル") },
+                label = { Text(stringResource(R.string.label_title)) },
+                // ★ Changed: "タイトル" → リソース
                 singleLine = true,
                 // ★ keep: 準備完了まで入力不可
                 enabled = enabled,
@@ -103,7 +113,8 @@ fun NoteEditorScreen(
             OutlinedTextField(
                 value = editing?.content.orEmpty(),
                 onValueChange = { text -> vm.setEditingContent(text) },
-                label = { Text("内容") },
+                label = { Text(stringResource(R.string.label_content)) },
+                // ★ Changed: "内容" → リソース
                 // ★ keep: 準備完了まで入力不可
                 enabled = enabled,
                 modifier = Modifier
