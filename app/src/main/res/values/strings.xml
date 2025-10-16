@@ -4,37 +4,55 @@
     <string name="app_name">Bug Memo</string>
 
     <!-- 画面タイトル -->
-    <string name="title_bugmemo_with_label">Bug Memo — %1$s</string> <!-- ★ Added -->
-    <string name="title_mindmap_with_count">Mind Map（%1$d）</string> <!-- ★ Added -->
+    <string name="title_bugmemo_with_label">Bug Memo — %1$s</string> <!-- ★ keep: 共有済み -->
+    <string name="title_mindmap_with_count">Mind Map（%1$d）</string> <!-- ★ keep: 共有済み -->
+    <string name="title_bugmemo">Bug Memo</string> <!-- ★ Added: 無フィルタ時のタイトル用（BugsScreenのAppBar） -->
 
     <!-- アクション / ボタン -->
-    <string name="action_add">追加</string> <!-- ★ Added -->
-    <string name="action_edit">編集</string> <!-- ★ Added -->
-    <string name="action_child_add_open">子ノードを追加</string> <!-- ★ Added -->
-    <string name="action_child_add_close">閉じる</string> <!-- ★ Added -->
-    <string name="action_folders">フォルダ</string> <!-- ★ Added -->
-    <string name="action_search">検索</string> <!-- ★ Added -->
-    <string name="action_mindmap_dev">Mind Map（試験機能）</string> <!-- ★ Added -->
+    <string name="action_add">追加</string> <!-- ★ keep -->
+    <string name="action_edit">編集</string> <!-- ★ keep -->
+    <string name="action_child_add_open">子ノードを追加</string> <!-- ★ keep -->
+    <string name="action_child_add_close">閉じる</string> <!-- ★ keep -->
+    <string name="action_folders">フォルダ</string> <!-- ★ keep -->
+    <string name="action_search">検索</string> <!-- ★ keep -->
+    <string name="action_mindmap_dev">Mind Map（試験機能）</string> <!-- ★ keep -->
 
     <!-- 入力ラベル -->
-    <string name="label_new_root_node">新規ノード（ルート）</string> <!-- ★ Added -->
-    <string name="label_name">名称</string> <!-- ★ Added -->
-    <string name="label_child_name">子ノード名</string> <!-- ★ Added -->
-    <string name="label_no_folder">フォルダ未選択</string> <!-- 既存画面と表現合わせに利用可 -->
+    <string name="label_new_root_node">新規ノード（ルート）</string> <!-- ★ keep -->
+    <string name="label_name">名称</string> <!-- ★ keep -->
+    <string name="label_child_name">子ノード名</string> <!-- ★ keep -->
+    <string name="label_no_folder">フォルダ未選択</string> <!-- ★ keep -->
 
     <!-- Snackbar / トースト -->
-    <string name="snack_root_added">ルートに追加しました</string> <!-- ★ Added -->
-    <string name="snack_renamed">名称を更新しました</string> <!-- ★ Added -->
-    <string name="snack_deleted">削除しました</string> <!-- ★ Added -->
-    <string name="snack_child_added">子ノードを追加しました</string> <!-- ★ Added -->
-    <string name="snack_undo">取り消す</string> <!-- ★ Added -->
+    <string name="snack_root_added">ルートに追加しました</string> <!-- ★ keep -->
+    <string name="snack_renamed">名称を更新しました</string> <!-- ★ keep -->
+    <string name="snack_deleted">削除しました</string> <!-- ★ keep -->
+    <string name="snack_child_added">子ノードを追加しました</string> <!-- ★ keep -->
+    <string name="snack_undo">取り消す</string> <!-- ★ keep -->
 
     <!-- contentDescription（アクセシビリティ） -->
-    <string name="cd_back">戻る</string> <!-- ★ Added -->
-    <string name="cd_save">保存</string> <!-- ★ Added -->
-    <string name="cd_delete">削除</string> <!-- ★ Added -->
-    <string name="cd_new_note">新規作成</string> <!-- ★ Added -->
-    <string name="cd_open_folders">フォルダ</string> <!-- ★ Added -->
-    <string name="cd_open_search">検索</string> <!-- ★ Added -->
-    <string name="cd_open_mindmap_dev">Mind Map（試験機能）</string> <!-- ★ Added -->
+    <string name="cd_back">戻る</string> <!-- ★ keep -->
+    <string name="cd_save">保存</string> <!-- ★ keep -->
+    <string name="cd_delete">削除</string> <!-- ★ keep -->
+    <string name="cd_new_note">新規作成</string> <!-- ★ keep -->
+    <string name="cd_open_folders">フォルダ</string> <!-- ★ keep -->
+    <string name="cd_open_search">検索</string> <!-- ★ keep -->
+    <string name="cd_open_mindmap_dev">Mind Map（試験機能）</string> <!-- ★ keep -->
+    <string name="cd_clear_folder_filter">フォルダ絞り込みを解除</string> <!-- ★ Added: BugsScreenのClearボタン用 -->
+
+    <!-- 空状態（将来の置き換え用: 現状未使用なら保持だけ） -->
+    <string name="empty_no_memo">メモがありません</string> <!-- ★ Added: EmptyMessage 文言 -->
+    <string name="empty_tip_create">右下の + から作成しましょう</string> <!-- ★ Added: EmptyMessage 補助 -->
+
+    <!-- メニュー（将来の置き換え用: 現状未使用なら保持だけ） -->
+    <string name="menu_unselected_none">未選択（なし）</string> <!-- ★ Added: フォルダ選択メニューの見直し用 -->
+
+    <!-- 追加分(穴埋め追加用) -->
+    <string name="label_untitled">無題</string>
+    <string name="title_new_note">新規メモ</string>
+    <string name="label_title">タイトル</string>
+    <string name="label_content">内容</string>
+
+
+
 </resources>
