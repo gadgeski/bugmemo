@@ -4,13 +4,15 @@
 package com.example.bugmemo.ui.screens
 
 // ★ keep: フェーズ0→1へ。既存機能に影響しない“単独画面”として動作
-
 // ★ keep: フォーカス/IME対応・Snackbar用のimport
+// ★ Added: キーボード表示時の下部被り回避に使用(androidx.compose.foundation.layout.imePadding)
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -50,7 +52,7 @@ import com.example.bugmemo.ui.mindmap.MindNode
 import kotlinx.coroutines.launch
 
 // ★ keep: StateFlow を Compose で購読するための拡張関数を使用（collectAsStateWithLifecycle）
-// ★ Added: Undo アクション結果の判定に使用(androidx.compose.material3.SnackbarResult)
+// ★ keep: Undo アクション結果の判定に使用(androidx.compose.material3.SnackbarResult)
 
 @Composable
 fun MindMapScreen(
@@ -89,7 +91,9 @@ fun MindMapScreen(
             Modifier
                 .padding(inner)
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(16.dp)
+                .imePadding(),
+            // ★ Added: IME(ソフトキーボード)表示時に下部が隠れないよう余白を付与
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // ★ keep: ルートノードの追加（最小 UI）
@@ -137,18 +141,16 @@ fun MindMapScreen(
                             scope.launch { snackbarHostState.showSnackbar("名称を更新しました") }
                         },
                         onDelete = {
-                            // ★ Changed: 削除 → Snackbar で「取り消す」アクションを提示し、押下で vm.undoDelete() を呼ぶ
+                            // ★ keep: 削除 → Snackbar で「取り消す」アクションを提示し、押下で vm.undoDelete() を呼ぶ
                             vm.deleteNode(node.id)
                             scope.launch {
                                 val result = snackbarHostState.showSnackbar(
                                     message = "削除しました",
-                                    actionLabel = if (vm.canUndoDelete()) "取り消す" else null, // ★ Added
+                                    actionLabel = if (vm.canUndoDelete()) "取り消す" else null,
                                     withDismissAction = true,
-                                    // ★ Added: 明示的に閉じる操作も可
                                 )
                                 if (result == SnackbarResult.ActionPerformed) {
                                     vm.undoDelete()
-                                    // ★ Added: 取り消し実行
                                 }
                             }
                         },
