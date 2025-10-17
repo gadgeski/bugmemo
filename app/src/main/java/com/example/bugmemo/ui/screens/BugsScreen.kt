@@ -357,10 +357,15 @@ private fun EmptyMessage() {
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("メモがありません", style = MaterialTheme.typography.titleMedium)
+            // ★ Changed: ハードコード → 文字列リソース
+            Text(
+                text = stringResource(R.string.empty_no_memo),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            // ★ Changed: ハードコード → 文字列リソース
             Spacer(Modifier.height(4.dp))
             Text(
-                "右下の + から作成しましょう",
+                text = stringResource(R.string.empty_tip_create),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
