@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings // ★ Added: 設定アイコン
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Button
@@ -65,10 +66,6 @@ import com.example.bugmemo.ui.NotesViewModel
 // ★ Added: R を参照(com.example.bugmemo.R)
 // ★ Added: スクロール用の状態を追加(androidx.compose.foundation.rememberScrollState)
 // ★ Added: 縦スクロール修飾子を追加(androidx.compose.foundation.verticalScroll)
-// ★ Removed: BuildConfig 直接参照は不要
-// import com.example.bugmemo.BuildConfig
-// ★ Removed: デフォルト生成をやめたため不要
-// import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun BugsScreen(
@@ -78,6 +75,7 @@ fun BugsScreen(
     onOpenSearch: () -> Unit = {},
     onOpenFolders: () -> Unit = {},
     onOpenMindMap: () -> Unit = {},
+    onOpenSettings: () -> Unit = {}, // ★ Added: 設定画面への遷移フック（NavGraph から受け取る）
     // ★ keep: MindMap への導線（Nav から渡す）
 ) {
     val notes by vm.notes.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -102,6 +100,15 @@ fun BugsScreen(
                     )
                 },
                 actions = {
+                    // ★ Added: 設定（常時表示・最左）※CD は strings 追加後に差し替え推奨
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(
+                            imageVector = Icons.Filled.Settings,
+                            contentDescription = stringResource(R.string.cd_open_settings),
+                            // ★ 差し替え
+                        )
+                    }
+                    // ★ keep: 以下既存
                     if (filterFolderId != null) {
                         IconButton(onClick = { vm.setFolderFilter(null) }) {
                             // ★ Changed: CD をリソース化（クリア→delete の文言を流用）

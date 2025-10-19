@@ -39,6 +39,7 @@
     <string name="cd_open_search">検索</string> <!-- ★ keep -->
     <string name="cd_open_mindmap_dev">Mind Map（試験機能）</string> <!-- ★ keep -->
     <string name="cd_clear_folder_filter">フォルダ絞り込みを解除</string> <!-- ★ Added: BugsScreenのClearボタン用 -->
+    <string name="cd_open_settings">設定</string>
 
     <!-- 空状態（将来の置き換え用: 現状未使用なら保持だけ） -->
     <string name="empty_no_memo">メモがありません</string> <!-- ★ Added: EmptyMessage 文言 -->
@@ -53,6 +54,13 @@
     <string name="label_title">タイトル</string>
     <string name="label_content">内容</string>
 
-
+    <!-- ★ Added: 設定画面 -->
+    <string name="title_settings">設定</string>
+    <string name="pref_language">アプリの言語</string>
+    <string name="pref_language_system">端末の言語に合わせる</string>
+    <string name="pref_language_ja">日本語</string>
+    <string name="pref_language_en">English</string>
+    <string name="action_apply">適用</string>
+    <string name="action_close">閉じる</string>
 
 </resources>

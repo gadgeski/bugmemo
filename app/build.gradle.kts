@@ -91,6 +91,9 @@ dependencies {
     // DataStore（フォルダ絞り込み・検索語の保存/復元で使用）
     implementation(libs.androidx.datastore.preferences)
 
+    // Appcompat
+    implementation(libs.androidx.appcompat)
+
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
