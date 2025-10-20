@@ -14,18 +14,22 @@ import com.example.bugmemo.ui.screens.FoldersScreen
 import com.example.bugmemo.ui.screens.MindMapScreen
 import com.example.bugmemo.ui.screens.NoteEditorScreen
 import com.example.bugmemo.ui.screens.SearchScreen
+import com.example.bugmemo.ui.screens.SettingsScreen
 
+// ★ Added: 設定画面を NavGraph に載せるため import
 // ★ Added: MindMap 用の viewModel() を使うための関数を import（androidx.lifecycle.viewmodel.compose.viewModel）
 // ★ Added: MindMap 画面の Composable を import（MindMapScreen）
 // ★ Added: MindMap 画面用の ViewModel を import（MindMapViewModel）
 
+// ★ keep: ルート定義（このファイルに一本化）
 object Routes {
     const val BUGS = "bugs"
     const val SEARCH = "search"
     const val FOLDERS = "folders"
     const val EDITOR = "editor"
     const val MINDMAP = "mindmap"
-    // ★ Added: Mind Map のルート定義（UI からは出さない想定）
+    const val SETTINGS = "settings"
+// ★ Added: 設定画面のルート
 }
 
 @Composable
@@ -47,6 +51,20 @@ fun AppNavHost(
                 // ★ keep: 一覧からエディタへ
                 onOpenEditor = {
                     navController.navigate(Routes.EDITOR)
+                },
+                // ★ Added: 設定へ遷移を配線
+                onOpenSettings = {
+                    navController.navigate(Routes.SETTINGS)
+                },
+                // ★ Added: フォルダ・検索・MindMap への遷移を NavGraph に配線（デフォルト{}だと遷移しないため）
+                onOpenFolders = {
+                    navController.navigate(Routes.FOLDERS)
+                },
+                onOpenSearch = {
+                    navController.navigate(Routes.SEARCH)
+                },
+                onOpenMindMap = {
+                    navController.navigate(Routes.MINDMAP)
                 },
             )
         }
@@ -82,15 +100,23 @@ fun AppNavHost(
             )
         }
 
-        // ★ Added: MindMap（UI からはリンクを出さない“非表示ルート”）
-        // ★ Added: 既存の Notes 用 VM とは独立した InMemory の VM を画面ローカルに生成
+        // MindMap（UI からはリンクを出さない“非表示ルート”）
+        // ★ keep: 既存の Notes 用 VM とは独立した InMemory の VM を画面ローカルに生成
         composable(Routes.MINDMAP) {
-            // ★ Added: MindMap 用の VM を取得（画面ローカル）
+            // ★ keep: MindMap 用の VM を取得（画面ローカル）
             val mindVm: MindMapViewModel = viewModel()
-            // ★ Added: 画面を閉じるだけ（戻る）
+            // ★ keep: 画面を閉じるだけ（戻る）
             MindMapScreen(
                 onClose = { navController.navigateUp() },
                 vm = mindVm,
+            )
+        }
+
+        // ★ Added: 設定
+        composable(Routes.SETTINGS) {
+            SettingsScreen(
+                onBack = { navController.navigateUp() },
+                // ★ Added: 戻るで前画面へ
             )
         }
     }
