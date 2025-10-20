@@ -24,8 +24,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.bugmemo.ui.navigation.Routes
 import com.example.bugmemo.ui.navigation.AppNavHost
+import com.example.bugmemo.ui.navigation.Routes
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
