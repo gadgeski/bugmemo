@@ -63,4 +63,9 @@
     <string name="action_apply">適用</string>
     <string name="action_close">閉じる</string>
 
+    <!-- Settings: エディタ文字サイズ -->
+    <string name="pref_editor_font_size">エディタ文字サイズ</string> <!-- ★ Added -->
+    <string name="pref_editor_font_size_value">%1$d%%</string> <!-- ★ Added: 表示用（例: 120%） -->
+
+
 </resources>
