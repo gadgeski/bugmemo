@@ -114,7 +114,7 @@ fun SettingsScreen(
             Text(
                 text = stringResource(
                     R.string.pref_editor_font_size_value,
-                    (tempScale * 100).toInt()
+                    (tempScale * 100).toInt(),
                 ),
                 style = MaterialTheme.typography.bodyMedium,
             )
@@ -151,7 +151,7 @@ fun SettingsScreen(
                     },
                     // ★ Changed: どちらか変更があるときだけ有効化
                     enabled = (selected != languageTag) ||
-                            (abs(tempScale - editorFontScale) > 0.0001f),
+                        (abs(tempScale - editorFontScale) > 0.0001f),
                 ) {
                     // ★ Changed: 「適用」をリソース化
                     Text(stringResource(R.string.action_apply))
