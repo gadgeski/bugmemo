@@ -155,7 +155,7 @@ fun NoteEditorScreen(
 
                             contentField = newValue
                             vm.setEditingContent(newValue.text)
-                                  // ★ Added: VM へ反映
+                            // ★ Added: VM へ反映
                         },
                     ) {
                         Icon(
@@ -211,7 +211,7 @@ fun NoteEditorScreen(
                 onValueChange = { v ->
                     contentField = v
                     if (enabled) vm.setEditingContent(v.text)
-                                // ★ keep: VM へ反映
+                    // ★ keep: VM へ反映
                 },
                 // ★ keep: ラベルのリソース化
                 label = { Text(stringResource(R.string.label_content)) },

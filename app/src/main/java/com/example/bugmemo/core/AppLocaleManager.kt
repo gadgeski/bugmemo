@@ -29,10 +29,9 @@ object AppLocaleManager {
     private val KEY_EDITOR_FONT_SCALE = floatPreferencesKey("editor_font_scale")
     // ★ Added
 
-    fun languageTagFlow(context: Context): Flow<String> =
-        context.dataStore.data
-            .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
-            .map { prefs -> prefs[KEY_LANGUAGE_TAG] ?: "" }
+    fun languageTagFlow(context: Context): Flow<String> = context.dataStore.data
+        .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
+        .map { prefs -> prefs[KEY_LANGUAGE_TAG] ?: "" }
 
     suspend fun setLanguage(context: Context, languageTag: String) {
         // ★ keep: DataStore に保存
@@ -53,10 +52,9 @@ object AppLocaleManager {
     // --------------------------------------
 
     // ★ Added: スケールの購読（未設定は 1.0f）
-    fun editorFontScaleFlow(context: Context): Flow<Float> =
-        context.dataStore.data
-            .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
-            .map { prefs -> prefs[KEY_EDITOR_FONT_SCALE] ?: 1.0f }
+    fun editorFontScaleFlow(context: Context): Flow<Float> = context.dataStore.data
+        .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
+        .map { prefs -> prefs[KEY_EDITOR_FONT_SCALE] ?: 1.0f }
 
     // ★ Added: スケールの保存（安全のため 0.75〜2.0 にクランプ）
     suspend fun setEditorFontScale(context: Context, scale: Float) {
