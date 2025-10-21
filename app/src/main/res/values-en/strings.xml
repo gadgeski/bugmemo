@@ -66,4 +66,9 @@
     <string name="action_apply">Apply</string>
     <string name="action_close">Close</string>
 
+    <!-- Settings: Editor Font Size -->
+    <string name="pref_editor_font_size">Editor font size</string> <!-- ★ Added -->
+    <string name="pref_editor_font_size_value">%1$d%%</string> <!-- ★ Added: for showing like 120% -->
+
+
 </resources>
