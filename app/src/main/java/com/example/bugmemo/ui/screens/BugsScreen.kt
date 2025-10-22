@@ -27,7 +27,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings // ★ Added: 設定アイコン
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Button
@@ -62,10 +62,18 @@ import com.example.bugmemo.data.Folder
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.ui.NotesViewModel
 
+// ★ Added: 設定アイコン(androidx.compose.material.icons.filled.Settings)
 // ★ Added: 文字列リソース参照(androidx.compose.ui.res.stringResource)
 // ★ Added: R を参照(com.example.bugmemo.R)
 // ★ Added: スクロール用の状態を追加(androidx.compose.foundation.rememberScrollState)
 // ★ Added: 縦スクロール修飾子を追加(androidx.compose.foundation.verticalScroll)
+
+/* ★ Added: トップレベル遷移を“必ず”ラムダ経由で実行するための超小さな共通ヘルパ
+   - 実際のスタック方針は呼び出し側（AppScaffold/Nav）で実装
+   - ここでは必ず経由させることでポリシーを統一（将来の差し替えも一箇所） */
+private fun performTopLevelNav(navigate: () -> Unit) {
+    navigate()
+}
 
 @Composable
 fun BugsScreen(
@@ -75,7 +83,7 @@ fun BugsScreen(
     onOpenSearch: () -> Unit = {},
     onOpenFolders: () -> Unit = {},
     onOpenMindMap: () -> Unit = {},
-    onOpenSettings: () -> Unit = {}, // ★ Added: 設定画面への遷移フック（NavGraph から受け取る）
+    onOpenSettings: () -> Unit = {},
     // ★ keep: MindMap への導線（Nav から渡す）
 ) {
     val notes by vm.notes.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -100,34 +108,29 @@ fun BugsScreen(
                     )
                 },
                 actions = {
-                    // ★ Added: 設定（常時表示・最左）※CD は strings 追加後に差し替え推奨
-                    IconButton(onClick = onOpenSettings) {
+                    // ★ Changed: 画面内ショートカットも共通ヘルパを経由して呼ぶ（ナビ方針を統一）
+                    IconButton(onClick = { performTopLevelNav(onOpenSettings) }) {
                         Icon(
                             imageVector = Icons.Filled.Settings,
                             contentDescription = stringResource(R.string.cd_open_settings),
-                            // ★ 差し替え
                         )
                     }
-                    // ★ keep: 以下既存
                     if (filterFolderId != null) {
                         IconButton(onClick = { vm.setFolderFilter(null) }) {
-                            // ★ Changed: CD をリソース化（クリア→delete の文言を流用）
+                            // ★ keep: これは内部状態変更のみ（ナビ無し）
                             Icon(Icons.Filled.Clear, contentDescription = stringResource(R.string.cd_delete))
                         }
                     }
-                    IconButton(onClick = onOpenFolders) {
-                        // ★ Changed: CD をリソース化
+                    IconButton(onClick = { performTopLevelNav(onOpenFolders) }) {
                         Icon(Icons.Filled.Folder, contentDescription = stringResource(R.string.cd_open_folders))
                     }
-                    IconButton(onClick = onOpenSearch) {
-                        // ★ Changed: CD をリソース化
+                    IconButton(onClick = { performTopLevelNav(onOpenSearch) }) {
                         Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.cd_open_search))
                     }
                     // ★ Changed: BuildConfig.DEBUG → FeatureFlags.ENABLE_MIND_MAP_DEBUG
                     if (FeatureFlags.ENABLE_MIND_MAP_DEBUG) {
                         // ★ keep: 開発時のみ Mind Map(Dev) へのショートカットを表示（UI非破壊）
-                        IconButton(onClick = onOpenMindMap) {
-                            // ★ Changed: CD をリソース化
+                        IconButton(onClick = { performTopLevelNav(onOpenMindMap) }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.List,
                                 contentDescription = stringResource(R.string.cd_open_mindmap_dev),
@@ -141,10 +144,10 @@ fun BugsScreen(
             FloatingActionButton(
                 onClick = {
                     vm.newNote()
-                    onOpenEditor()
+                    performTopLevelNav(onOpenEditor)
+                    // ★ Changed: FAB からの遷移もヘルパ経由
                 },
             ) {
-                // ★ Changed: CD をリソース化
                 Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.cd_new_note))
             }
         },
@@ -165,14 +168,15 @@ fun BugsScreen(
                         contentPadding = PaddingValues(12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        items(notes, key = { n -> n.id }) {
+                        items(notes, key = { n -> n.id }) { note ->
                             NoteRow(
-                                note = it,
+                                note = note,
                                 onClick = {
-                                    vm.loadNote(it.id)
-                                    onOpenEditor()
+                                    vm.loadNote(note.id)
+                                    performTopLevelNav(onOpenEditor)
+                                    // ★ Changed: 行内の遷移もヘルパ経由
                                 },
-                                onToggleStar = { vm.toggleStar(it.id, it.isStarred) },
+                                onToggleStar = { vm.toggleStar(note.id, note.isStarred) },
                             )
                         }
                     }
