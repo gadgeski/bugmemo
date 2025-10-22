@@ -28,6 +28,9 @@ bugmemo/
 │       │   │       └── example
 │       │   │           └── bugmemo
 │       │   │               ├── MainActivity.kt
+│       │   │               ├── core
+│       │   │               │   ├── AppLocaleManager.kt
+│       │   │               │   └── FeatureFlags.kt
 │       │   │               ├── data
 │       │   │               │   ├── InMemoryNotesRepository.kt
 │       │   │               │   ├── Models.kt
@@ -44,6 +47,8 @@ bugmemo/
 │       │   │                   ├── NotesViewModel.kt
 │       │   │                   ├── components
 │       │   │                   │   └── Common.kt
+│       │   │                   ├── mindmap
+│       │   │                   │   └── MindMapViewModel.kt
 │       │   │                   ├── navigation
 │       │   │                   │   └── Nav.kt
 │       │   │                   ├── screens
@@ -51,7 +56,8 @@ bugmemo/
 │       │   │                   │   ├── FoldersScreen.kt
 │       │   │                   │   ├── MindMapScreen.kt
 │       │   │                   │   ├── NoteEditorScreen.kt
-│       │   │                   │   └── SearchScreen.kt
+│       │   │                   │   ├── SearchScreen.kt
+│       │   │                   │   └── SettingsScreen.kt
 │       │   │                   └── theme
 │       │   │                       └── AppTheme.kt
 │       │   └── res
@@ -86,9 +92,12 @@ bugmemo/
 │       │       │   ├── colors.xml
 │       │       │   ├── strings.xml
 │       │       │   └── themes.xml
+│       │       ├── values-en
+│       │       │   └── strings.xml
 │       │       └── xml
 │       │           ├── backup_rules.xml
-│       │           └── data_extraction_rules.xml
+│       │           ├── data_extraction_rules.xml
+│       │           └── locale_config.xml
 │       └── test
 │           └── java
 │               └── com
@@ -107,5 +116,5 @@ bugmemo/
 ├── local.properties
 └── settings.gradle.kts
 
-43 directories, 64 files
+46 directories, 70 files
 ```
