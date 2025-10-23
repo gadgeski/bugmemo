@@ -4,9 +4,9 @@
 package com.example.bugmemo.ui.screens
 
 // ★ keep: フェーズ0→1へ。既存機能に影響しない“単独画面”として動作
+
 // ★ keep: フォーカス/IME対応・Snackbar用のimport
 // ★ Added: キーボード表示時の下部被り回避に使用(androidx.compose.foundation.layout.imePadding)
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -41,8 +41,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,8 +54,18 @@ import com.example.bugmemo.ui.mindmap.MindMapViewModel
 import com.example.bugmemo.ui.mindmap.MindNode
 import kotlinx.coroutines.launch
 
+// ★ Added: 枝線の太さ（dp→px は drawBehind 内で toPx() を使用）
+private val GUIDE_STROKE = 1.dp // ★ Added
+
+// ★ Added: Canvas 描画(androidx.compose.foundation.Canvas)
+// ★ Added: 2D スクロール（横）(androidx.compose.foundation.horizontalScroll)
 // ★ keep: StateFlow を Compose で購読するための拡張関数を使用（collectAsStateWithLifecycle）
 // ★ keep: Undo アクション結果の判定に使用(androidx.compose.material3.SnackbarResult)
+// ★ Added: スクロール状態(androidx.compose.foundation.rememberScrollState)
+// ★ Added: 2D スクロール（縦）(androidx.compose.foundation.verticalScroll)
+// ★ Added: 表示切替トグル(androidx.compose.material3.OutlinedButton)
+// ★ Added: px↔dp 変換(androidx.compose.ui.platform.LocalDensity)
+// ★ Added: キーボード表示時の下部被り回避に使用(androidx.compose.foundation.layout.imePadding)
 
 @Composable
 fun MindMapScreen(
@@ -188,6 +201,9 @@ private fun MindNodeRow(
         if (addingChild) childFocusRequester.requestFocus()
     }
 
+    // ★ Added: 枝線の色（テーマのサーフェス上補助色を利用）
+    val guideColor = MaterialTheme.colorScheme.onSurfaceVariant
+
     Column(
         // ★ keep: 一行構成 → Column 化して下に子追加 UI をぶら下げる
         modifier = Modifier
@@ -195,9 +211,40 @@ private fun MindNodeRow(
             .padding(start = (depth * 16).dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
+        // ★ Added: ルート(depth==0)以外の行に“L字”の枝線を描く（縦＋短い横）
+        val rowModifier =
+            if (depth > 0) {
+                Modifier
+                    .fillMaxWidth()
+                    .drawBehind {
+                        val stroke = GUIDE_STROKE.toPx()
+                        // ★ Fixed: Dp を px(Float) に変換
+                        val centerY = size.height / 2f
+                        // 縦線（行の左端に 1 本）
+                        drawLine(
+                            color = guideColor,
+                            start = Offset(0f, 0f),
+                            end = Offset(0f, size.height),
+                            strokeWidth = stroke,
+                            cap = StrokeCap.Square,
+                        )
+                        // 横線（左端から少しだけ右へ）
+                        val horiz = 12.dp.toPx()
+                        drawLine(
+                            color = guideColor,
+                            start = Offset(0f, centerY),
+                            end = Offset(horiz, centerY),
+                            strokeWidth = stroke,
+                            cap = StrokeCap.Square,
+                        )
+                    }
+            } else {
+                Modifier.fillMaxWidth()
+            }
+
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = rowModifier,
         ) {
             if (edit) {
                 OutlinedTextField(
