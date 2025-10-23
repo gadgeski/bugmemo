@@ -39,9 +39,11 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.ui.NotesViewModel
+
+// ★ Removed: 画面内での viewModel() 生成は廃止（親から渡されるため）
+// import androidx.lifecycle.viewmodel.compose.viewModel
 
 /**
  * 検索画面（Bugs のクエリと同じ状態を共有）
@@ -51,8 +53,9 @@ import com.example.bugmemo.ui.NotesViewModel
  */
 @Composable
 fun SearchScreen(
-    // ★ Added: Editor に遷移するコールバック（Nav から受け取る）
-    vm: NotesViewModel = viewModel(),
+    // ★ Changed: viewModel() のデフォルト生成をやめ、親（Nav）から渡す
+    vm: NotesViewModel, // ★ Changed
+    // ★ keep: Editor に遷移するラムダ（Nav から受け取る）
     onOpenEditor: () -> Unit = {},
 ) {
     val query by vm.query.collectAsStateWithLifecycle(initialValue = "")
@@ -62,6 +65,7 @@ fun SearchScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Search") },
+                // TODO: 必要なら strings.xml にリソース化可能
                 actions = {
                     // 検索フィールド（シンプル版）
                     OutlinedTextField(
@@ -69,6 +73,7 @@ fun SearchScreen(
                         onValueChange = { vm.setQuery(it) },
                         singleLine = true,
                         placeholder = { Text("キーワードを入力") },
+                        // TODO: リソース化可能
                         leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
                         trailingIcon = {
                             if (query.isNotEmpty()) {
@@ -77,10 +82,9 @@ fun SearchScreen(
                                 }
                             }
                         },
-                        // ★ Added
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(
-                            onSearch = { /* 特に何もしなくても Flow が反映 */ },
+                            onSearch = { /* Flow により自動反映 */ },
                         ),
                         modifier = Modifier
                             .padding(end = 8.dp)
@@ -98,12 +102,16 @@ fun SearchScreen(
             if (query.isBlank()) {
                 EmptyHint(
                     title = "検索ワードを入力してください",
+                    // TODO: リソース化可能
                     subtitle = "例: クラッシュ / Retrofit / Compose",
+                    // TODO: リソース化可能
                 )
             } else if (results.isEmpty()) {
                 EmptyHint(
                     title = "0件でした",
+                    // TODO: リソース化可能
                     subtitle = "キーワードを変えて試してみましょう",
+                    // TODO: リソース化可能
                 )
             } else {
                 LazyColumn(
@@ -117,7 +125,7 @@ fun SearchScreen(
                             onClick = {
                                 // 編集対象をロード
                                 vm.loadNote(note.id)
-                                // ★ Added: Editor へ遷移
+                                // ★ keep: 受け取ったラムダで Editor へ遷移（Nav へ依存しない）
                                 onOpenEditor()
                             },
                             onToggleStar = { vm.toggleStar(note.id, note.isStarred) },
@@ -149,6 +157,7 @@ private fun ResultRow(
             Column(Modifier.weight(1f)) {
                 Text(
                     text = note.title.ifBlank { "(無題)" },
+                    // TODO: リソース化可能（label_untitled 等）
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -164,8 +173,10 @@ private fun ResultRow(
             IconButton(onClick = onToggleStar) {
                 if (note.isStarred) {
                     Icon(Icons.Filled.Star, contentDescription = "Starred")
+                    // TODO: リソース化可能
                 } else {
                     Icon(Icons.Outlined.StarBorder, contentDescription = "Not starred")
+                    // TODO: リソース化可能
                 }
             }
         }

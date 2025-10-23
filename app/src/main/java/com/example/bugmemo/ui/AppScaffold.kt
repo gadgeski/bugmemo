@@ -89,6 +89,22 @@ fun AppScaffold(
     // ★ Added: 現在の Destination が BottomNav 対象かどうかを階層で判定
     val showBottomBar = shouldShowBottomBar(currentDestination, bottomBarRoutes)
 
+    // ─────────────────────────────────────────────────────────────
+    // ★ Added: トップレベル画面間の“共通ナビゲーション”ヘルパ
+    //   - launchSingleTop: 二重積み上げ防止
+    //   - restoreState   : 以前の状態（スクロール等）復元
+    //   - popUpTo(start) : トップレベル間の重複スタック化を防止（saveState で戻れる）
+    fun navigateTopLevel(route: String) {
+        navController.navigate(route) {
+            launchSingleTop = true
+            restoreState = true
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
+        }
+    }
+    // ─────────────────────────────────────────────────────────────
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
@@ -102,17 +118,8 @@ fun AppScaffold(
                         NavigationBarItem(
                             selected = selected,
                             onClick = {
-                                // ★ Changed: トップレベル間は1スタック化し、状態保存/復元を有効化
-                                navController.navigate(item.route) {
-                                    // 二重積み上げ防止
-                                    launchSingleTop = true
-                                    // 以前の状態（スクロール位置など）を復元
-                                    restoreState = true
-                                    // スタート先まで popUp して重複スタックを防ぐ
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                }
+                                // ★ Changed: 直接 navigate を書かず共通ヘルパを使用
+                                if (!selected) navigateTopLevel(item.route)
                             },
                             icon = { item.icon() },
                             label = { Text(item.label) },
