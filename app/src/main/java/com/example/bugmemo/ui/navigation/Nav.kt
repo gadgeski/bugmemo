@@ -4,6 +4,7 @@ package com.example.bugmemo.ui.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -16,7 +17,7 @@ import com.example.bugmemo.ui.screens.NoteEditorScreen
 import com.example.bugmemo.ui.screens.SearchScreen
 import com.example.bugmemo.ui.screens.SettingsScreen
 
-// ★ Added: 設定画面を NavGraph に載せるため import
+// ★ Added: startDestination を取得して popUpTo に使うための拡張を import(androidx.navigation.NavGraph.Companion.findStartDestination)
 // ★ Added: MindMap 用の viewModel() を使うための関数を import（androidx.lifecycle.viewmodel.compose.viewModel）
 // ★ Added: MindMap 画面の Composable を import（MindMapScreen）
 // ★ Added: MindMap 画面用の ViewModel を import（MindMapViewModel）
@@ -29,7 +30,7 @@ object Routes {
     const val EDITOR = "editor"
     const val MINDMAP = "mindmap"
     const val SETTINGS = "settings"
-// ★ Added: 設定画面のルート
+    // ★ keep: 設定画面のルート
 }
 
 @Composable
@@ -39,6 +40,22 @@ fun AppNavHost(
     navController: NavHostController,
     vm: NotesViewModel,
 ) {
+    // ─────────────────────────────────────────────────────────────
+    // ★ Added: トップレベル画面（Bugs/Search/Folders）へ遷移するための“共通ラムダ”
+    //          - launchSingleTop: 二重積み上げ防止
+    //          - restoreState   : 以前の状態（スクロール位置など）復元
+    //          - popUpTo(start) : トップレベル間の重複スタック化を防止（saveStateで戻れる）
+    val navigateTopLevel: (String) -> Unit = { route ->
+        navController.navigate(route) {
+            launchSingleTop = true
+            restoreState = true
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
+        }
+    }
+    // ─────────────────────────────────────────────────────────────
+
     NavHost(
         navController = navController,
         startDestination = Routes.BUGS,
@@ -48,24 +65,16 @@ fun AppNavHost(
         composable(Routes.BUGS) {
             BugsScreen(
                 vm = vm,
-                // ★ keep: 一覧からエディタへ
-                onOpenEditor = {
-                    navController.navigate(Routes.EDITOR)
-                },
-                // ★ Added: 設定へ遷移を配線
-                onOpenSettings = {
-                    navController.navigate(Routes.SETTINGS)
-                },
-                // ★ Added: フォルダ・検索・MindMap への遷移を NavGraph に配線（デフォルト{}だと遷移しないため）
-                onOpenFolders = {
-                    navController.navigate(Routes.FOLDERS)
-                },
-                onOpenSearch = {
-                    navController.navigate(Routes.SEARCH)
-                },
-                onOpenMindMap = {
-                    navController.navigate(Routes.MINDMAP)
-                },
+                // ★ keep: 一覧からエディタへ（詳細画面なので通常 navigate）
+                onOpenEditor = { navController.navigate(Routes.EDITOR) },
+
+                // ★ Changed: トップレベルへの遷移は共通ラムダ経由に統一
+                onOpenSettings = { navigateTopLevel(Routes.SETTINGS) }, // ★ Changed
+                onOpenFolders = { navigateTopLevel(Routes.FOLDERS) }, // ★ Changed
+                onOpenSearch = { navigateTopLevel(Routes.SEARCH) }, // ★ Changed
+
+                // ★ keep: MindMap は“非トップ”の隠し画面想定なので通常 navigate
+                onOpenMindMap = { navController.navigate(Routes.MINDMAP) },
             )
         }
 
@@ -73,10 +82,8 @@ fun AppNavHost(
         composable(Routes.SEARCH) {
             SearchScreen(
                 vm = vm,
-                // ★ keep: 検索結果からエディタへ
-                onOpenEditor = {
-                    navController.navigate(Routes.EDITOR)
-                },
+                // ★ keep: 検索結果からエディタへ（通常 navigate）
+                onOpenEditor = { navController.navigate(Routes.EDITOR) },
             )
         }
 
@@ -84,10 +91,8 @@ fun AppNavHost(
         composable(Routes.FOLDERS) {
             FoldersScreen(
                 vm = vm,
-                // ★ keep: フォルダ画面からも遷移可能
-                onOpenEditor = {
-                    navController.navigate(Routes.EDITOR)
-                },
+                // ★ keep: フォルダ画面からも遷移可能（通常 navigate）
+                onOpenEditor = { navController.navigate(Routes.EDITOR) },
             )
         }
 
@@ -112,11 +117,11 @@ fun AppNavHost(
             )
         }
 
-        // ★ Added: 設定
+        // 設定
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 onBack = { navController.navigateUp() },
-                // ★ Added: 戻るで前画面へ
+                // ★ 戻るで前画面へ
             )
         }
     }
