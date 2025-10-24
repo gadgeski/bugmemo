@@ -3,11 +3,11 @@
 
 package com.example.bugmemo.ui.screens
 
+// ----------------------------------------
 // ★ keep: フェーズ0→1へ。既存機能に影響しない“単独画面”として動作
-
 // ★ keep: フォーカス/IME対応・Snackbar用のimport
-// ★ Added: キーボード表示時の下部被り回避に使用(androidx.compose.foundation.layout.imePadding)
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,17 +36,19 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -54,18 +56,25 @@ import com.example.bugmemo.ui.mindmap.MindMapViewModel
 import com.example.bugmemo.ui.mindmap.MindNode
 import kotlinx.coroutines.launch
 
-// ★ Added: 枝線の太さ（dp→px は drawBehind 内で toPx() を使用）
-private val GUIDE_STROKE = 1.dp // ★ Added
-
+// ----------------------------------------
+// ★ Added: 枝線用のガターを確保するために使用(androidx.compose.foundation.layout.Box)
+// ★ Added: アンカーY(px)保持用(androidx.compose.runtime.mutableFloatStateOf)
+// ★ Added: コンテンツと同じレイヤで線を描画(androidx.compose.ui.draw.drawWithContent)
+// ★ Added: dp→px 変換に使用(androidx.compose.ui.platform.LocalDensity)
+// ★ Added: 複数行時に省略表現(androidx.compose.ui.text.style.TextOverflow)
 // ★ Added: Canvas 描画(androidx.compose.foundation.Canvas)
+// ----------------------------------------
 // ★ Added: 2D スクロール（横）(androidx.compose.foundation.horizontalScroll)
 // ★ keep: StateFlow を Compose で購読するための拡張関数を使用（collectAsStateWithLifecycle）
 // ★ keep: Undo アクション結果の判定に使用(androidx.compose.material3.SnackbarResult)
 // ★ Added: スクロール状態(androidx.compose.foundation.rememberScrollState)
+// ----------------------------------------
 // ★ Added: 2D スクロール（縦）(androidx.compose.foundation.verticalScroll)
 // ★ Added: 表示切替トグル(androidx.compose.material3.OutlinedButton)
 // ★ Added: px↔dp 変換(androidx.compose.ui.platform.LocalDensity)
 // ★ Added: キーボード表示時の下部被り回避に使用(androidx.compose.foundation.layout.imePadding)
+
+private val GUIDE_STROKE = 1.dp
 
 @Composable
 fun MindMapScreen(
@@ -106,7 +115,7 @@ fun MindMapScreen(
                 .fillMaxSize()
                 .padding(16.dp)
                 .imePadding(),
-            // ★ Added: IME(ソフトキーボード)表示時に下部が隠れないよう余白を付与
+            // ★ keep: IME(ソフトキーボード)表示時に下部が隠れないよう余白を付与
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // ★ keep: ルートノードの追加（最小 UI）
@@ -204,105 +213,143 @@ private fun MindNodeRow(
     // ★ Added: 枝線の色（テーマのサーフェス上補助色を利用）
     val guideColor = MaterialTheme.colorScheme.onSurfaceVariant
 
-    Column(
-        // ★ keep: 一行構成 → Column 化して下に子追加 UI をぶら下げる
+    // ★ Added: 枝線描画のためのパラメータ
+    val indentUnit = 16.dp
+    // 各階層のインデント幅
+    val armWidth = 12.dp
+    // 横枝の長さ
+    val density = LocalDensity.current
+    var anchorY by remember { mutableFloatStateOf(0f) }
+    // テキスト1行目の中央y(px)
+
+    // ★ Changed: 左側に「ガター」を確保して、そこに枝線を描画する
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = (depth * 16).dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        // ★ Added: ルート(depth==0)以外の行に“L字”の枝線を描く（縦＋短い横）
-        val rowModifier =
-            if (depth > 0) {
-                Modifier
-                    .fillMaxWidth()
-                    .drawBehind {
-                        val stroke = GUIDE_STROKE.toPx()
-                        // ★ Fixed: Dp を px(Float) に変換
-                        val centerY = size.height / 2f
-                        // 縦線（行の左端に 1 本）
+            .drawWithContent {
+                // --- 線を背面に描く ---
+                val indentPx = with(density) { indentUnit.toPx() }
+                val armPx = with(density) { armWidth.toPx() }
+                val strokePx = with(density) { GUIDE_STROKE.toPx() }
+
+                if (depth > 0) {
+                    // 縦のガイド（1..depth の位置に描く）
+                    for (i in 1..depth) {
+                        val x = i * indentPx
                         drawLine(
                             color = guideColor,
-                            start = Offset(0f, 0f),
-                            end = Offset(0f, size.height),
-                            strokeWidth = stroke,
-                            cap = StrokeCap.Square,
-                        )
-                        // 横線（左端から少しだけ右へ）
-                        val horiz = 12.dp.toPx()
-                        drawLine(
-                            color = guideColor,
-                            start = Offset(0f, centerY),
-                            end = Offset(horiz, centerY),
-                            strokeWidth = stroke,
-                            cap = StrokeCap.Square,
+                            start = Offset(x, 0f),
+                            end = Offset(x, size.height),
+                            strokeWidth = strokePx,
                         )
                     }
-            } else {
-                Modifier.fillMaxWidth()
-            }
+                    // 横の枝：アンカーY（1行目中央）に合わせる。未取得時は行中央。
+                    val y = if (anchorY > 0f) anchorY.coerceIn(0f, size.height) else size.height / 2f
+                    val x = depth * indentPx
+                    drawLine(
+                        color = guideColor,
+                        start = Offset(x, y),
+                        end = Offset(x + armPx, y),
+                        strokeWidth = strokePx,
+                    )
+                }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = rowModifier,
+                // --- 本来のコンテンツを描く ---
+                drawContent()
+            }
+            // コンテンツをガターぶん右に寄せる
+            .padding(start = indentUnit * depth + armWidth),
+    ) {
+        Column(
+            // ★ keep: 一行構成 → Column 化して下に子追加 UI をぶら下げる
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 0.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            if (edit) {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    singleLine = true,
-                    label = { Text("名称") },
-                    modifier = Modifier.weight(1f),
-                    // ★ keep: Enterで名称確定できるようIMEアクション
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(
-                        onDone = {
-                            val t = title.trim()
-                            if (t.isNotEmpty()) {
-                                onRename(t)
-                                edit = false
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                if (edit) {
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        singleLine = true,
+                        label = { Text("名称") },
+                        modifier = Modifier.weight(1f),
+                        // ★ keep: Enterで名称確定できるようIMEアクション
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                val t = title.trim()
+                                if (t.isNotEmpty()) {
+                                    onRename(t)
+                                    edit = false
+                                }
+                            },
+                        ),
+                        // ※ TextField では onTextLayout が取れないため、編集時は行中央に描画されます
+                    )
+                    IconButton(
+                        onClick = {
+                            onRename(title.trim())
+                            edit = false
+                        },
+                        enabled = title.isNotBlank(),
+                    ) { Icon(Icons.Filled.Save, contentDescription = "Save") }
+                } else {
+                    Text(
+                        text = node.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        // ★ Added: 1行目の上下座標から中央Yを算出 → 枝線のアンカーに反映
+                        onTextLayout = { layout ->
+                            if (layout.lineCount > 0) {
+                                val top = layout.getLineTop(0)
+                                val bottom = layout.getLineBottom(0)
+                                anchorY = (top + bottom) / 2f
                             }
                         },
-                    ),
-                )
-                IconButton(
-                    onClick = {
-                        onRename(title.trim())
-                        edit = false
-                    },
-                    enabled = title.isNotBlank(),
-                ) { Icon(Icons.Filled.Save, contentDescription = "Save") }
-            } else {
-                Text(
-                    text = node.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
-                )
-                Button(onClick = { edit = true }) { Text("編集") }
-                // ★ keep: 子追加トグル（開いたら入力→自動フォーカス）
-                Button(onClick = { addingChild = !addingChild }) {
-                    Text(if (addingChild) "子追加を閉じる" else "子追加")
+                    )
+                    Button(onClick = { edit = true }) { Text("編集") }
+                    // ★ keep: 子追加トグル（開いたら入力→自動フォーカス）
+                    Button(onClick = { addingChild = !addingChild }) {
+                        Text(if (addingChild) "子追加を閉じる" else "子追加")
+                    }
                 }
+                IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, contentDescription = "Delete") }
             }
-            IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, contentDescription = "Delete") }
-        }
 
-        // ★ keep: 子追加の入力行（トグルで表示）
-        if (addingChild) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(
-                    value = childTitle,
-                    onValueChange = { childTitle = it },
-                    singleLine = true,
-                    label = { Text("子ノード名") },
-                    modifier = Modifier
-                        .weight(1f)
-                        // ★ keep: トグル直後に自動フォーカス
-                        .focusRequester(childFocusRequester),
-                    // ★ keep: Enterで確定→即クローズ
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(
-                        onDone = {
+            // ★ keep: 子追加の入力行（トグルで表示）
+            if (addingChild) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = childTitle,
+                        onValueChange = { childTitle = it },
+                        singleLine = true,
+                        label = { Text("子ノード名") },
+                        modifier = Modifier
+                            .weight(1f)
+                            // ★ keep: トグル直後に自動フォーカス
+                            .focusRequester(childFocusRequester),
+                        // ★ keep: Enterで確定→即クローズ
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                val t = childTitle.trim()
+                                if (t.isNotEmpty()) {
+                                    onAddChild(t)
+                                    childTitle = ""
+                                    addingChild = false
+                                }
+                            },
+                        ),
+                    )
+                    Button(
+                        onClick = {
                             val t = childTitle.trim()
                             if (t.isNotEmpty()) {
                                 onAddChild(t)
@@ -310,19 +357,9 @@ private fun MindNodeRow(
                                 addingChild = false
                             }
                         },
-                    ),
-                )
-                Button(
-                    onClick = {
-                        val t = childTitle.trim()
-                        if (t.isNotEmpty()) {
-                            onAddChild(t)
-                            childTitle = ""
-                            addingChild = false
-                        }
-                    },
-                    enabled = childTitle.isNotBlank(),
-                ) { Text("追加") }
+                        enabled = childTitle.isNotBlank(),
+                    ) { Text("追加") }
+                }
             }
         }
     }
