@@ -72,6 +72,12 @@
 
 Lint で baseline created と出た場合はローカルで baseline をコミットして再実行してください。
 
+# ローカルで先に整形(コミット前)
+
+```
+./gradlew spotlessApply && ./gradlew spotlessCheck
+```
+
 ## 開発メモ（Architecture 概要）
 
 - NotesViewModel
@@ -100,3 +106,11 @@ GitHub Actions で以下をチェックします。
 - README など “misc” 対象ファイルの末尾スペース／改行
 - ktlint の import 並び順／命名規約
 - baseline 未コミットによる Lint 失敗
+
+## より理解度を深める為に/アーキテクチャについて
+- docs/app_scaffold.md
+- docs/nav.md
+- settingsscreen + appLocalemanager.md
+
+## より理解度を深める為に/アルゴリズムについて
+- algorithms.md
