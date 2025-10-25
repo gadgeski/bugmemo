@@ -110,7 +110,7 @@ GitHub Actions で以下をチェックします。
 ## より理解度を深める為に/アーキテクチャについて
 - docs/app_scaffold.md
 - docs/nav.md
-- settingsscreen+appLocalemanager.md
+- settingsscreen + appLocalemanager.md
 
 ## より理解度を深める為に/アルゴリズムについて
 - algorithms.md
