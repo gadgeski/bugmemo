@@ -105,6 +105,12 @@ bugmemo/
 │                       └── bugmemo
 │                           └── ExampleUnitTest.kt
 ├── build.gradle.kts
+├── docs
+│   └── architecture
+│       ├── algorithms.md
+│       ├── app_scaffold.md
+│       ├── nav.md
+│       └── settingsscreen + appLocalemanager.md
 ├── gradle
 │   ├── libs.versions.toml
 │   └── wrapper
@@ -116,5 +122,5 @@ bugmemo/
 ├── local.properties
 └── settings.gradle.kts
 
-46 directories, 70 files
+48 directories, 74 files
 ```
