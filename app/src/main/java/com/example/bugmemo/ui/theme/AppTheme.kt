@@ -4,130 +4,157 @@
 package com.example.bugmemo.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme // ★ Added: 動的カラー（ダーク）
-import androidx.compose.material3.dynamicLightColorScheme // ★ Added: 動的カラー（ライト）
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext // ★ Added: dynamic color に必要
-// import android.os.Build
-// ★ Removed: minSdk=34 なので分岐を削除、未使用に
+import androidx.compose.ui.platform.LocalContext
 
 /* ===============================
-   カスタムカラーパレット（落ち着いたオレンジ系）
+   カスタムカラーパレット（黄×橙を基調としたトーン）
    =============================== */
 
-// 深いオレンジ（プライマリー）
-private val BugMemoOrange = Color(0xFFD84315)
+// ★ Changed: 近似のブランド系カラーを定義
+private val BrandOrange = Color(0xFFFF8A00)
 
-// ライトオレンジ
-private val BugMemoOrangeLight = Color(0xFFFF7043)
+// 濃いオレンジ（ロゴ円のイメージ）
+private val BrandOrangeDark = Color(0xFFF36C00)
 
-// アクセントオレンジ
-private val BugMemoAccent = Color(0xFFFF9800)
+// プライマリ容器などの濃色
+private val BrandAmber = Color(0xFFFFC400)
 
-// 暖かみのある背景
-private val BugMemoBackground = Color(0xFFFFF8F5)
+// アクセント寄りのオレンジ/黄色
+private val BrandBgYellow = Color(0xFFFFF0B3)
 
-// サーフェス色
-private val BugMemoSurface = Color(0xFFFFFBFA)
+// 明るい黄（背景）
+private val BrandSurfaceYellow = Color(0xFFFFF6CC)
 
-// プライマリー上のテキスト
-private val BugMemoOnPrimary = Color(0xFFFFFFFF)
-
-// サーフェス上のテキスト
-private val BugMemoOnSurface = Color(0xFF1C1B1F)
+// もう少し淡い黄（サーフェス）
+private val OnDarkInk = Color(0xFF1F1400)
+// 暖色系UIに合う濃いインク色（茶寄りの黒）
 
 /* ===============================
    ライトテーマ
    =============================== */
 private val LightColors = lightColorScheme(
-    primary = BugMemoOrange,
-    onPrimary = BugMemoOnPrimary,
-    primaryContainer = BugMemoOrangeLight,
-    onPrimaryContainer = Color(0xFF2D1600),
-    secondary = BugMemoAccent,
-    onSecondary = Color.White,
-    secondaryContainer = Color(0xFFFFDDB3),
-    onSecondaryContainer = Color(0xFF2D1600),
-    tertiary = Color(0xFF6F5B40),
+    // ★ Changed: オレンジ基調
+    primary = BrandOrange,
+    onPrimary = Color.Black,
+    // ★ Changed: 黒インクでコントラストを確保
+    primaryContainer = BrandOrangeDark,
+    onPrimaryContainer = Color(0xFFFFF4E6),
+
+    // ★ Changed: セカンダリも暖色系で統一
+    secondary = BrandAmber,
+    onSecondary = Color(0xFF1E1200),
+    secondaryContainer = Color(0xFFFFE38A),
+    onSecondaryContainer = Color(0xFF231600),
+
+    // ★ Changed: 第三色は少し茶色寄り
+    tertiary = Color(0xFF8A5A00),
     onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFF9DDBC),
-    onTertiaryContainer = Color(0xFF271904),
+    tertiaryContainer = Color(0xFFFFDC9E),
+    onTertiaryContainer = Color(0xFF2C1B00),
+
+    // エラーはデフォルト寄り（可読性重視）
     error = Color(0xFFBA1A1A),
     onError = Color.White,
     errorContainer = Color(0xFFFFDAD6),
     onErrorContainer = Color(0xFF410002),
-    background = BugMemoBackground,
-    onBackground = Color(0xFF1F1B16),
-    surface = BugMemoSurface,
-    onSurface = BugMemoOnSurface,
-    surfaceVariant = Color(0xFFF0E0CF),
-    onSurfaceVariant = Color(0xFF4F4539),
-    outline = Color(0xFF817567),
-    outlineVariant = Color(0xFFD3C4B4),
+
+    // ★ Changed: 背景/サーフェスは黄色ベース
+    background = BrandBgYellow,
+    onBackground = OnDarkInk,
+    surface = BrandSurfaceYellow,
+    onSurface = OnDarkInk,
+
+    // ★ Changed: バリアント/アウトラインも暖色寄りに
+    surfaceVariant = Color(0xFFFFE6B8),
+    onSurfaceVariant = Color(0xFF5D3A00),
+    outline = Color(0xFF9A6B1A),
+    outlineVariant = Color(0xFFFFE0A3),
+
     scrim = Color.Black,
-    inverseSurface = Color(0xFF34302A),
-    inverseOnSurface = Color(0xFFF9EFE7),
-    inversePrimary = Color(0xFFFFB599),
+    inverseSurface = Color(0xFF2D2300),
+    inverseOnSurface = Color(0xFFFFF3CF),
+    inversePrimary = Color(0xFFFFB766),
 )
 
 /* ===============================
    ダークテーマ
    =============================== */
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFFFFB599),
-    onPrimary = Color(0xFF4A1C00),
-    primaryContainer = Color(0xFF6A2C00),
-    onPrimaryContainer = Color(0xFFFFDBCC),
-    secondary = Color(0xFFE6C2A2),
-    onSecondary = Color(0xFF422C15),
-    secondaryContainer = Color(0xFF5B422A),
-    onSecondaryContainer = Color(0xFFFFDDB3),
-    tertiary = Color(0xFFDCC1A0),
-    onTertiary = Color(0xFF3E2D16),
-    tertiaryContainer = Color(0xFF56442A),
-    onTertiaryContainer = Color(0xFFF9DDBC),
+    // ★ Changed: ダーク側は“琥珀×焦げ茶”
+    primary = Color(0xFFFFB74D),
+    onPrimary = Color(0xFF3A1A00),
+    primaryContainer = Color(0xFF5A2700),
+    onPrimaryContainer = Color(0xFFFFE6C8),
+
+    secondary = Color(0xFFFFCC80),
+    onSecondary = Color(0xFF3A1A00),
+    secondaryContainer = Color(0xFF5A3A00),
+    onSecondaryContainer = Color(0xFFFFF0C9),
+
+    tertiary = Color(0xFFE6C389),
+    onTertiary = Color(0xFF2C1B00),
+    tertiaryContainer = Color(0xFF4B3200),
+    onTertiaryContainer = Color(0xFFFFE2B9),
+
     error = Color(0xFFFFB4AB),
     onError = Color(0xFF690005),
     errorContainer = Color(0xFF93000A),
     onErrorContainer = Color(0xFFFFDAD6),
-    background = Color(0xFF16120E),
-    onBackground = Color(0xFFF0E0D0),
-    surface = Color(0xFF16120E),
-    onSurface = Color(0xFFF0E0D0),
-    surfaceVariant = Color(0xFF4F4539),
-    onSurfaceVariant = Color(0xFFD3C4B4),
-    outline = Color(0xFF9C8F80),
-    outlineVariant = Color(0xFF4F4539),
+
+    // ★ Changed: 背景/サーフェスは暗い焦げ茶、文字は明るい琥珀
+    background = Color(0xFF1B0E00),
+    onBackground = Color(0xFFFFE9B0),
+    surface = Color(0xFF1B0E00),
+    onSurface = Color(0xFFFFE9B0),
+
+    surfaceVariant = Color(0xFF4B3200),
+    onSurfaceVariant = Color(0xFFE6C389),
+    outline = Color(0xFFB4893A),
+    outlineVariant = Color(0xFF4B3200),
+
     scrim = Color.Black,
-    inverseSurface = Color(0xFFF0E0D0),
-    inverseOnSurface = Color(0xFF34302A),
-    inversePrimary = BugMemoOrange,
+    inverseSurface = Color(0xFFFFE9B0),
+    inverseOnSurface = Color(0xFF2D2300),
+    inversePrimary = BrandOrange,
 )
 
 /* ===============================
    テーマ適用
-   - ★ Changed: SDK バージョン分岐を削除（minSdk=34 のため常に true 側になるチェックは不要）
-   - ★ Added: dynamicDarkColorScheme / dynamicLightColorScheme を直接利用
+   - customize: (ColorScheme) -> ColorScheme で任意の配色を一括更新
+   - 動的カラーを使う/使わないを選択可能
    =============================== */
 @Composable
 fun AppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // ★ Added: 呼び出し側で動的カラーのON/OFFを選べる
     useDynamicColor: Boolean = true,
+    primary: Color? = null,
+    secondary: Color? = null,
+    customize: (ColorScheme) -> ColorScheme = { it },
     content: @Composable () -> Unit,
 ) {
-    // ★ Added: dynamic color に必要
     val context = LocalContext.current
-    val colorScheme =
+    val base =
         if (useDynamicColor) {
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         } else {
             if (darkTheme) DarkColors else LightColors
         }
+
+    // ★ keep: 必要なら個別に上書き
+    val withBasic = base.copy(
+        primary = primary ?: base.primary,
+        secondary = secondary ?: base.secondary,
+    )
+
+    val colorScheme = customize(withBasic)
 
     MaterialTheme(
         colorScheme = colorScheme,
