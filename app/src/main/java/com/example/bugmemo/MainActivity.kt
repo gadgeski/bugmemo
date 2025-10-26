@@ -18,7 +18,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            AppTheme {
+            AppTheme(
+                useDynamicColor = false,
+                // ★ 推奨：端末依存を避ける
+            ) {
                 // ★ keep: 明示的に VM を渡す（AppScaffold 側で viewModel() は呼ばない）
                 AppScaffold(vm = vm)
             }
