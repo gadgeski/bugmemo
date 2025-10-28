@@ -3,6 +3,7 @@
 
 package com.example.bugmemo.ui.screens
 
+// ★ Changed: import は辞書順・未使用除去（ktlint/spotless を想定）
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
@@ -44,6 +46,7 @@ import com.example.bugmemo.ui.NotesViewModel
 
 // ★ Removed: 画面内での viewModel() 生成は廃止（親から渡されるため）
 // import androidx.lifecycle.viewmodel.compose.viewModel
+// ★ Added: Bugs へ戻るショートカット(androidx.compose.material.icons.automirrored.filled.List)
 
 /**
  * 検索画面（Bugs のクエリと同じ状態を共有）
@@ -57,6 +60,8 @@ fun SearchScreen(
     vm: NotesViewModel, // ★ Changed
     // ★ keep: Editor に遷移するラムダ（Nav から受け取る）
     onOpenEditor: () -> Unit = {},
+    // ★ Added: Bugs（Notes）へトップレベル遷移するラムダ（Nav から受け取る）
+    onOpenNotes: () -> Unit = {}, // ★ Added
 ) {
     val query by vm.query.collectAsStateWithLifecycle(initialValue = "")
     val results by vm.notes.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -67,6 +72,14 @@ fun SearchScreen(
                 title = { Text("Search") },
                 // TODO: 必要なら strings.xml にリソース化可能
                 actions = {
+                    // ★ Added: Bugs へ戻るショートカット（Nav 側の共通ヘルパでトップレベル遷移）
+                    IconButton(onClick = onOpenNotes) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.List,
+                            contentDescription = "Bugs",
+                            // TODO: リソース化可能
+                        )
+                    }
                     // 検索フィールド（シンプル版）
                     OutlinedTextField(
                         value = query,
@@ -74,11 +87,15 @@ fun SearchScreen(
                         singleLine = true,
                         placeholder = { Text("キーワードを入力") },
                         // TODO: リソース化可能
-                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
+                        leadingIcon = {
+                            Icon(Icons.Filled.Search, contentDescription = "Search")
+                            // TODO: リソース化可能
+                        },
                         trailingIcon = {
                             if (query.isNotEmpty()) {
                                 IconButton(onClick = { vm.setQuery("") }) {
                                     Icon(Icons.Filled.Clear, contentDescription = "Clear")
+                                    // TODO: リソース化可能
                                 }
                             }
                         },
@@ -108,8 +125,7 @@ fun SearchScreen(
                 )
             } else if (results.isEmpty()) {
                 EmptyHint(
-                    title = "0件でした",
-                    // TODO: リソース化可能
+                    title = "0件でした", // TODO: リソース化可能
                     subtitle = "キーワードを変えて試してみましょう",
                     // TODO: リソース化可能
                 )

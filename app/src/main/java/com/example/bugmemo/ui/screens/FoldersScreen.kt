@@ -3,6 +3,7 @@
 
 package com.example.bugmemo.ui.screens
 
+// ★ Changed: import を整理（未使用除去・辞書順）
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
@@ -41,10 +43,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bugmemo.data.Folder
 import com.example.bugmemo.ui.NotesViewModel
 import kotlinx.coroutines.launch
+
+// ★ Removed: 画面内での viewModel() 生成は廃止（親から渡すため）
+// import androidx.lifecycle.viewmodel.compose.viewModel
+// ★ Added: Bugs へ戻るショートカット(androidx.compose.material.icons.automirrored.filled.List)
 
 /**
  * フォルダ一覧画面（完成版）
@@ -54,13 +59,15 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun FoldersScreen(
+    // ★ Changed: viewModel() のデフォ生成をやめ、親（Nav）から渡す
+    vm: NotesViewModel, // ★ Changed
     // Nav から受け取るエディタ遷移のコールバック
-    vm: NotesViewModel = viewModel(),
     onOpenEditor: () -> Unit = {},
+    // ★ Added: Bugs（Notes）へトップレベル遷移するラムダ（Nav から受け取る）
+    onOpenNotes: () -> Unit = {}, // ★ Added
 ) {
     val folders by vm.folders.collectAsStateWithLifecycle(initialValue = emptyList())
     val currentFilter by vm.filterFolderId.collectAsStateWithLifecycle(initialValue = null)
-
     var newFolder by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
 
@@ -68,10 +75,20 @@ fun FoldersScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Folders") },
+                // TODO: strings.xml へ移行可能
                 actions = {
+                    // ★ Added: Bugs へ戻るショートカット（Nav 側の共通ヘルパでトップレベル遷移）
+                    IconButton(onClick = onOpenNotes) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.List,
+                            contentDescription = "Bugs",
+                            // TODO: リソース化可能
+                        )
+                    }
                     if (currentFilter != null) {
                         IconButton(onClick = { vm.setFolderFilter(null) }) {
                             Icon(Icons.Filled.Clear, contentDescription = "Clear filter")
+                            // TODO: リソース化可能
                         }
                     }
                 },
@@ -91,6 +108,7 @@ fun FoldersScreen(
                     value = newFolder,
                     onValueChange = { newFolder = it },
                     label = { Text("新規フォルダ名") },
+                    // TODO: リソース化可能
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                 )
@@ -107,6 +125,7 @@ fun FoldersScreen(
                     // ★ Added: 空文字のときは無効化して押せないようにする
                     enabled = newFolder.isNotBlank(),
                 ) { Text("追加") }
+                // TODO: リソース化可能
             }
 
             if (folders.isEmpty()) {
@@ -169,6 +188,7 @@ private fun FolderRow(
                 if (isActive) {
                     Text(
                         text = "（絞り込み中）",
+                        // TODO: リソース化可能
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -176,9 +196,11 @@ private fun FolderRow(
             }
             IconButton(onClick = { onCreateNoteHere(folder.id) }) {
                 Icon(Icons.Filled.Add, contentDescription = "Create note here")
+                // TODO: リソース化可能
             }
             IconButton(onClick = { onDelete(folder.id) }) {
                 Icon(Icons.Filled.Delete, contentDescription = "Delete folder")
+                // TODO: リソース化可能
             }
         }
     }
@@ -197,9 +219,11 @@ private fun EmptyFoldersMessage() {
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("フォルダがありません", style = MaterialTheme.typography.titleMedium)
+            // TODO: リソース化可能
             Spacer(Modifier.height(4.dp))
             Text(
                 "上の入力欄から追加できます",
+                // TODO: リソース化可能
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

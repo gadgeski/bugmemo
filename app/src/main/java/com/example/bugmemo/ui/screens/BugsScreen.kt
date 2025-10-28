@@ -23,6 +23,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
@@ -62,13 +63,14 @@ import com.example.bugmemo.data.Folder
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.ui.NotesViewModel
 
+// ★ Added: 一覧アイコンを追加(androidx.compose.material.icons.filled.ViewList)
 // ★ Added: 設定アイコン(androidx.compose.material.icons.filled.Settings)
 // ★ Added: 文字列リソース参照(androidx.compose.ui.res.stringResource)
 // ★ Added: R を参照(com.example.bugmemo.R)
 // ★ Added: スクロール用の状態を追加(androidx.compose.foundation.rememberScrollState)
 // ★ Added: 縦スクロール修飾子を追加(androidx.compose.foundation.verticalScroll)
 
-/* ★ Added: トップレベル遷移を“必ず”ラムダ経由で実行するための超小さな共通ヘルパ
+/* ★ keep: トップレベル遷移を“必ず”ラムダ経由で実行するための超小さな共通ヘルパ
    - 実際のスタック方針は呼び出し側（AppScaffold/Nav）で実装
    - ここでは必ず経由させることでポリシーを統一（将来の差し替えも一箇所） */
 private fun performTopLevelNav(navigate: () -> Unit) {
@@ -84,13 +86,14 @@ fun BugsScreen(
     onOpenFolders: () -> Unit = {},
     onOpenMindMap: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
+    onOpenAllNotes: () -> Unit = {},
+    // ★ Added: “All Notes（一覧画面）” への遷移フックを追加
     // ★ keep: MindMap への導線（Nav から渡す）
 ) {
     val notes by vm.notes.collectAsStateWithLifecycle(initialValue = emptyList())
     val folders by vm.folders.collectAsStateWithLifecycle(initialValue = emptyList())
     val editing by vm.editing.collectAsStateWithLifecycle(initialValue = null)
     val filterFolderId by vm.filterFolderId.collectAsStateWithLifecycle(initialValue = null)
-
     var showFolderMenu by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -108,6 +111,15 @@ fun BugsScreen(
                     )
                 },
                 actions = {
+                    // ★ Added: “All Notes（一覧）” を開くアイコンを最初に追加
+                    IconButton(onClick = { performTopLevelNav(onOpenAllNotes) }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ViewList,
+                            contentDescription = "Open all notes",
+                            // ★ Added: 小PRのため直書き
+                        )
+                    }
+
                     // ★ Changed: 画面内ショートカットも共通ヘルパを経由して呼ぶ（ナビ方針を統一）
                     IconButton(onClick = { performTopLevelNav(onOpenSettings) }) {
                         Icon(
@@ -182,12 +194,10 @@ fun BugsScreen(
                     }
                 }
             }
-
             VerticalDivider(
                 modifier = Modifier.fillMaxHeight(),
                 thickness = 1.dp,
             )
-
             // 右：エディタ
             EditorPane(
                 editing = editing,
@@ -274,7 +284,6 @@ private fun EditorPane(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text("編集", style = MaterialTheme.typography.titleLarge)
-
         OutlinedTextField(
             value = editing?.title.orEmpty(),
             onValueChange = onTitleChange,
@@ -282,7 +291,6 @@ private fun EditorPane(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
-
         OutlinedTextField(
             value = editing?.content.orEmpty(),
             onValueChange = onContentChange,
@@ -290,7 +298,6 @@ private fun EditorPane(
             minLines = 6,
             modifier = Modifier.fillMaxWidth(),
         )
-
         HorizontalDivider(thickness = 1.dp)
 
         // フォルダ選択
