@@ -81,10 +81,19 @@ fun AppScaffold(
         NavItem("Folders", Routes.FOLDERS) {
             Icon(Icons.Filled.Folder, contentDescription = "Folders")
         },
+        // ★ Added: Notes タブ（All Notes）
+        NavItem("Notes", Routes.ALL_NOTES) {
+            Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Notes")
+        },
     )
 
     // ★ Added: BottomNav 表示対象のルート集合（Routes に同様の set があるならそれを参照してもOK）
-    val bottomBarRoutes = setOf(Routes.BUGS, Routes.SEARCH, Routes.FOLDERS)
+    val bottomBarRoutes = setOf(
+        Routes.BUGS,
+        Routes.SEARCH,
+        Routes.FOLDERS,
+        Routes.ALL_NOTES,
+    )
 
     // ★ Added: 現在の Destination が BottomNav 対象かどうかを階層で判定
     val showBottomBar = shouldShowBottomBar(currentDestination, bottomBarRoutes)
@@ -112,13 +121,22 @@ fun AppScaffold(
             if (showBottomBar) {
                 NavigationBar {
                     navItems.forEach { item ->
-                        // ★ Changed: 階層内に一致する route があるかで選択状態を判定（ネストに強い）
+                        // ★ Changed: Bugs タブは BUGS/ALL_NOTES の両方で選択扱いにする
                         val selected =
-                            currentDestination?.hierarchy?.any { it.route == item.route } == true
+                            if (item.route == Routes.BUGS) {
+                                // ★ Added: ALL_NOTES も同一グループとして扱う
+                                currentDestination?.hierarchy?.any {
+                                    it.route == Routes.BUGS || it.route == Routes.ALL_NOTES
+                                } == true
+                            } else {
+                                // ★ keep: それ以外は従来どおり route 一致で判定
+                                currentDestination?.hierarchy?.any { it.route == item.route } == true
+                            }
+
                         NavigationBarItem(
                             selected = selected,
                             onClick = {
-                                // ★ Changed: 直接 navigate を書かず共通ヘルパを使用
+                                // ★ keep: 直接 navigate を書かず共通ヘルパを使用
                                 if (!selected) navigateTopLevel(item.route)
                             },
                             icon = { item.icon() },

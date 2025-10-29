@@ -27,7 +27,6 @@ object Routes {
     const val EDITOR = "editor"
     const val MINDMAP = "mindmap"
     const val SETTINGS = "settings"
-
     const val ALL_NOTES = "all_notes"
 }
 
@@ -65,7 +64,7 @@ fun AppNavHost(
                 vm = vm,
                 // ★ keep: 検索結果からエディタへ
                 onOpenEditor = { navController.navigate(Routes.EDITOR) },
-                // ★ Added: Notes（=Bugs）ショートカットの遷移先を配線（トップレベル遷移）
+                // ★ keep（リネーム後）: Notes（= AllNotes）ショートカットの遷移先を配線（トップレベル遷移）
                 onOpenNotes = { navController.navigateTopLevel(Routes.ALL_NOTES) },
             )
         }
@@ -76,7 +75,7 @@ fun AppNavHost(
                 vm = vm,
                 // ★ keep: フォルダから新規ノート→エディタへ
                 onOpenEditor = { navController.navigate(Routes.EDITOR) },
-                // ★ Added: Notes（=Bugs）ショートカットの遷移先を配線（トップレベル遷移）
+                // ★ keep（リネーム後）: Notes（= AllNotes）ショートカットの遷移先を配線（トップレベル遷移）
                 onOpenNotes = { navController.navigateTopLevel(Routes.ALL_NOTES) },
             )
         }
@@ -108,30 +107,36 @@ fun AppNavHost(
             )
         }
 
+        // ★ Changed: ALL_NOTES への onBack 配線（navigateUp のフォールバック付き）
         composable(Routes.ALL_NOTES) {
             AllNotesScreen(
                 vm = vm,
-                onOpenEditor =
-                { navController.navigate(Routes.EDITOR) },
+                onOpenEditor = { navController.navigate(Routes.EDITOR) },
+                onBack = {
+                    // ★ Added: 戻り先が無い場合（navigateUp が false）に Bugs へフォールバック
+                    if (!navController.navigateUp()) {
+                        navController.navigateTopLevel(Routes.BUGS)
+                    }
+                },
             )
         }
     }
 }
 
 /* ===============================
-   ★ Added: トップレベル遷移ヘルパ
-   - Bugs / Search / Folders の相互遷移で重複スタックを作らない
+   ★ keep: トップレベル遷移ヘルパ
+   - Bugs / Search / Folders / AllNotes の相互遷移で重複スタックを作らない
    - スクロール位置などを save/restore
    =============================== */
 private fun NavHostController.navigateTopLevel(route: String) {
     this.navigate(route) {
         launchSingleTop = true
-        // ★ Added: 二重積み防止
+        // ★ keep: 二重積み防止
         restoreState = true
-        // ★ Added: 以前の状態（スクロール等）を復元
+        // ★ keep: 以前の状態（スクロール等）を復元
         popUpTo(this@navigateTopLevel.graph.findStartDestination().id) {
             saveState = true
-            // ★ Added: バックスタック先頭で状態保存
+            // ★ keep: バックスタック先頭で状態保存
         }
     }
 }
