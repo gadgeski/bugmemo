@@ -52,6 +52,7 @@ bugmemo/
 │       │   │                   ├── navigation
 │       │   │                   │   └── Nav.kt
 │       │   │                   ├── screens
+│       │   │                   │   ├── AllNotesScreen.kt
 │       │   │                   │   ├── BugsScreen.kt
 │       │   │                   │   ├── FoldersScreen.kt
 │       │   │                   │   ├── MindMapScreen.kt
@@ -122,5 +123,5 @@ bugmemo/
 ├── local.properties
 └── settings.gradle.kts
 
-48 directories, 74 files
+48 directories, 75 files
 ```
