@@ -1,34 +1,39 @@
+// app/src/main/java/com/example/bugmemo/data/NotesRepository.kt
 package com.example.bugmemo.data
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first // ★ Added: seed 実装で Flow の最初の値を読むために使用
+import kotlinx.coroutines.flow.first
+// ★ keep: seed で Flow の最初の値を読むために使用(kotlinx.coroutines.flow.first)
 
 // ──────────────────────────────────────────────────────────────
 // Flow ベースのリポジトリIF（← このファイルは IF だけ持つ）
 // ──────────────────────────────────────────────────────────────
 interface NotesRepository {
     fun observeNotes(): Flow<List<Note>>
-
     fun searchNotes(query: String): Flow<List<Note>>
-
     fun observeFolders(): Flow<List<Folder>>
-
     suspend fun getNote(id: Long): Note?
-
     suspend fun upsert(note: Note): Long
-
     suspend fun deleteNote(id: Long)
-
     suspend fun addFolder(name: String): Long
-
     suspend fun deleteFolder(id: Long)
-
     suspend fun setStarred(id: Long, starred: Boolean)
-// 既存のまま
+    // 既存のまま
+
+    // ★ Added: 件数の監視／単発取得 API（UI のバッジ表示や統計に使用）
+    fun observeNoteCount(): Flow<Long>
+    fun observeFolderCount(): Flow<Long>
+    suspend fun countNotes(): Long
+    suspend fun countFolders(): Long
+    suspend fun countNotesInFolder(folderId: Long): Long
+
+    // ★ Added: バルク挿入（デバッグシード／インポート機能などで使用）
+    suspend fun insertAllNotes(notes: List<Note>): List<Long>
+    suspend fun insertAllFolders(folders: List<Folder>): List<Long>
 }
 
 /* ===============================
-   ★ Added: Repository の最小 API だけで動く “シード” ユーティリティ
+   ★ keep: Repository の最小 API だけで動く “シード” ユーティリティ
    - 既存の実装(RoomNotesRepository など)を変更せずに利用可能（拡張関数）
    - 起動時に observeNotes()/observeFolders() の初期値を確認して空なら投入
    - 使い方（Debug等で一度だけ）:
@@ -42,7 +47,7 @@ interface NotesRepository {
        }
    =============================== */
 
-/** ★ Added: シード用の簡易モデル（フォルダ名でひも付け） */
+/** ★ keep: シード用の簡易モデル（フォルダ名でひも付け） */
 data class SeedNote(
     val title: String,
     val content: String,
@@ -51,7 +56,7 @@ data class SeedNote(
 )
 
 /**
- * ★ Added: データが“空”ならフォルダ/ノートを投入する拡張関数
+ * ★ keep: データが“空”ならフォルダ/ノートを投入する拡張関数
  * - Notes が1件でもあれば何もしない（重複投入防止）
  * - Folder は名前→ID をマップしつつ必要ぶんだけ追加
  * - Note は upsert(id=0L) で挿入し、必要なら starred を反映

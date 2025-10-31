@@ -4,12 +4,15 @@ package com.example.bugmemo.data.db
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
+// ★ Added: バルク挿入で ON CONFLICT を指定するため(androidx.room.OnConflictStrategy)
 
 @Dao
 interface FolderDao {
+
     @Query("SELECT * FROM folders ORDER BY name")
     fun observeFolders(): Flow<List<FolderEntity>>
 
@@ -18,10 +21,26 @@ interface FolderDao {
 
     @Delete
     suspend fun delete(folder: FolderEntity)
+
+    // ★ Added: 使うまで警告を抑制（ダッシュボード等で件数を監視予定）
+    @Suppress("unused")
+    @Query("SELECT COUNT(*) FROM folders")
+    fun observeFolderCount(): Flow<Long>
+
+    // ★ Added: 使うまで警告を抑制（起動時チェック等で単発取得予定）
+    @Suppress("unused")
+    @Query("SELECT COUNT(*) FROM folders")
+    suspend fun countFolders(): Long
+
+    // ★ Added: 使うまで警告を抑制（デバッグシード/インポートで利用予定）
+    @Suppress("unused")
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertAll(folders: List<FolderEntity>): List<Long>
 }
 
 @Dao
 interface NoteDao {
+
     @Query("SELECT * FROM notes ORDER BY updatedAt DESC")
     fun observeNotes(): Flow<List<NoteEntity>>
 
@@ -41,6 +60,11 @@ interface NoteDao {
     @Insert
     suspend fun insert(note: NoteEntity): Long
 
+    // ★ Added: 使うまで警告を抑制（デバッグシード/一括インポートで利用予定）
+    @Suppress("unused")
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertAll(notes: List<NoteEntity>): List<Long>
+
     @Update
     suspend fun update(note: NoteEntity)
 
@@ -54,4 +78,19 @@ interface NoteDao {
         starred: Boolean,
         updatedAt: Long,
     )
+
+    // ★ Added: 使うまで警告を抑制（一覧の空/非空UI切替のリアルタイム反映で利用予定）
+    @Suppress("unused")
+    @Query("SELECT COUNT(*) FROM notes")
+    fun observeNoteCount(): Flow<Long>
+
+    // ★ Added: 使うまで警告を抑制（単発の総数チェックで利用予定）
+    @Suppress("unused")
+    @Query("SELECT COUNT(*) FROM notes")
+    suspend fun countNotes(): Long
+
+    // ★ Added: 使うまで警告を抑制（フォルダ別バッジや集計で利用予定）
+    @Suppress("unused")
+    @Query("SELECT COUNT(*) FROM notes WHERE folderId = :folderId")
+    suspend fun countNotesInFolder(folderId: Long): Long
 }

@@ -17,6 +17,7 @@ class RoomNotesRepository(
     private val notes: NoteDao,
     private val folders: FolderDao,
 ) : NotesRepository {
+
     override fun observeNotes(): Flow<List<Note>> = notes.observeNotes().map { list -> list.map(::toDomain) }
 
     override fun searchNotes(query: String): Flow<List<Note>> = notes.search("%$query%").map { list -> list.map(::toDomain) }
@@ -73,6 +74,40 @@ class RoomNotesRepository(
         notes.updateStarred(id = id, starred = starred, updatedAt = now)
     }
 
+    // ─────────── ここから “未使用警告” 解消のためのパススルー実装 ───────────
+
+    // ★ Added: 件数の監視／単発取得（UI のバッジや空表示切替で使用）
+    override fun observeNoteCount(): Flow<Long> = notes.observeNoteCount()
+    override fun observeFolderCount(): Flow<Long> = folders.observeFolderCount()
+    override suspend fun countNotes(): Long = notes.countNotes()
+    override suspend fun countFolders(): Long = folders.countFolders()
+    override suspend fun countNotesInFolder(folderId: Long): Long = notes.countNotesInFolder(folderId)
+
+    // ★ Added: バルク挿入（デバッグシード／インポート機能などで使用）
+    override suspend fun insertAllNotes(notes: List<Note>): List<Long> {
+        val now = System.currentTimeMillis()
+        val entities = notes.map { n ->
+            // createdAt/updatedAt が 0 の場合は now を充当して挿入の一貫性を確保
+            NoteEntity(
+                id = n.id,
+                // 0L なら autoGenerate 側に委ねる想定
+                title = n.title,
+                content = n.content,
+                folderId = n.folderId,
+                createdAt = if (n.createdAt == 0L) now else n.createdAt,
+                updatedAt = if (n.updatedAt == 0L) now else n.updatedAt,
+                isStarred = n.isStarred,
+            )
+        }
+        return this.notes.insertAll(entities)
+    }
+
+    override suspend fun insertAllFolders(folders: List<Folder>): List<Long> {
+        val entities = folders.map { f -> FolderEntity(id = f.id, name = f.name) }
+        return this.folders.insertAll(entities)
+    }
+
+    // ─────────── ヘルパ ───────────
     private fun toDomain(e: NoteEntity) = Note(
         id = e.id,
         title = e.title,

@@ -1,3 +1,8 @@
+// app/src/main/java/com/example/bugmemo/data/InMemoryNotesRepository.kt
+@file:Suppress("unused")
+// ★ Added: この実装は主にテスト/デバッグ用のため、アプリ本体から未参照でも正常。
+// ★        IDE の "Class is never used" 警告を抑止します。
+
 package com.example.bugmemo.data
 
 import kotlinx.coroutines.flow.Flow
@@ -12,6 +17,7 @@ import kotlinx.coroutines.flow.update
  * - データはプロセス終了で消える（永続化なし）
  */
 class InMemoryNotesRepository : NotesRepository {
+
     private val foldersFlow = MutableStateFlow<List<Folder>>(emptyList())
     private val notesFlow = MutableStateFlow<List<Note>>(emptyList())
 
@@ -27,7 +33,6 @@ class InMemoryNotesRepository : NotesRepository {
         foldersFlow.value = seedFolders
 
         fun fid(name: String) = seedFolders.firstOrNull { it.name == name }?.id
-
         val now = System.currentTimeMillis()
         notesFlow.value =
             buildList {
@@ -74,6 +79,12 @@ class InMemoryNotesRepository : NotesRepository {
     // フォルダ一覧
     override fun observeFolders(): Flow<List<Folder>> = foldersFlow
 
+    // ★ Added: ノート件数を Flow で監視
+    override fun observeNoteCount(): Flow<Long> = notesFlow.map { it.size.toLong() }
+
+    // ★ Added: フォルダ件数を Flow で監視
+    override fun observeFolderCount(): Flow<Long> = foldersFlow.map { it.size.toLong() }
+
     // 単発取得（スナップショットから）
     override suspend fun getNote(id: Long): Note? = notesFlow.value.firstOrNull { it.id == id }
 
@@ -95,7 +106,8 @@ class InMemoryNotesRepository : NotesRepository {
                         } else {
                             it
                         }
-                    }.also { if (list.none { it.id == note.id }) resultId = 0L }
+                    }
+                    .also { if (list.none { it.id == note.id }) resultId = 0L }
             }
             resultId
         }
@@ -120,7 +132,13 @@ class InMemoryNotesRepository : NotesRepository {
     override suspend fun deleteFolder(id: Long) {
         foldersFlow.update { it.filterNot { f -> f.id == id } }
         notesFlow.update { list ->
-            list.map { n -> if (n.folderId == id) n.copy(folderId = null, updatedAt = System.currentTimeMillis()) else n }
+            list.map { n ->
+                if (n.folderId == id) {
+                    n.copy(folderId = null, updatedAt = System.currentTimeMillis())
+                } else {
+                    n
+                }
+            }
         }
     }
 
@@ -133,5 +151,65 @@ class InMemoryNotesRepository : NotesRepository {
         notesFlow.update { list ->
             list.map { n -> if (n.id == id) n.copy(isStarred = starred, updatedAt = now) else n }
         }
+    }
+
+    // ─────────── 集計系（同期取得）──────────
+
+    // ★ Added: ノート総数（同期）
+    override suspend fun countNotes(): Long = notesFlow.value.size.toLong()
+
+    // ★ Added: フォルダ総数（同期）
+    override suspend fun countFolders(): Long = foldersFlow.value.size.toLong()
+
+    // ★ Added: 指定フォルダ内のノート件数（同期）
+    override suspend fun countNotesInFolder(folderId: Long): Long = notesFlow.value.count { it.folderId == folderId }.toLong()
+
+    // ─────────── バルク挿入系（IGNORE 相当の挙動）──────────
+
+    // ★ Added: ノートのバルク挿入（id 衝突時は -1 を返す＝IGNORE 相当）
+    override suspend fun insertAllNotes(notes: List<Note>): List<Long> {
+        val now = System.currentTimeMillis()
+        val currentById = notesFlow.value.associateBy { it.id }
+        val ids = mutableListOf<Long>()
+        val toAdd = mutableListOf<Note>()
+
+        notes.forEach { n ->
+            if (n.id != 0L && currentById.containsKey(n.id)) {
+                // 既存と衝突 → IGNORE 相当
+                ids += -1L
+            } else {
+                val id = if (n.id == 0L) nextNoteId++ else n.id
+                toAdd += n.copy(
+                    id = id,
+                    createdAt = if (n.createdAt == 0L) now else n.createdAt,
+                    updatedAt = if (n.updatedAt == 0L) now else n.updatedAt,
+                )
+                ids += id
+            }
+        }
+
+        if (toAdd.isNotEmpty()) notesFlow.update { it + toAdd }
+        return ids
+    }
+
+    // ★ Added: フォルダのバルク挿入（id 衝突時は -1 を返す＝IGNORE 相当）
+    override suspend fun insertAllFolders(folders: List<Folder>): List<Long> {
+        val currentById = foldersFlow.value.associateBy { it.id }
+        val ids = mutableListOf<Long>()
+        val toAdd = mutableListOf<Folder>()
+
+        folders.forEach { f ->
+            if (f.id != 0L && currentById.containsKey(f.id)) {
+                // 既存と衝突 → IGNORE 相当
+                ids += -1L
+            } else {
+                val id = if (f.id == 0L) nextFolderId++ else f.id
+                toAdd += f.copy(id = id)
+                ids += id
+            }
+        }
+
+        if (toAdd.isNotEmpty()) foldersFlow.update { it + toAdd }
+        return ids
     }
 }
