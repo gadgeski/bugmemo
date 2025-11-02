@@ -9,9 +9,10 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
-    entities = [NoteEntity::class, FolderEntity::class],
+    entities = [NoteEntity::class, FolderEntity::class, NoteFts::class],
     version = 2,
-    // 将来の自動マイグレーション用にスキーマを出力
+    // ★ エンティティに NoteFts を追加
+    // ★ 将来の自動マイグレーション用にスキーマを出力
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {

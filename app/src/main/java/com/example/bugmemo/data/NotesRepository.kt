@@ -1,9 +1,16 @@
 // app/src/main/java/com/example/bugmemo/data/NotesRepository.kt
 package com.example.bugmemo.data
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 // ★ keep: seed で Flow の最初の値を読むために使用(kotlinx.coroutines.flow.first)
+
+// ★ Added: Paging 3 の薄いラッパ（拡張関数用に必要）                  //
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 
 // ──────────────────────────────────────────────────────────────
 // Flow ベースのリポジトリIF（← このファイルは IF だけ持つ）
@@ -37,14 +44,14 @@ interface NotesRepository {
    - 既存の実装(RoomNotesRepository など)を変更せずに利用可能（拡張関数）
    - 起動時に observeNotes()/observeFolders() の初期値を確認して空なら投入
    - 使い方（Debug等で一度だけ）:
-       lifecycleScope.launch {
-           repo.seedIfEmpty(
-               folders = listOf("Inbox", "Ideas"),
-               notes = listOf(
-                   SeedNote("Welcome", "BugMemoへようこそ", folderName = "Inbox", starred = true)
-               )
-           )
-       }
+      lifecycleScope.launch {
+          repo.seedIfEmpty(
+              folders = listOf("Inbox", "Ideas"),
+              notes = listOf(
+                  SeedNote("Welcome", "BugMemoへようこそ", folderName = "Inbox", starred = true)
+              )
+          )
+      }
    =============================== */
 
 /** ★ keep: シード用の簡易モデル（フォルダ名でひも付け） */
@@ -101,4 +108,47 @@ suspend fun NotesRepository.seedIfEmpty(
             setStarred(insertedId, true)
         }
     }
+}
+
+/* ===============================
+   ★ Added: Paging 3 ヘルパ（拡張関数）
+   - まずは Flow<List<Note>> → Flow<PagingData<Note>> へ簡易変換。
+   - UI の Paging 配線・動作確認を先に進めるための足場。
+   - 将来 Room/DAO を PagingSource 対応にしたら、ここを差し替えるだけで OK。
+   =============================== */
+
+/**
+ * ★ Added: 全件ページング（簡易版）
+ * - 現状は「スナップショット全件を PagingData に包む」実装。
+ * - 変更検知は Flow の再発行単位（差分ロードは未対応）。
+ * - scope を渡した場合は cachedIn で UI スコープにキャッシュ。
+ */
+fun NotesRepository.pagingAllNotes(
+    pageSize: Int = 30,
+    // ★ UI 側の PagingConfig と合わせやすいように引数化
+    scope: CoroutineScope? = null,
+    // ★ ViewModel の viewModelScope を渡せるように
+): Flow<PagingData<Note>> {
+    val source = observeNotes()
+        .distinctUntilChanged()
+        // ★ 同一リストの連続発行を抑止
+        .map { list -> PagingData.from(list) }
+    // ★ スナップショット → PagingData
+    return if (scope != null) source.cachedIn(scope) else source
+}
+
+/**
+ * ★ Added: 検索ページング（簡易版）
+ * - FTS/LIKE いずれの searchNotes 実装でもそのまま利用可能。
+ * - 将来、Room の `PagingSource` に切り替える場合はここを差し替え。
+ */
+fun NotesRepository.pagingSearch(
+    query: String,
+    pageSize: Int = 30,
+    scope: CoroutineScope? = null,
+): Flow<PagingData<Note>> {
+    val source = searchNotes(query)
+        .distinctUntilChanged()
+        .map { list -> PagingData.from(list) }
+    return if (scope != null) source.cachedIn(scope) else source
 }
