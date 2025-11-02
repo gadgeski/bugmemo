@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "0af7d49487e4c800552b083ba215aabb",
+    "identityHash": "cb34cdd1860bbdd5a09d7bc69381aeb2",
     "entities": [
       {
         "tableName": "notes",
@@ -66,6 +66,24 @@
             ],
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_notes_folderId` ON `${TABLE_NAME}` (`folderId`)"
+          },
+          {
+            "name": "index_notes_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_notes_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
+          },
+          {
+            "name": "index_notes_isStarred",
+            "unique": false,
+            "columnNames": [
+              "isStarred"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_notes_isStarred` ON `${TABLE_NAME}` (`isStarred`)"
           }
         ]
       },
@@ -103,11 +121,50 @@
             "createSql": "CREATE INDEX IF NOT EXISTS `index_folders_name` ON `${TABLE_NAME}` (`name`)"
           }
         ]
+      },
+      {
+        "tableName": "notesFts",
+        "createSql": "CREATE VIRTUAL TABLE IF NOT EXISTS `${TABLE_NAME}` USING FTS4(`title` TEXT NOT NULL, `content` TEXT NOT NULL, tokenize=unicode61, content=`notes`)",
+        "fields": [
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "content",
+            "columnName": "content",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": []
+        },
+        "ftsVersion": "FTS4",
+        "ftsOptions": {
+          "tokenizer": "unicode61",
+          "tokenizerArgs": [],
+          "contentTable": "notes",
+          "languageIdColumnName": "",
+          "matchInfo": "FTS4",
+          "notIndexedColumns": [],
+          "prefixSizes": [],
+          "preferredOrder": "ASC"
+        },
+        "contentSyncTriggers": [
+          "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_notesFts_BEFORE_UPDATE BEFORE UPDATE ON `notes` BEGIN DELETE FROM `notesFts` WHERE `docid`=OLD.`rowid`; END",
+          "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_notesFts_BEFORE_DELETE BEFORE DELETE ON `notes` BEGIN DELETE FROM `notesFts` WHERE `docid`=OLD.`rowid`; END",
+          "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_notesFts_AFTER_UPDATE AFTER UPDATE ON `notes` BEGIN INSERT INTO `notesFts`(`docid`, `title`, `content`) VALUES (NEW.`rowid`, NEW.`title`, NEW.`content`); END",
+          "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_notesFts_AFTER_INSERT AFTER INSERT ON `notes` BEGIN INSERT INTO `notesFts`(`docid`, `title`, `content`) VALUES (NEW.`rowid`, NEW.`title`, NEW.`content`); END"
+        ]
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0af7d49487e4c800552b083ba215aabb')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'cb34cdd1860bbdd5a09d7bc69381aeb2')"
     ]
   }
 }

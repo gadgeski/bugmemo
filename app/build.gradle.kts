@@ -94,6 +94,10 @@ dependencies {
     // Appcompat
     implementation(libs.androidx.appcompat)
 
+    // paging 3
+    implementation(libs.androidx.paging.runtime)
+    implementation(libs.androidx.paging.compose)
+
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

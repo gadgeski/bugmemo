@@ -1,3 +1,4 @@
+// app/src/main/java/com/example/bugmemo/data/db/NoteDao.kt
 package com.example.bugmemo.data.db
 
 // ★ 整理: 必要な import を個別に。ワイルドカードと個別の重複を解消
@@ -8,11 +9,10 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
-// ★ Added: バルク挿入で ON CONFLICT を指定するため(androidx.room.OnConflictStrategy)
 
+// ★ Added: バルク挿入で ON CONFLICT を指定するため(androidx.room.OnConflictStrategy)
 @Dao
 interface FolderDao {
-
     @Query("SELECT * FROM folders ORDER BY name")
     fun observeFolders(): Flow<List<FolderEntity>>
 
@@ -40,7 +40,6 @@ interface FolderDao {
 
 @Dao
 interface NoteDao {
-
     @Query("SELECT * FROM notes ORDER BY updatedAt DESC")
     fun observeNotes(): Flow<List<NoteEntity>>
 
@@ -56,6 +55,20 @@ interface NoteDao {
     )
     fun search(q: String): Flow<List<NoteEntity>>
     // Repository 側で "%$query%" の形にして渡す想定（そのままでOK）
+
+    // ★ Added: FTS（MATCH）検索 — NoteFts.kt の仮想テーブル `notesFts` と rowid で同期
+    // ★ Added: 将来 RoomNotesRepository から切り替えて使用（LIKE より高速かつスコアリング前提）
+    // ★ Added: 現時点で未配線なら警告抑制（Nav/UseCase 配線後に外してOK）
+    @Suppress("unused") // ★ Added
+    @Query(
+        """
+        SELECT notes.* FROM notes
+        JOIN notesFts ON (notes.rowid = notesFts.rowid)
+        WHERE notesFts MATCH :query
+        ORDER BY notes.updatedAt DESC
+        """,
+    )
+    fun searchFts(query: String): Flow<List<NoteEntity>> // ★ Added
 
     @Insert
     suspend fun insert(note: NoteEntity): Long
