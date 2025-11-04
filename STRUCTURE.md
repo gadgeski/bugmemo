@@ -39,7 +39,8 @@ bugmemo/
 │       │   │               │   ├── db
 │       │   │               │   │   ├── AppDatabase.kt
 │       │   │               │   │   ├── Entities.kt
-│       │   │               │   │   └── NoteDao.kt
+│       │   │               │   │   ├── NoteDao.kt
+│       │   │               │   │   └── NoteFts.kt
 │       │   │               │   └── prefs
 │       │   │               │       └── SettingsRepository.kt
 │       │   │               └── ui
@@ -123,5 +124,5 @@ bugmemo/
 ├── local.properties
 └── settings.gradle.kts
 
-48 directories, 75 files
+48 directories, 76 files
 ```
