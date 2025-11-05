@@ -1,7 +1,7 @@
 // app/src/main/java/com/example/bugmemo/data/db/NoteDao.kt
 package com.example.bugmemo.data.db
 
-// ★ 整理: 必要な import を個別に。ワイルドカードと個別の重複を解消
+import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -9,8 +9,11 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
+// ★ keep: 必要な import のみ個別指定
 
-// ★ Added: バルク挿入で ON CONFLICT を指定するため(androidx.room.OnConflictStrategy)
+// ─────────────────────────────────────────────
+// FolderDao
+// ─────────────────────────────────────────────
 @Dao
 interface FolderDao {
     @Query("SELECT * FROM folders ORDER BY name")
@@ -22,24 +25,25 @@ interface FolderDao {
     @Delete
     suspend fun delete(folder: FolderEntity)
 
-    // ★ Added: 使うまで警告を抑制（ダッシュボード等で件数を監視予定）
-    @Suppress("unused")
+    @Suppress("unused") // ★ keep: 将来的なダッシュボード用
     @Query("SELECT COUNT(*) FROM folders")
     fun observeFolderCount(): Flow<Long>
 
-    // ★ Added: 使うまで警告を抑制（起動時チェック等で単発取得予定）
-    @Suppress("unused")
+    @Suppress("unused") // ★ keep: 起動時チェック等
     @Query("SELECT COUNT(*) FROM folders")
     suspend fun countFolders(): Long
 
-    // ★ Added: 使うまで警告を抑制（デバッグシード/インポートで利用予定）
-    @Suppress("unused")
+    @Suppress("unused") // ★ keep: バルク挿入
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(folders: List<FolderEntity>): List<Long>
 }
 
+// ─────────────────────────────────────────────
+// NoteDao
+// ─────────────────────────────────────────────
 @Dao
 interface NoteDao {
+
     @Query("SELECT * FROM notes ORDER BY updatedAt DESC")
     fun observeNotes(): Flow<List<NoteEntity>>
 
@@ -54,27 +58,52 @@ interface NoteDao {
         """,
     )
     fun search(q: String): Flow<List<NoteEntity>>
-    // Repository 側で "%$query%" の形にして渡す想定（そのままでOK）
+    // ★ keep: Repository 側で "%$query%" を付与する前提
 
-    // ★ Added: FTS（MATCH）検索 — NoteFts.kt の仮想テーブル `notesFts` と rowid で同期
-    // ★ Added: 将来 RoomNotesRepository から切り替えて使用（LIKE より高速かつスコアリング前提）
-    // ★ Added: 現時点で未配線なら警告抑制（Nav/UseCase 配線後に外してOK）
-    @Suppress("unused") // ★ Added
+    // ─────────── PagingSource 追加（ここから）──────────
+
+    // ★ keep: フォルダ絞り込み付き（正規名）
     @Query(
         """
-        SELECT notes.* FROM notes
-        JOIN notesFts ON (notes.rowid = notesFts.rowid)
-        WHERE notesFts MATCH :query
-        ORDER BY notes.updatedAt DESC
+        SELECT * FROM notes
+        WHERE (:folderId IS NULL OR folderId = :folderId)
+        ORDER BY updatedAt DESC
         """,
     )
-    fun searchFts(query: String): Flow<List<NoteEntity>> // ★ Added
+    fun pagingSourceByFolder(folderId: Long?): PagingSource<Int, NoteEntity>
+
+    // ★ Removed: 互換用に残していた別名（未使用のため削除）
+    // fun pagingSource(folderId: Long?): PagingSource<Int, NoteEntity>
+
+    // ★ Changed: FTS 検索の PagingSource
+    @Query(
+        """
+        SELECT n.*
+        FROM notes AS n
+        JOIN notesFts AS fts ON fts.rowid = n.id
+        WHERE notesFts MATCH :query
+        ORDER BY n.updatedAt DESC
+        """,
+    )
+    fun pagingSourceFts(query: String): PagingSource<Int, NoteEntity>
+
+    // ★ keep: LIKE 検索フォールバック（FTS 未準備時に Repository 側オプションで使用）
+    @Suppress("unused") // ★ keep: 使うまで警告抑制（Repository で切替えたら外す）
+    @Query(
+        """
+        SELECT * FROM notes
+        WHERE title LIKE :q OR content LIKE :q
+        ORDER BY updatedAt DESC
+        """,
+    )
+    fun pagingSourceLike(q: String): PagingSource<Int, NoteEntity>
+
+    // ─────────── PagingSource 追加（ここまで）──────────
 
     @Insert
     suspend fun insert(note: NoteEntity): Long
 
-    // ★ Added: 使うまで警告を抑制（デバッグシード/一括インポートで利用予定）
-    @Suppress("unused")
+    @Suppress("unused") // ★ keep: バルク挿入
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(notes: List<NoteEntity>): List<Long>
 
@@ -84,7 +113,7 @@ interface NoteDao {
     @Delete
     suspend fun delete(note: NoteEntity)
 
-    // ★ 追加: スター状態だけを更新したい時に便利（部分更新）
+    // ★ keep: スター状態のみ部分更新
     @Query("UPDATE notes SET isStarred = :starred, updatedAt = :updatedAt WHERE id = :id")
     suspend fun updateStarred(
         id: Long,
@@ -92,18 +121,15 @@ interface NoteDao {
         updatedAt: Long,
     )
 
-    // ★ Added: 使うまで警告を抑制（一覧の空/非空UI切替のリアルタイム反映で利用予定）
-    @Suppress("unused")
+    @Suppress("unused") // ★ keep: 一覧の空/非空監視等
     @Query("SELECT COUNT(*) FROM notes")
     fun observeNoteCount(): Flow<Long>
 
-    // ★ Added: 使うまで警告を抑制（単発の総数チェックで利用予定）
-    @Suppress("unused")
+    @Suppress("unused") // ★ keep
     @Query("SELECT COUNT(*) FROM notes")
     suspend fun countNotes(): Long
 
-    // ★ Added: 使うまで警告を抑制（フォルダ別バッジや集計で利用予定）
-    @Suppress("unused")
+    @Suppress("unused") // ★ keep
     @Query("SELECT COUNT(*) FROM notes WHERE folderId = :folderId")
     suspend fun countNotesInFolder(folderId: Long): Long
 }

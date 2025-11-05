@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -25,6 +24,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -41,30 +41,37 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.ui.NotesViewModel
 
 // ★ Removed: 画面内での viewModel() 生成は廃止（親から渡されるため）
 // import androidx.lifecycle.viewmodel.compose.viewModel
 // ★ Added: Bugs へ戻るショートカット(androidx.compose.material.icons.automirrored.filled.List)
+// ★ Added: Paging のロード状態(androidx.paging.LoadState)
+// ★ Added: ローディング表示(androidx.compose.material3.CircularProgressIndicator)
+// import androidx.compose.foundation.lazy.items // ★ Removed: Paging 置換のため未使用
 
 /**
  * 検索画面（Bugs のクエリと同じ状態を共有）
  * - クエリ入力で VM の setQuery を更新
- * - 表示は VM.notes（内部で observeNotes/searchNotes を切替）
+ * - 表示は Paging 版：vm.pagedNotes を collectAsLazyPagingItems で収集
  * - 結果タップで編集画面へ遷移（onOpenEditor）
  */
 @Composable
 fun SearchScreen(
     // ★ Changed: viewModel() のデフォルト生成をやめ、親（Nav）から渡す
-    vm: NotesViewModel, // ★ Changed
+    vm: NotesViewModel,
     // ★ keep: Editor に遷移するラムダ（Nav から受け取る）
     onOpenEditor: () -> Unit = {},
     // ★ Added: Bugs（Notes）へトップレベル遷移するラムダ（Nav から受け取る）
-    onOpenNotes: () -> Unit = {}, // ★ Added
+    onOpenNotes: () -> Unit = {},
 ) {
     val query by vm.query.collectAsStateWithLifecycle(initialValue = "")
-    val results by vm.notes.collectAsStateWithLifecycle(initialValue = emptyList())
+    // ★ Added: Paging データを収集
+    val results: LazyPagingItems<Note> = vm.pagedNotes.collectAsLazyPagingItems()
 
     Scaffold(
         topBar = {
@@ -101,7 +108,7 @@ fun SearchScreen(
                         },
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(
-                            onSearch = { /* Flow により自動反映 */ },
+                            onSearch = { /* VM 側の Flow により自動反映 */ },
                         ),
                         modifier = Modifier
                             .padding(end = 8.dp)
@@ -116,6 +123,7 @@ fun SearchScreen(
                 .padding(inner)
                 .fillMaxSize(),
         ) {
+            // ★ Changed: 未入力時は Paging リストを描画せずヒント表示
             if (query.isBlank()) {
                 EmptyHint(
                     title = "検索ワードを入力してください",
@@ -123,29 +131,74 @@ fun SearchScreen(
                     subtitle = "例: クラッシュ / Retrofit / Compose",
                     // TODO: リソース化可能
                 )
-            } else if (results.isEmpty()) {
-                EmptyHint(
-                    title = "0件でした", // TODO: リソース化可能
-                    subtitle = "キーワードを変えて試してみましょう",
-                    // TODO: リソース化可能
-                )
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(results, key = { it.id }) { note ->
-                        ResultRow(
-                            note = note,
-                            onClick = {
-                                // 編集対象をロード
-                                vm.loadNote(note.id)
-                                // ★ keep: 受け取ったラムダで Editor へ遷移（Nav へ依存しない）
-                                onOpenEditor()
-                            },
-                            onToggleStar = { vm.toggleStar(note.id, note.isStarred) },
+                return@Column
+            }
+
+            // ★ Added: Paging のロード状態に応じた分岐
+            when (val state = results.loadState.refresh) {
+                is LoadState.Loading -> {
+                    // 初回ロード中
+                    InitialLoading()
+                }
+                is LoadState.Error -> {
+                    // 失敗時（簡易表示）
+                    EmptyHint(
+                        title = "読み込みに失敗しました",
+                        subtitle = state.error.message ?: "不明なエラー",
+                    )
+                }
+                is LoadState.NotLoading -> {
+                    if (results.itemCount == 0) {
+                        // 空結果
+                        EmptyHint(
+                            title = "0件でした", // TODO: リソース化可能
+                            subtitle = "キーワードを変えて試してみましょう",
+                            // TODO: リソース化可能
                         )
+                    } else {
+                        // 通常表示
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            // ★ Changed: items(...) → Paging 版（index で取り出す）
+                            items(
+                                count = results.itemCount,
+                                key = { index ->
+                                    val item = results[index]
+                                    item?.id ?: "placeholder-$index"
+                                    // ★ Added: null（プレースホルダー）対策
+                                },
+                            ) { index ->
+                                val note = results[index]
+                                if (note == null) {
+                                    // ★ Added: プレースホルダー（プレフェッチ中）
+                                    ShimmerlessPlaceholderRow()
+                                } else {
+                                    ResultRow(
+                                        note = note,
+                                        onClick = {
+                                            vm.loadNote(note.id)
+                                            onOpenEditor()
+                                        },
+                                        onToggleStar = { vm.toggleStar(note.id, note.isStarred) },
+                                    )
+                                }
+                            }
+
+                            // ★ Added: 追加ロード中のフッター
+                            if (results.loadState.append is LoadState.Loading) {
+                                item(key = "append-loading") {
+                                    AppendLoading()
+                                }
+                            }
+                            if (results.loadState.append is LoadState.Error) {
+                                item(key = "append-error") {
+                                    AppendError()
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -197,6 +250,63 @@ private fun ResultRow(
             }
         }
     }
+}
+
+// ★ Added: 初回ロード表示（中央にインジケータ）
+@Composable
+private fun InitialLoading() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        CircularProgressIndicator()
+        Spacer(Modifier.height(12.dp))
+        Text("読み込み中…")
+    }
+}
+
+// ★ Added: 追加ロードのフッター表示
+@Composable
+private fun AppendLoading() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        CircularProgressIndicator()
+        Spacer(Modifier.width(8.dp))
+        Text("さらに読み込み中…")
+    }
+}
+
+// ★ Added: 追加ロード失敗の簡易表示（必要なら再試行ボタンを追加）
+@Composable
+private fun AppendError() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Text("読み込みに失敗しました")
+    }
+}
+
+// ★ Added: プレースホルダー行（簡易）
+@Composable
+private fun ShimmerlessPlaceholderRow() {
+    Surface(
+        tonalElevation = 1.dp,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp),
+    ) { /* 簡易なので中身は空。必要なら灰色のボックス等を配置 */ }
 }
 
 @Composable

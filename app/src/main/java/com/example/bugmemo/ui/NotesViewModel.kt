@@ -6,13 +6,14 @@
 
 package com.example.bugmemo.ui
 
-// ★ Added: Repository の“シード”拡張を VM から使うための import
 import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.example.bugmemo.data.Folder
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.data.NotesRepository
@@ -37,12 +38,15 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+// ★ Removed: 未実装の拡張に依存していたため削除
+// ★ Removed: import androidx.paging.filter as pagingFilter
 
 /**
  * NotesViewModel
  * - 検索クエリ / フォルダ絞り込みを DataStore へ保存・復元
  * - 一覧は（検索 × フォルダ）で動的フィルタ
  * - 削除→Undo / 失敗時のSnackbar通知
+ * - ★ keep: Paging 3 で Flow<PagingData<Note>> を公開
  */
 class NotesViewModel(
     private val repo: NotesRepository,
@@ -54,11 +58,10 @@ class NotesViewModel(
         data class Message(val text: String) : UiEvent
         data class UndoDelete(val text: String) : UiEvent
     }
-
     private val _events = MutableSharedFlow<UiEvent>(extraBufferCapacity = 1)
     val events: SharedFlow<UiEvent> = _events.asSharedFlow()
 
-    // ★ Added: 直前に削除したノート（Undo 復元用）を保持
+    // ★ keep: 直前に削除したノート（Undo 復元用）を保持
     private var lastDeleted: Note? = null
 
     // ─────────── 検索クエリ（保存・復元対応）──────────
@@ -67,7 +70,6 @@ class NotesViewModel(
 
     fun setQuery(q: String) {
         _query.value = q
-        // ★ keep: 入力のたびに DataStore へ保存（必要なら保存側を debounce へ変更も可）
         viewModelScope.launch {
             runCatching { settings.setLastQuery(q) }
                 .onFailure { e ->
@@ -76,15 +78,12 @@ class NotesViewModel(
         }
     }
 
-    // ★ Added: 検索クエリに debounce + trim + distinctUntilChanged を適用したフロー
-    //           UI側は query をそのまま更新してOK。実際の検索切替はこのフローを使います。
+    // ★ keep: 入力をデバウンスして検索切替
     private val debouncedQuery: Flow<String> =
         query
             .map { it.trim() }
             .debounce(250)
-            // ★ keep（150–250msは好みで調整可）
             .distinctUntilChanged()
-    // ★ keep（これは StateFlow ではなく map/debounce 後の Flow に対して有効）
 
     // ─────────── フォルダ絞り込み（保存・復元対応）──────────
     private val _filterFolderId = MutableStateFlow<Long?>(null)
@@ -92,7 +91,6 @@ class NotesViewModel(
 
     fun setFolderFilter(id: Long?) {
         _filterFolderId.value = id
-        // ★ keep: 変更を DataStore に保存（失敗時通知）
         viewModelScope.launch {
             runCatching { settings.setFilterFolderId(id) }
                 .onFailure { e ->
@@ -101,42 +99,31 @@ class NotesViewModel(
         }
     }
 
-    // ★ Changed: 起動時復元は distinctUntilChanged() を使わず、
-    //             「値が変わったときだけ代入」で重複反映を防止（StateFlow 非推奨API回避）
     init {
         // フォルダ絞り込みIDの復元
         viewModelScope.launch {
             settings.filterFolderId
-                // .distinctUntilChanged() // ★ Removed: StateFlow 非推奨（下で比較して反映）
                 .collect { saved ->
                     if (saved != _filterFolderId.value) {
-                        // ★ Added: 値が変わった時だけ反映
                         _filterFolderId.value = saved
+                        // ★ Added: 値が変わった時だけ反映
                     }
                 }
         }
         // 検索クエリの復元
         viewModelScope.launch {
             settings.lastQuery
-                // .distinctUntilChanged() // ★ Removed: 同上
                 .collect { saved ->
                     if (saved != _query.value) {
-                        // ★ keep: 重複回避ロジック
                         _query.value = saved
                     }
                 }
         }
     }
 
-    // ─────────── 一覧（検索＋フォルダ絞り込み）───────────
-    // ★ Changed: combine の第二引数で StateFlow に distinctUntilChanged() を掛けない
-    //            （StateFlow は連続同値をそもそも流さない設計のため）
+    // ─────────── 非 Paging 版（互換）──────────
     val notes: StateFlow<List<Note>> =
-        combine(
-            debouncedQuery,
-            filterFolderId,
-            // ★ Changed: _filterFolderId.distinctUntilChanged() → filterFolderId に置換
-        ) { q, folderId -> q to folderId }
+        combine(debouncedQuery, filterFolderId) { q, folderId -> q to folderId }
             .flatMapLatest { (q, folderId) ->
                 val base = if (q.isBlank()) repo.observeNotes() else repo.searchNotes(q)
                 if (folderId == null) {
@@ -146,6 +133,27 @@ class NotesViewModel(
                 }
             }
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    // ─────────── Paging 3 版（Flow<PagingData<Note>>）──────────
+    private val pageSize = 50
+
+    // ★ Changed: フォルダ絞り込み時は ViewModel 内での PagingData.filter を廃止し、
+    //            Repository の DAO バックエンド（pagingSource(folderId)）を **直接**呼ぶ
+    //            → 「DAO の関数が未使用」警告を解消しつつ、DB 側で最小データだけ読み込む
+    val pagedNotes: Flow<PagingData<Note>> =
+        combine(debouncedQuery, filterFolderId) { q, folderId -> q to folderId }
+            .flatMapLatest { (q, folderId) ->
+                if (q.isBlank()) {
+                    // ★ Changed: 非検索時 → フォルダIDを Repository に渡して DAO の PagingSource を利用
+                    repo.pagedNotesByFolder(folderId = folderId, pageSize = pageSize)
+                } else {
+                    // ★ keep: 検索時 → FTS/LIKE の PagingSource を使う Repository 実装へ委譲
+                    //         （フォルダも掛け合わせたい場合は pagedSearchByFolder(...) を IF に追加する）
+                    repo.pagedSearch(query = q, pageSize = pageSize)
+                }
+            }
+            .cachedIn(viewModelScope)
+    // ★ 再生成時の無駄を抑制
 
     // ─────────── フォルダ一覧 ───────────
     val folders: StateFlow<List<Folder>> =
@@ -195,7 +203,7 @@ class NotesViewModel(
         val note = _editing.value ?: return
         viewModelScope.launch {
             runCatching {
-                val id = repo.upsert(note) // ★ keep
+                val id = repo.upsert(note)
                 if (note.id == 0L && id != 0L) _editing.value = note.copy(id = id)
                 _events.tryEmit(UiEvent.Message("保存しました"))
             }.onFailure { e ->
@@ -204,7 +212,6 @@ class NotesViewModel(
         }
     }
 
-    // ★ keep: 削除→Undo
     fun deleteEditing() {
         val id = _editing.value?.id ?: return
         viewModelScope.launch {
@@ -219,7 +226,6 @@ class NotesViewModel(
         }
     }
 
-    // ★ keep: Undo 実行
     fun undoDelete() {
         val note = lastDeleted ?: return
         lastDeleted = null
@@ -270,7 +276,7 @@ class NotesViewModel(
     fun deleteFolder(id: Long) {
         viewModelScope.launch {
             runCatching {
-                repo.deleteFolder(id) // ★ keep
+                repo.deleteFolder(id)
                 if (filterFolderId.value == id) _filterFolderId.value = null
                 _events.tryEmit(UiEvent.Message("フォルダを削除しました"))
             }.onFailure { e ->
@@ -280,17 +286,12 @@ class NotesViewModel(
     }
 
     /* ===============================
-       ★ Added: データ投入（シード）ヘルパ
-       - Repository の拡張関数 seedIfEmpty(...) を VM 経由で呼び出す薄いラッパ
-       - MainActivity などから「1回だけ」投入したいときに呼ぶ
-       - 既存データがあれば何もしない（重複投入防止は拡張側で実施）
+       ★ keep: データ投入（シード）ヘルパ
        =============================== */
-    // ★ Added: 現状は呼び出し元が未配線のため警告抑制（MainActivity から使うなら外してOK）
     @Suppress("unused")
     fun seedIfEmpty(
         folders: List<String> = listOf("Inbox", "Ideas"),
         notes: List<SeedNote> = listOf(
-            // ★ keep: 例として Welcome ノートを 1 件
             SeedNote(
                 title = "Welcome to BugMemo",
                 content = """
@@ -312,11 +313,9 @@ class NotesViewModel(
             }
         }
     }
-    // ★ Added: ここまで（シードヘルパ）
 
     // ─────────── Factory（DI 最小）──────────
     companion object {
-        // アプリから DB / Settings を引き当てて VM を作る Factory
         fun factory(): ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val app = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as Application

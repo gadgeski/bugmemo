@@ -97,11 +97,16 @@ dependencies {
     // paging 3
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)
+    implementation(libs.androidx.room.paging)
+
+    // LeakCanary
+    debugImplementation(libs.leakcanary.android)
 
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler) // ★ KSP 構成で呼ぶ。版は libs.versions.toml の room に従う
+    ksp(libs.androidx.room.compiler)
+    // ★ KSP 構成で呼ぶ。版は libs.versions.toml の room に従う
 
     // Test
     testImplementation(libs.junit)

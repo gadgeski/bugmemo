@@ -1,18 +1,18 @@
+// app/src/main/java/com/example/bugmemo/data/RoomNotesRepository.kt
 package com.example.bugmemo.data
 
-// 必要なものだけ個別 import（ワイルドカードは避ける）
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
 import com.example.bugmemo.data.db.FolderDao
 import com.example.bugmemo.data.db.FolderEntity
 import com.example.bugmemo.data.db.NoteDao
 import com.example.bugmemo.data.db.NoteEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+// ★ keep: 必要な import のみ
 
-/**
- * NOTE:
- * - このファイルでは Note/Folder/NotesRepository を再宣言しない（重複回避）。
- *   それらは data/Models.kt・data/NotesRepository.kt が“真実の場所”。
- */
 class RoomNotesRepository(
     private val notes: NoteDao,
     private val folders: FolderDao,
@@ -65,32 +65,24 @@ class RoomNotesRepository(
         folders.delete(FolderEntity(id = id, name = ""))
     }
 
-    // ★ Added: NotesRepository に追加した API を実装（DAO の部分更新を使用）
-    override suspend fun setStarred(
-        id: Long,
-        starred: Boolean,
-    ) {
+    // ★ keep: 部分更新
+    override suspend fun setStarred(id: Long, starred: Boolean) {
         val now = System.currentTimeMillis()
         notes.updateStarred(id = id, starred = starred, updatedAt = now)
     }
 
-    // ─────────── ここから “未使用警告” 解消のためのパススルー実装 ───────────
-
-    // ★ Added: 件数の監視／単発取得（UI のバッジや空表示切替で使用）
+    // ─────────── 件数・バルク系（パススルー） ───────────
     override fun observeNoteCount(): Flow<Long> = notes.observeNoteCount()
     override fun observeFolderCount(): Flow<Long> = folders.observeFolderCount()
     override suspend fun countNotes(): Long = notes.countNotes()
     override suspend fun countFolders(): Long = folders.countFolders()
     override suspend fun countNotesInFolder(folderId: Long): Long = notes.countNotesInFolder(folderId)
 
-    // ★ Added: バルク挿入（デバッグシード／インポート機能などで使用）
     override suspend fun insertAllNotes(notes: List<Note>): List<Long> {
         val now = System.currentTimeMillis()
         val entities = notes.map { n ->
-            // createdAt/updatedAt が 0 の場合は now を充当して挿入の一貫性を確保
             NoteEntity(
-                id = n.id,
-                // 0L なら autoGenerate 側に委ねる想定
+                id = n.id, // 0L なら autoGenerate 想定
                 title = n.title,
                 content = n.content,
                 folderId = n.folderId,
@@ -106,6 +98,42 @@ class RoomNotesRepository(
         val entities = folders.map { f -> FolderEntity(id = f.id, name = f.name) }
         return this.folders.insertAll(entities)
     }
+
+    // ─────────── Paging 3（Pager）実装 ───────────
+
+    override fun pagedNotesByFolder(
+        folderId: Long?,
+        pageSize: Int,
+    ): Flow<PagingData<Note>> = Pager(
+        config = PagingConfig(
+            pageSize = pageSize,
+            enablePlaceholders = false,
+            initialLoadSize = pageSize * 2,
+            prefetchDistance = pageSize / 2,
+        ),
+        pagingSourceFactory = {
+            notes.pagingSourceByFolder(folderId)
+            // ★ Changed: DAO の正規名を使用（互換の pagingSource(...) は削除済み想定）
+        },
+    ).flow.map { paging -> paging.map(::toDomain) }
+
+    override fun pagedNotes(pageSize: Int): Flow<PagingData<Note>> = pagedNotesByFolder(folderId = null, pageSize = pageSize)
+    // ★ Fixed: ここで未定義の folderId を渡さない（null を明示）
+
+    override fun pagedSearch(query: String, pageSize: Int): Flow<PagingData<Note>> = Pager(
+        config = PagingConfig(
+            pageSize = pageSize,
+            enablePlaceholders = false,
+            initialLoadSize = pageSize * 2,
+            prefetchDistance = pageSize / 2,
+        ),
+        pagingSourceFactory = {
+            notes.pagingSourceFts(query)
+            // ★ ensure-use: FTS を使うことで NoteDao の "pagingSourceFts is never used" を解消
+            // ★ FTS 未準備なら下の LIKE 版に切替え、DAO の FTS 関数に @Suppress("unused") を付与
+            // return@pagingSourceFactory notes.pagingSourceLike("%$query%")
+        },
+    ).flow.map { paging -> paging.map(::toDomain) }
 
     // ─────────── ヘルパ ───────────
     private fun toDomain(e: NoteEntity) = Note(
