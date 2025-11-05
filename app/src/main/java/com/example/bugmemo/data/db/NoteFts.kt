@@ -14,7 +14,8 @@ import androidx.room.FtsOptions
     contentEntity = NoteEntity::class,
     tokenizer = FtsOptions.TOKENIZER_UNICODE61,
 )
-@Entity(tableName = "notesFts") // ★ 統一: テーブル名は notesFts に統一
+@Entity(tableName = "notesFts")
+// ★ 統一: テーブル名は notesFts に統一
 data class NoteFts(
     val title: String,
     val content: String,

@@ -15,6 +15,7 @@ activityCompose = "1.11.0"
 composeBom = "2025.10.01"
 appcompat = "1.7.1"
 paging = "3.3.6"
+leakcanary = "3.0-alpha-8"
 
 # テスト系
 junit = "4.13.2"
@@ -29,47 +30,52 @@ spotless = "8.0.0"
 
 [libraries]
 # コア
-androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 
 # ── Compose BOM（以下の Compose 群は version 指定なしで BOM に従う） ──
-androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 
 # Compose UI/M3（BOM配下なので version 指定なし）
-androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
-androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
-androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
-androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
-androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
-androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
-androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-ui                 = { module = "androidx.compose.ui:ui" }
+androidx-compose-ui-graphics        = { module = "androidx.compose.ui:ui-graphics" }
+androidx-compose-ui-tooling         = { module = "androidx.compose.ui:ui-tooling" }
+androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+androidx-compose-ui-test-manifest   = { module = "androidx.compose.ui:ui-test-manifest" }
+androidx-compose-ui-test-junit4     = { module = "androidx.compose.ui:ui-test-junit4" }
+androidx-compose-material3          = { module = "androidx.compose.material3:material3" }
+
 # アイコン拡張（BOM に従う）
-androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
+androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 
 # BOM 対象外（個別に版を管理）
-androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
-androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation" }
+androidx-activity-compose          = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+androidx-navigation-compose        = { module = "androidx.navigation:navigation-compose", version.ref = "navigation" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
 
 # Room
-androidx-room-runtime  = { group = "androidx.room", name = "room-runtime",  version.ref = "room" }
-androidx-room-ktx      = { group = "androidx.room", name = "room-ktx",      version.ref = "room" }
-androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-room-runtime  = { module = "androidx.room:room-runtime",   version.ref = "room" }
+androidx-room-ktx      = { module = "androidx.room:room-ktx",       version.ref = "room" }
+androidx-room-compiler = { module = "androidx.room:room-compiler",  version.ref = "room" }
 
 # DataStore
-androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 
 # Appcompat
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
 
-# paging
-androidx-paging-runtime = { group = "androidx.paging", name = "paging-runtime-ktx", version.ref ="paging" }
-androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "paging" }
+# Paging
+androidx-paging-runtime = { module = "androidx.paging:paging-runtime-ktx", version.ref = "paging" }
+androidx-paging-compose = { module = "androidx.paging:paging-compose",     version.ref = "paging" }
+androidx-room-paging    = { module = "androidx.room:room-paging",          version.ref = "room" } # ← 補正
+
+# LeakCanary
+leakcanary-android = { module = "com.squareup.leakcanary:leakcanary-android", version.ref = "leakcanary" }
 
 # テスト
-junit = { group = "junit", name = "junit", version.ref = "junit" }
-androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
-androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+junit                = { module = "junit:junit",                          version.ref = "junit" }
+androidx-junit       = { module = "androidx.test.ext:junit",              version.ref = "junitVersion" }
+androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espressoCore" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

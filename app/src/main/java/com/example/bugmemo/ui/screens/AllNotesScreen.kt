@@ -1,8 +1,9 @@
+// app/src/main/java/com/example/bugmemo/ui/screens/AllNotesScreen.kt
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 package com.example.bugmemo.ui.screens
 
-// ★ Added: 一覧専用の軽量画面（小PR向け）
+// ★ Changed: import を整理（未使用削除・辞書順）
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,11 +15,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,35 +37,43 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.ui.NotesViewModel
+
+// ★ Added: Paging Compose 依存(LazyPagingItems/collectAsLazyPagingItems)
+// import androidx.compose.foundation.lazy.items // ★ Removed: Paging に置換
+// ★ Added: ローディング(androidx.compose.material3.CircularProgressIndicator)
 
 @Composable
 fun AllNotesScreen(
     // ★ keep: Nav から渡す
     onBack: () -> Unit = {},
     onOpenEditor: () -> Unit = {},
-    vm: NotesViewModel = viewModel(),
+    // vm: NotesViewModel = viewModel(), // ★ Removed: 画面内生成は避け、親から受け取る
+    vm: NotesViewModel,
+    // ★ Changed: 親から受け取る（重複 VM 防止）
 ) {
-    val notes by vm.notes.collectAsStateWithLifecycle(initialValue = emptyList())
-    // ★ Added: “スターのみ”の簡易フィルタ（画面ローカル・低リスク）
+    // ★ Changed: Flow<List<Note>> → Flow<PagingData<Note>> を収集
+    val notesPaging: LazyPagingItems<Note> = vm.pagedNotes.collectAsLazyPagingItems()
+
+    // ★ Added: “スターのみ”の簡易フィルタ（画面ローカル）
     var starredOnly by remember { mutableStateOf(false) }
-    val list = if (starredOnly) notes.filter { it.isStarred } else notes
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("All Notes") },
-                // ★ 小PRのため文字列は直書き（必要なら strings に昇格）
+                // ★ 小PRのため直書き
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    // ★ Added: スターのみ表示トグル（軽量な視認性改善）
+                    // ★ Added: スターのみ表示トグル（軽量）
                     FilterChip(
                         selected = starredOnly,
                         onClick = { starredOnly = !starredOnly },
@@ -74,25 +83,67 @@ fun AllNotesScreen(
             )
         },
     ) { inner ->
-        if (list.isEmpty()) {
-            EmptyAllNotesHint(Modifier.padding(inner))
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .padding(inner)
-                    .fillMaxSize(),
-                contentPadding = PaddingValues(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(list, key = { it.id }) { note ->
-                    AllNoteRow(
-                        note = note,
-                        onClick = {
-                            vm.loadNote(note.id)
-                            onOpenEditor()
-                        },
-                        onToggleStar = { vm.toggleStar(note.id, note.isStarred) },
-                    )
+        // ★ Added: 初回ロード／エラー／空表示の分岐
+        when (val state = notesPaging.loadState.refresh) {
+            is LoadState.Loading -> {
+                InitialLoading(modifier = Modifier.padding(inner))
+            }
+            is LoadState.Error -> {
+                EmptyAllNotesHint(
+                    modifier = Modifier.padding(inner),
+                    title = "読み込みに失敗しました",
+                    subtitle = state.error.message ?: "不明なエラー",
+                )
+                // ★ Added: 簡易エラー表示
+            }
+            is LoadState.NotLoading -> {
+                if (notesPaging.itemCount == 0) {
+                    // ★ Changed: 空状態（Paging の件数で判定）
+                    EmptyAllNotesHint(Modifier.padding(inner))
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .padding(inner)
+                            .fillMaxSize(),
+                        contentPadding = PaddingValues(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        // ★ Changed: items(list) → items(count) に置換
+                        items(
+                            count = notesPaging.itemCount,
+                            key = { index ->
+                                val item = notesPaging[index]
+                                item?.id ?: "placeholder-$index"
+                                // ★ Added: null プレースホルダ対応
+                            },
+                        ) { index ->
+                            val note = notesPaging[index]
+                            if (note == null) {
+                                // ★ Added: プレースホルダー（簡易）
+                                PlaceholderRow()
+                            } else {
+                                // ★ Added: 画面ローカルのスター絞り込み
+                                if (!starredOnly || note.isStarred) {
+                                    AllNoteRow(
+                                        note = note,
+                                        onClick = {
+                                            vm.loadNote(note.id)
+                                            onOpenEditor()
+                                        },
+                                        onToggleStar = { vm.toggleStar(note.id, note.isStarred) },
+                                    )
+                                }
+                            }
+                        }
+
+                        // ★ Added: 追加ロードのフッター表示
+                        if (notesPaging.loadState.append is LoadState.Loading) {
+                            item("append-loading") { AppendLoading() }
+                        }
+                        if (notesPaging.loadState.append is LoadState.Error) {
+                            item("append-error") { AppendError() }
+                        }
+                    }
                 }
             }
         }
@@ -142,8 +193,14 @@ private fun AllNoteRow(
     }
 }
 
+/* ▼▼ ここから Empty/Loading/Placeholder ▼▼ */
+
 @Composable
-private fun EmptyAllNotesHint(modifier: Modifier = Modifier) {
+private fun EmptyAllNotesHint(
+    modifier: Modifier = Modifier,
+    title: String = "メモがありません",
+    subtitle: String = "作成したメモがここに一覧表示されます",
+) {
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -154,13 +211,68 @@ private fun EmptyAllNotesHint(modifier: Modifier = Modifier) {
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("メモがありません", style = MaterialTheme.typography.titleMedium)
+            Text(title, style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(4.dp))
             Text(
-                "作成したメモがここに一覧表示されます",
+                subtitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
 }
+
+@Composable
+private fun InitialLoading(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(top = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        CircularProgressIndicator()
+        Spacer(Modifier.height(12.dp))
+        Text("読み込み中…")
+    }
+}
+
+@Composable
+private fun AppendLoading() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        CircularProgressIndicator()
+        Spacer(Modifier.height(8.dp))
+        Text("さらに読み込み中…")
+    }
+}
+
+@Composable
+private fun AppendError() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Text("読み込みに失敗しました")
+    }
+}
+
+@Composable
+private fun PlaceholderRow() {
+    Surface(
+        tonalElevation = 1.dp,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp),
+    ) { /* 簡易プレースホルダー。必要ならスケルトンを追加 */ }
+}
+
+/* ▲▲ ここまで Empty/Loading/Placeholder ▲▲ */

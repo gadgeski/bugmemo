@@ -3,7 +3,7 @@
 
 package com.example.bugmemo.ui.screens
 
-// ★ Changed: import を辞書順に並べ替え（途中にコメントを挟まない：ktlint対応）
+// ★ Changed: import を辞書順に整理（未使用削除）
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -32,6 +31,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
@@ -57,18 +57,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.bugmemo.R
 import com.example.bugmemo.core.FeatureFlags
 import com.example.bugmemo.data.Folder
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.ui.NotesViewModel
 
-// ★ Added: 一覧アイコンを追加(androidx.compose.material.icons.filled.ViewList)
-// ★ Added: 設定アイコン(androidx.compose.material.icons.filled.Settings)
-// ★ Added: 文字列リソース参照(androidx.compose.ui.res.stringResource)
-// ★ Added: R を参照(com.example.bugmemo.R)
-// ★ Added: スクロール用の状態を追加(androidx.compose.foundation.rememberScrollState)
-// ★ Added: 縦スクロール修飾子を追加(androidx.compose.foundation.verticalScroll)
+// ★ Added: Paging のロード状態(androidx.paging.LoadState)
+// ★ Added: ローディング表示(androidx.compose.material3.CircularProgressIndicator)
+// import androidx.compose.foundation.lazy.items // ★ Removed: Paging に置換
 
 /* ★ keep: トップレベル遷移を“必ず”ラムダ経由で実行するための超小さな共通ヘルパ
    - 実際のスタック方針は呼び出し側（AppScaffold/Nav）で実装
@@ -90,7 +90,9 @@ fun BugsScreen(
     // ★ Added: “All Notes（一覧画面）” への遷移フックを追加
     // ★ keep: MindMap への導線（Nav から渡す）
 ) {
-    val notes by vm.notes.collectAsStateWithLifecycle(initialValue = emptyList())
+    // ★ Changed: 一覧は Paging 化（Flow<PagingData<Note>> を収集）
+    val notesPaging: LazyPagingItems<Note> = vm.pagedNotes.collectAsLazyPagingItems()
+
     val folders by vm.folders.collectAsStateWithLifecycle(initialValue = emptyList())
     val editing by vm.editing.collectAsStateWithLifecycle(initialValue = null)
     val filterFolderId by vm.filterFolderId.collectAsStateWithLifecycle(initialValue = null)
@@ -119,7 +121,6 @@ fun BugsScreen(
                             // ★ Added: 小PRのため直書き
                         )
                     }
-
                     // ★ Changed: 画面内ショートカットも共通ヘルパを経由して呼ぶ（ナビ方針を統一）
                     IconButton(onClick = { performTopLevelNav(onOpenSettings) }) {
                         Icon(
@@ -171,33 +172,72 @@ fun BugsScreen(
         ) {
             // 左：一覧
             Box(Modifier.weight(1f)) {
-                if (notes.isEmpty()) {
-                    // ★ keep: 固定文言の空状態表示
-                    EmptyMessage()
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        items(notes, key = { n -> n.id }) { note ->
-                            NoteRow(
-                                note = note,
-                                onClick = {
-                                    vm.loadNote(note.id)
-                                    performTopLevelNav(onOpenEditor)
-                                    // ★ Changed: 行内の遷移もヘルパ経由
-                                },
-                                onToggleStar = { vm.toggleStar(note.id, note.isStarred) },
-                            )
+                // ★ Added: Paging のロード状態に応じて分岐
+                when (val state = notesPaging.loadState.refresh) {
+                    is LoadState.Loading -> {
+                        InitialLoading()
+                    }
+                    is LoadState.Error -> {
+                        EmptyMessage(
+                            // ★ Changed: 簡易エラー表示（既存の EmptyMessage を流用）
+                            title = "読み込みに失敗しました",
+                            subtitle = state.error.message ?: "不明なエラー",
+                        )
+                    }
+                    is LoadState.NotLoading -> {
+                        if (notesPaging.itemCount == 0) {
+                            // ★ Changed: 空状態
+                            EmptyMessage()
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                // ★ Changed: items(list) → items(count) に置換
+                                items(
+                                    count = notesPaging.itemCount,
+                                    key = { index ->
+                                        val item = notesPaging[index]
+                                        item?.id ?: "placeholder-$index"
+                                        // ★ Added: null プレースホルダー対応
+                                    },
+                                ) { index ->
+                                    val note = notesPaging[index]
+                                    if (note == null) {
+                                        ShimmerlessPlaceholderRow()
+                                        // ★ Added: プレースホルダー
+                                    } else {
+                                        NoteRow(
+                                            note = note,
+                                            onClick = {
+                                                vm.loadNote(note.id)
+                                                performTopLevelNav(onOpenEditor)
+                                                // ★ Changed: 行内の遷移もヘルパ経由
+                                            },
+                                            onToggleStar = { vm.toggleStar(note.id, note.isStarred) },
+                                        )
+                                    }
+                                }
+
+                                // ★ Added: 追加ロードのフッター表示
+                                if (notesPaging.loadState.append is LoadState.Loading) {
+                                    item(key = "append-loading") { AppendLoading() }
+                                }
+                                if (notesPaging.loadState.append is LoadState.Error) {
+                                    item(key = "append-error") { AppendError() }
+                                }
+                            }
                         }
                     }
                 }
             }
+
             VerticalDivider(
                 modifier = Modifier.fillMaxHeight(),
                 thickness = 1.dp,
             )
+
             // 右：エディタ
             EditorPane(
                 editing = editing,
@@ -299,7 +339,6 @@ private fun EditorPane(
             modifier = Modifier.fillMaxWidth(),
         )
         HorizontalDivider(thickness = 1.dp)
-
         // フォルダ選択
         Box {
             OutlinedButton(onClick = { setShowFolderMenu(true) }) {
@@ -333,7 +372,6 @@ private fun EditorPane(
                 }
             }
         }
-
         // 保存・削除・フォルダ追加
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(onClick = onSave, enabled = editing != null) { Text("保存") }
@@ -341,7 +379,6 @@ private fun EditorPane(
                 onClick = onDelete,
                 enabled = (editing?.id ?: 0L) != 0L,
             ) { Text("削除") }
-
             var newFolder by remember { mutableStateOf("") }
             OutlinedTextField(
                 value = newFolder,
@@ -362,9 +399,23 @@ private fun EditorPane(
 }
 /* ▲▲ ここまで EditorPane ▲▲ */
 
-/* ▼▼ ここから EmptyMessage（引数なし・固定表示版） ▼▼ */
+/* ▼▼ ここから Empty/Loading 系 ▼▼ */
+
+// ★ Changed: 既存 EmptyMessage を引数なし固定 → 互換のため引数ありオーバーロードを用意
 @Composable
 private fun EmptyMessage() {
+    EmptyMessage(
+        title = stringResource(R.string.empty_no_memo),
+        subtitle = stringResource(R.string.empty_tip_create),
+    )
+}
+
+// ★ Added: 文言を受け取れる版（エラー等でも再利用）
+@Composable
+private fun EmptyMessage(
+    title: String,
+    subtitle: String,
+) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -375,19 +426,72 @@ private fun EmptyMessage() {
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            // ★ Changed: ハードコード → 文字列リソース
-            Text(
-                text = stringResource(R.string.empty_no_memo),
-                style = MaterialTheme.typography.titleMedium,
-            )
-            // ★ Changed: ハードコード → 文字列リソース
+            Text(title, style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(4.dp))
             Text(
-                text = stringResource(R.string.empty_tip_create),
+                subtitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
 }
-/* ▲▲ ここまで EmptyMessage ▲▲ */
+
+// ★ Added: 初回ロード表示（中央にインジケータ）
+@Composable
+private fun InitialLoading() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        CircularProgressIndicator()
+        Spacer(Modifier.height(12.dp))
+        Text("読み込み中…")
+    }
+}
+
+// ★ Added: 追加ロードのフッター表示
+@Composable
+private fun AppendLoading() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        CircularProgressIndicator()
+        Spacer(Modifier.height(8.dp))
+        Text("さらに読み込み中…")
+    }
+}
+
+// ★ Added: 追加ロード失敗の簡易表示（必要なら再試行ボタンを追加）
+@Composable
+private fun AppendError() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Text("読み込みに失敗しました")
+    }
+}
+
+// ★ Added: プレースホルダー行（簡易）
+@Composable
+private fun ShimmerlessPlaceholderRow() {
+    Surface(
+        tonalElevation = 1.dp,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp),
+    ) { /* 簡易なので中身は空。必要なら灰色のボックス等を配置 */ }
+}
+
+/* ▲▲ ここまで Empty/Loading 系 ▲▲ */
