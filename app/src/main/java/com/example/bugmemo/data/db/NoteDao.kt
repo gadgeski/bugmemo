@@ -9,13 +9,14 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
-// ★ keep: 必要な import のみ個別指定
+// ★ keep: 必要な import のみ個別指定（ワイルドカード回避）
 
 // ─────────────────────────────────────────────
 // FolderDao
 // ─────────────────────────────────────────────
 @Dao
 interface FolderDao {
+
     @Query("SELECT * FROM folders ORDER BY name")
     fun observeFolders(): Flow<List<FolderEntity>>
 
@@ -25,15 +26,17 @@ interface FolderDao {
     @Delete
     suspend fun delete(folder: FolderEntity)
 
-    @Suppress("unused") // ★ keep: 将来的なダッシュボード用
+    @Suppress("unused")
+    // ★ keep: 将来的なダッシュボード用
     @Query("SELECT COUNT(*) FROM folders")
     fun observeFolderCount(): Flow<Long>
 
-    @Suppress("unused") // ★ keep: 起動時チェック等
+    @Suppress("unused")
+    // ★ keep: 起動時チェック等
     @Query("SELECT COUNT(*) FROM folders")
     suspend fun countFolders(): Long
 
-    @Suppress("unused") // ★ keep: バルク挿入
+    @Suppress("unused")
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(folders: List<FolderEntity>): List<Long>
 }
@@ -72,10 +75,13 @@ interface NoteDao {
     )
     fun pagingSourceByFolder(folderId: Long?): PagingSource<Int, NoteEntity>
 
-    // ★ Removed: 互換用に残していた別名（未使用のため削除）
+    // ★ Removed: 互換用の別名（未使用）→ 削除して重複を解消
     // fun pagingSource(folderId: Long?): PagingSource<Int, NoteEntity>
 
-    // ★ Changed: FTS 検索の PagingSource
+    // ★ Fixed: FTS 検索の PagingSource
+    // - JOIN 先テーブル名は NoteFts.kt の @Entity(tableName="notesFts") に一致させる
+    // - 外部コンテンツ方式なので ON 句は fts.rowid = n.id（← rowid と content table の INTEGER PRIMARY KEY が一致）
+    // - MATCH はエイリアスではなくテーブル名（notesFts）で書く方が Room/SQLite の解釈で安全
     @Query(
         """
         SELECT n.*
@@ -103,7 +109,8 @@ interface NoteDao {
     @Insert
     suspend fun insert(note: NoteEntity): Long
 
-    @Suppress("unused") // ★ keep: バルク挿入
+    @Suppress("unused")
+    // ★ keep: バルク挿入
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(notes: List<NoteEntity>): List<Long>
 
@@ -121,7 +128,7 @@ interface NoteDao {
         updatedAt: Long,
     )
 
-    @Suppress("unused") // ★ keep: 一覧の空/非空監視等
+    @Suppress("unused")
     @Query("SELECT COUNT(*) FROM notes")
     fun observeNoteCount(): Flow<Long>
 

@@ -10,9 +10,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [NoteEntity::class, FolderEntity::class, NoteFts::class],
-    version = 2,
-    // ★ エンティティに NoteFts を追加
-    // ★ 将来の自動マイグレーション用にスキーマを出力
+    version = 4, // ★ Changed: 3 → 4（FTS 定義を修正：content_rowid=id を追加）
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -20,54 +18,199 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun folderDao(): FolderDao
 
     companion object {
-        // ★ Changed: ktlint(property-naming) 回避 — UPPER_SNAKE から lowerCamel へ
-        @Volatile private var instance: AppDatabase? = null
+        @Volatile
+        private var instance: AppDatabase? = null
 
-        // ★ OK: 既に lowerCamel。命名問題なし
+        // v1 → v2: isStarred 列の追加
         private val migration1to2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // 既存データを壊さないために DEFAULT を付与＆ NOT NULL を維持
                 db.execSQL(
                     """
-                    ALTER TABLE notes 
+                    ALTER TABLE notes
                     ADD COLUMN isStarred INTEGER NOT NULL DEFAULT 0
                     """.trimIndent(),
                 )
             }
         }
 
-        fun get(context: Context): AppDatabase = // ★ Changed: 参照先を INSTANCE → instance に統一
-            instance ?: synchronized(this) {
-                instance ?: Room.databaseBuilder(
-                    context.applicationContext,
-                    AppDatabase::class.java,
-                    "bugmemo.db",
+        // v2 → v3: FTS（notesFts）と補助インデックスを整備
+        // - 既存誤定義に備えて、古い FTS/トリガは DROP → 正しい定義で CREATE
+        // - notes/folders のインデックスを IF NOT EXISTS で明示作成
+        // - REBUILD で既存データを投入
+        private val migration2to3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // --- notes の補助インデックス（Room の検証に合わせる） ---
+                db.execSQL("""CREATE INDEX IF NOT EXISTS index_notes_folderId  ON notes(folderId)""")
+                db.execSQL("""CREATE INDEX IF NOT EXISTS index_notes_updatedAt ON notes(updatedAt)""")
+                db.execSQL("""CREATE INDEX IF NOT EXISTS index_notes_isStarred ON notes(isStarred)""")
+
+                // --- folders テーブル & name インデックスの保険（存在しなければ作る） ---
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS folders(
+                        id   INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        name TEXT NOT NULL
+                    )
+                    """.trimIndent(),
                 )
-                    // ★ keep: リネーム後のマイグレーションを登録
-                    .addMigrations(migration1to2)
-                    // .fallbackToDestructiveMigration() // データ消去になるため原則使わない
-                    .build()
-                    // ★ Changed: 代入先も instance へ
-                    .also { instance = it }
+                db.execSQL("""CREATE INDEX IF NOT EXISTS index_folders_name ON folders(name)""")
+
+                // --- 既存の FTS/トリガを掃除（命名差分も含めて落とす） ---
+                db.execSQL("""DROP TRIGGER IF EXISTS notesFts_BEFORE_UPDATE""")
+                db.execSQL("""DROP TRIGGER IF EXISTS notesFts_BEFORE_DELETE""")
+                db.execSQL("""DROP TRIGGER IF EXISTS notesFts_AFTER_INSERT""")
+                db.execSQL("""DROP TRIGGER IF EXISTS notesFts_AFTER_UPDATE""")
+                db.execSQL("""DROP TRIGGER IF EXISTS notes_ai""")
+                db.execSQL("""DROP TRIGGER IF EXISTS notes_ad""")
+                db.execSQL("""DROP TRIGGER IF EXISTS notes_au""")
+                db.execSQL("""DROP TABLE   IF EXISTS notesFts""") // 再作成のため落とす
+
+                // --- FTS4 外部コンテンツ（UNICODE61, content='notes'） ---
+                db.execSQL(
+                    """
+                    CREATE VIRTUAL TABLE IF NOT EXISTS notesFts
+                    USING fts4(
+                        title,
+                        content,
+                        content='notes',
+                        tokenize=unicode61
+                    )
+                    """.trimIndent(),
+                )
+
+                // --- 同期トリガ（external content は自動生成されない） ---
+                db.execSQL(
+                    """
+                    CREATE TRIGGER IF NOT EXISTS notesFts_BEFORE_UPDATE
+                    BEFORE UPDATE ON notes BEGIN
+                        DELETE FROM notesFts WHERE docid=old.id;
+                    END
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    """
+                    CREATE TRIGGER IF NOT EXISTS notesFts_BEFORE_DELETE
+                    BEFORE DELETE ON notes BEGIN
+                        DELETE FROM notesFts WHERE docid=old.id;
+                    END
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    """
+                    CREATE TRIGGER IF NOT EXISTS notesFts_AFTER_INSERT
+                    AFTER INSERT ON notes BEGIN
+                        INSERT INTO notesFts(docid, title, content)
+                        VALUES (new.id, new.title, new.content);
+                    END
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    """
+                    CREATE TRIGGER IF NOT EXISTS notesFts_AFTER_UPDATE
+                    AFTER UPDATE ON notes BEGIN
+                        INSERT INTO notesFts(docid, title, content)
+                        VALUES (new.id, new.title, new.content);
+                    END
+                    """.trimIndent(),
+                )
+
+                // --- 既存データの反映（外部コンテンツは REBUILD で content テーブルから再構築） ---
+                db.execSQL("""INSERT INTO notesFts(notesFts) VALUES('rebuild')""")
             }
+        }
+
+        // ★ Added: v3 → v4
+        // FTS を Room の期待に合わせて「content_rowid=id」を明示して再作成
+        // 既存端末で v3 を踏んだ DB を安全に修復する
+        private val migration3to4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // --- まず既存の FTS と関連トリガを削除 ---
+                db.execSQL("""DROP TRIGGER IF EXISTS notesFts_BEFORE_UPDATE""")
+                db.execSQL("""DROP TRIGGER IF EXISTS notesFts_BEFORE_DELETE""")
+                db.execSQL("""DROP TRIGGER IF EXISTS notesFts_AFTER_INSERT""")
+                db.execSQL("""DROP TRIGGER IF EXISTS notesFts_AFTER_UPDATE""")
+                db.execSQL("""DROP TABLE   IF EXISTS notesFts""")
+
+                // --- 正しい定義で作成（content_rowid=id を追加） ---
+                db.execSQL(
+                    """
+                    CREATE VIRTUAL TABLE IF NOT EXISTS notesFts
+                    USING fts4(
+                        title,
+                        content,
+                        content='notes',
+                        content_rowid=id,          -- ★ Added: 主キー列を明示（Room の期待に合わせる）
+                        tokenize=unicode61
+                    )
+                    """.trimIndent(),
+                )
+
+                // --- トリガを再作成（docid=old.id / new.id で同期） ---
+                db.execSQL(
+                    """
+                    CREATE TRIGGER IF NOT EXISTS notesFts_BEFORE_UPDATE
+                    BEFORE UPDATE ON notes BEGIN
+                        DELETE FROM notesFts WHERE docid=old.id;
+                    END
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    """
+                    CREATE TRIGGER IF NOT EXISTS notesFts_BEFORE_DELETE
+                    BEFORE DELETE ON notes BEGIN
+                        DELETE FROM notesFts WHERE docid=old.id;
+                    END
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    """
+                    CREATE TRIGGER IF NOT EXISTS notesFts_AFTER_INSERT
+                    AFTER INSERT ON notes BEGIN
+                        INSERT INTO notesFts(docid, title, content)
+                        VALUES (new.id, new.title, new.content);
+                    END
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    """
+                    CREATE TRIGGER IF NOT EXISTS notesFts_AFTER_UPDATE
+                    AFTER UPDATE ON notes BEGIN
+                        INSERT INTO notesFts(docid, title, content)
+                        VALUES (new.id, new.title, new.content);
+                    END
+                    """.trimIndent(),
+                )
+
+                // --- 既存データで再構築（REBUILD） ---
+                db.execSQL("""INSERT INTO notesFts(notesFts) VALUES('rebuild')""")
+            }
+        }
+
+        fun get(context: Context): AppDatabase = instance ?: synchronized(this) {
+            instance ?: Room.databaseBuilder(
+                context.applicationContext,
+                AppDatabase::class.java,
+                "bugmemo.db",
+            )
+                .addMigrations(
+                    migration1to2,
+                    migration2to3,
+                    migration3to4, // ★ Added: v3→v4 を登録
+                )
+                // .fallbackToDestructiveMigration() // 原則オフ（データ消去のため）
+                .build()
+                .also { instance = it }
+        }
     }
 }
 
 /* ─────────────────────────────────────────────────────────────
-   参考：次の変更に備えるテンプレ
-   v2 → v3 で列名変更やテーブル追加をしたい場合の雛形
-───────────────────────────────────────────────────────────── */
-// private val migration2to3 = object : Migration(2, 3) {
-//     override fun migrate(db: SupportSQLiteDatabase) {
-//         // 例：新テーブルを追加
-//         // db.execSQL("CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT NOT NULL)")
-//
-//         // 例：列名変更は “新テーブル作成 → データコピー → 旧テーブル削除 → リネーム” が安全
-//         // db.execSQL("CREATE TABLE notes_new ( ... )")
-//         // db.execSQL("INSERT INTO notes_new (id, title, content, folderId, createdAt, updatedAt, isStarred)
-//         //             SELECT id, title, content, folderId, createdAt, updatedAt, isStarred FROM notes")
-//         // db.execSQL("DROP TABLE notes")
-//         // db.execSQL("ALTER TABLE notes_new RENAME TO notes")
-//     }
-// }
-// .addMigrations(migration1to2, migration2to3)
+   動作確認メモ:
+   - 起動直後に "Migration didn't properly handle: notesFts(...)" が消えること
+   - Database Inspector:
+       PRAGMA index_list('notes');
+       PRAGMA index_list('folders');
+       SELECT count(*) FROM notesFts;
+   - 既存端末（v3 適用済み）では v3→v4 が実行され、FTS の content_rowid=id が反映される
+   - 新規インストール（v4 直作成）でも FTS とトリガが揃う
+──────────────────────────────────────────────────────────── */

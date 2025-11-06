@@ -1,7 +1,7 @@
 // app/build.gradle.kts — フル版（Lint最小 + Roomスキーマ出力/読込 + BuildConfig 生成を明示）
 plugins {
-    alias(libs.plugins.android.application) // OK
-    alias(libs.plugins.kotlin.android) // OK
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose) // OK（Compose Compiler DSL）
     alias(libs.plugins.ksp) // OK（Room の KSP）
     // ★ 重複なし：先頭で二重に同じ alias を適用しないこと
