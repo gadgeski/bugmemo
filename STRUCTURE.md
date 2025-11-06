@@ -8,7 +8,9 @@ bugmemo/
 │   ├── proguard-rules.pro
 │   ├── schemas
 │   │   └── com.example.bugmemo.data.db.AppDatabase
-│   │       └── 2.json
+│   │       ├── 2.json
+│   │       ├── 3.json
+│   │       └── 4.json
 │   └── src
 │       ├── androidTest
 │       │   └── java
@@ -38,8 +40,8 @@ bugmemo/
 │       │   │               │   ├── RoomNotesRepository.kt
 │       │   │               │   ├── db
 │       │   │               │   │   ├── AppDatabase.kt
-│       │   │               │   │   ├── Entities.kt
 │       │   │               │   │   ├── NoteDao.kt
+│       │   │               │   │   ├── NoteEntity.kt
 │       │   │               │   │   └── NoteFts.kt
 │       │   │               │   └── prefs
 │       │   │               │       └── SettingsRepository.kt
@@ -124,5 +126,5 @@ bugmemo/
 ├── local.properties
 └── settings.gradle.kts
 
-48 directories, 76 files
+48 directories, 78 files
 ```
