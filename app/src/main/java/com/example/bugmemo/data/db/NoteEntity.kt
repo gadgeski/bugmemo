@@ -1,4 +1,4 @@
-// app/src/main/java/com/example/bugmemo/data/db/Entities.kt
+// app/src/main/java/com/example/bugmemo/data/db/NoteEntity.kt
 package com.example.bugmemo.data.db
 
 // 必要最小の import のみ（ワイルドカード・重複なし）

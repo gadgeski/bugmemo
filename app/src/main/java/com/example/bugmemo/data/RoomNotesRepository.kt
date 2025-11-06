@@ -65,7 +65,6 @@ class RoomNotesRepository(
         folders.delete(FolderEntity(id = id, name = ""))
     }
 
-    // ★ keep: 部分更新
     override suspend fun setStarred(id: Long, starred: Boolean) {
         val now = System.currentTimeMillis()
         notes.updateStarred(id = id, starred = starred, updatedAt = now)
