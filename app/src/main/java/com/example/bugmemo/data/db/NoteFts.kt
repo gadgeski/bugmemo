@@ -5,9 +5,9 @@ import androidx.room.Entity
 import androidx.room.Fts4
 import androidx.room.FtsOptions
 
-// ★ FTS は Fts3/Fts4 を使用（Room に Fts5 は無い/androidx.room.Entity）
+// ★ FTS は Fts3/Fts4 を使用（Room に Fts5 はネイティブサポート未対応/androidx.room.Entity）
 // ★ UNICODE61 を使うため/androidx.room.FtsOptions
-// ★ Fixed: @Fts5 → @Fts4 に変更
+// ★ Fixed: @Fts5 → @Fts4 に変更/利便性が高い
 // ★ Added: tokenizer = UNICODE61 を指定（日本語・記号の扱いを改善）
 // ★ contentEntity=NoteEntity で外部コンテンツ方式（トリガは Room が自動生成）
 
