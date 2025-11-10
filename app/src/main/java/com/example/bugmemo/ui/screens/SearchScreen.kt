@@ -46,7 +46,6 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.ui.NotesViewModel
-
 // ★ Removed: 画面内での viewModel() 生成は廃止（親から渡されるため）
 // import androidx.lifecycle.viewmodel.compose.viewModel
 // ★ Added: Bugs へ戻るショートカット(androidx.compose.material.icons.automirrored.filled.List)
@@ -76,10 +75,10 @@ fun SearchScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Search") },
-                // TODO: 必要なら strings.xml にリソース化可能
+                // ★ Changed: タイトルは空に（ラベルは本文の Row 側に移動）
+                title = { /* no title here */ },
                 actions = {
-                    // ★ Added: Bugs へ戻るショートカット（Nav 側の共通ヘルパでトップレベル遷移）
+                    // ★ keep: Bugs へ戻るショートカット（Nav 側の共通ヘルパでトップレベル遷移）
                     IconButton(onClick = onOpenNotes) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.List,
@@ -87,33 +86,7 @@ fun SearchScreen(
                             // TODO: リソース化可能
                         )
                     }
-                    // 検索フィールド（シンプル版）
-                    OutlinedTextField(
-                        value = query,
-                        onValueChange = { vm.setQuery(it) },
-                        singleLine = true,
-                        placeholder = { Text("キーワードを入力") },
-                        // TODO: リソース化可能
-                        leadingIcon = {
-                            Icon(Icons.Filled.Search, contentDescription = "Search")
-                            // TODO: リソース化可能
-                        },
-                        trailingIcon = {
-                            if (query.isNotEmpty()) {
-                                IconButton(onClick = { vm.setQuery("") }) {
-                                    Icon(Icons.Filled.Clear, contentDescription = "Clear")
-                                    // TODO: リソース化可能
-                                }
-                            }
-                        },
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(
-                            onSearch = { /* VM 側の Flow により自動反映 */ },
-                        ),
-                        modifier = Modifier
-                            .padding(end = 8.dp)
-                            .width(280.dp),
-                    )
+                    // ★ Removed: OutlinedTextField を TopAppBar(actions) から撤去
                 },
             )
         },
@@ -123,6 +96,50 @@ fun SearchScreen(
                 .padding(inner)
                 .fillMaxSize(),
         ) {
+            // ─────────────────────────────────────────────
+            // ★ Added: 「Search」ラベル＋検索ボックスを同じ行（Row）に配置
+            //    - Text は 1 行固定 + Ellipsis
+            //    - TextField は weight(1f) で残り幅を占有（固定 280dp を撤去）
+            // ─────────────────────────────────────────────
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Search",
+                    // TODO: 必要なら strings.xml にリソース化
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { vm.setQuery(it) },
+                    singleLine = true,
+                    placeholder = { Text("キーワードを入力") }, // TODO: リソース化可能
+                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
+                    trailingIcon = {
+                        if (query.isNotEmpty()) {
+                            IconButton(onClick = { vm.setQuery("") }) {
+                                Icon(Icons.Filled.Clear, contentDescription = "Clear")
+                            }
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(
+                        onSearch = { /* VM 側の Flow により自動反映 */ },
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        // ★ Added: 横幅は残りすべてを使用
+                        .height(56.dp),
+                    // ★ Added: 見た目の安定化
+                )
+            }
+
             // ★ Changed: 未入力時は Paging リストを描画せずヒント表示
             if (query.isBlank()) {
                 EmptyHint(
@@ -186,7 +203,6 @@ fun SearchScreen(
                                     )
                                 }
                             }
-
                             // ★ Added: 追加ロード中のフッター
                             if (results.loadState.append is LoadState.Loading) {
                                 item(key = "append-loading") {
