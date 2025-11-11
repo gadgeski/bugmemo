@@ -46,11 +46,10 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.ui.NotesViewModel
+import com.example.bugmemo.ui.common.MarkdownText // ★ keep: 本文を太字解釈するため
+
 // ★ Removed: 画面内での viewModel() 生成は廃止（親から渡されるため）
 // import androidx.lifecycle.viewmodel.compose.viewModel
-// ★ Added: Bugs へ戻るショートカット(androidx.compose.material.icons.automirrored.filled.List)
-// ★ Added: Paging のロード状態(androidx.paging.LoadState)
-// ★ Added: ローディング表示(androidx.compose.material3.CircularProgressIndicator)
 // import androidx.compose.foundation.lazy.items // ★ Removed: Paging 置換のため未使用
 
 /**
@@ -83,7 +82,6 @@ fun SearchScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.List,
                             contentDescription = "Bugs",
-                            // TODO: リソース化可能
                         )
                     }
                     // ★ Removed: OutlinedTextField を TopAppBar(actions) から撤去
@@ -108,11 +106,11 @@ fun SearchScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Search",
+                    text = "Search", // ★ Changed: ラベルは Markdown 解釈不要なので Text に戻す
                     // TODO: 必要なら strings.xml にリソース化
                     style = MaterialTheme.typography.titleLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1, // ★ Added
+                    overflow = TextOverflow.Ellipsis, // ★ Added
                     modifier = Modifier.padding(end = 12.dp),
                 )
                 OutlinedTextField(
@@ -133,10 +131,8 @@ fun SearchScreen(
                         onSearch = { /* VM 側の Flow により自動反映 */ },
                     ),
                     modifier = Modifier
-                        .weight(1f)
-                        // ★ Added: 横幅は残りすべてを使用
-                        .height(56.dp),
-                    // ★ Added: 見た目の安定化
+                        .weight(1f) // ★ Added: 横幅は残りすべてを使用
+                        .height(56.dp), // ★ Added: 見た目の安定化
                 )
             }
 
@@ -248,8 +244,9 @@ private fun ResultRow(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(4.dp))
-                Text(
-                    text = note.content,
+                // ★ Changed: 本文は MarkdownText で **bold** / __bold__ を太字表示
+                MarkdownText(
+                    text = note.content, // ★ Changed
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
