@@ -29,6 +29,11 @@
 <sub>ホーム</sub>
 </td>
 <td align="center">
+<img src="docs/img/BugMemo-Search.png" alt="検索" width="300">
+<br>
+<sub>検索</sub>
+</td>
+<td align="center">
 <img src="docs/img/BugMemo-Mindmap.png" alt="マインドマップ" width="300">
 <br>
 <sub>マインドマップ</sub>
