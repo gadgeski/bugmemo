@@ -19,6 +19,12 @@
 - Search: クエリ入力でリアルタイム検索、結果から編集へ
 - Folders: フォルダ一覧・作成・削除、選択で絞り込み
 
+## アプリ画面
+
+<img src="docs/img/BugMemo-Home.png" alt="ホーム" width="500">
+<img src="docs/img/BugMemo-Mindmap.png" alt="マインドマップ" width="500">
+<img src="docs/img/BugMemo_Setting.png" alt="設定" width="500">
+
 ## 技術スタック
 
 - Kotlin / Coroutines / Flow
@@ -108,9 +114,11 @@ GitHub Actions で以下をチェックします。
 - baseline 未コミットによる Lint 失敗
 
 ## より理解度を深める為に/アーキテクチャについて
+
 - docs/app_scaffold.md
 - docs/nav.md
 - settingsscreen + appLocalemanager.md
 
 ## より理解度を深める為に/アルゴリズムについて
+
 - algorithms.md
