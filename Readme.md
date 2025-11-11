@@ -21,9 +21,25 @@
 
 ## アプリ画面
 
-<img src="docs/img/BugMemo-Home.png" alt="ホーム" width="500">
-<img src="docs/img/BugMemo-Mindmap.png" alt="マインドマップ" width="500">
-<img src="docs/img/BugMemo_Setting.png" alt="設定" width="500">
+<table>
+<tr>
+<td align="center">
+<img src="docs/img/BugMemo-Home.png" alt="ホーム" width="300">
+<br>
+<sub>ホーム</sub>
+</td>
+<td align="center">
+<img src="docs/img/BugMemo-Mindmap.png" alt="マインドマップ" width="300">
+<br>
+<sub>マインドマップ</sub>
+</td>
+<td align="center">
+<img src="docs/img/BugMemo_Setting.png" alt="設定" width="300">
+<br>
+<sub>設定</sub>
+</td>
+</tr>
+</table>
 
 ## 技術スタック
 
