@@ -48,6 +48,10 @@ bugmemo/
 │       │   │               └── ui
 │       │   │                   ├── AppScaffold.kt
 │       │   │                   ├── NotesViewModel.kt
+│       │   │                   ├── common
+│       │   │                   │   ├── MarkdownBoldVisual.kt
+│       │   │                   │   ├── MarkdownEditUtils.kt
+│       │   │                   │   └── MarkdownText.kt
 │       │   │                   ├── components
 │       │   │                   │   └── Common.kt
 │       │   │                   ├── mindmap
@@ -110,11 +114,17 @@ bugmemo/
 │                           └── ExampleUnitTest.kt
 ├── build.gradle.kts
 ├── docs
-│   └── architecture
-│       ├── algorithms.md
-│       ├── app_scaffold.md
-│       ├── nav.md
-│       └── settingsscreen + appLocalemanager.md
+│   ├── architecture
+│   │   ├── algorithms.md
+│   │   ├── app_scaffold.md
+│   │   ├── nav.md
+│   │   ├── overview.md
+│   │   └── settingsscreen + appLocalemanager.md
+│   └── img
+│       ├── BugMemo-Home.png
+│       ├── BugMemo-Mindmap.png
+│       ├── BugMemo-Search.png
+│       └── BugMemo_Setting.png
 ├── gradle
 │   ├── libs.versions.toml
 │   └── wrapper
@@ -126,5 +136,5 @@ bugmemo/
 ├── local.properties
 └── settings.gradle.kts
 
-48 directories, 78 files
+50 directories, 86 files
 ```
