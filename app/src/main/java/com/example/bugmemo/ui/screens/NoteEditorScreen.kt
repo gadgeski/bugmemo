@@ -39,7 +39,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.bugmemo.R
 import com.example.bugmemo.core.AppLocaleManager
 import com.example.bugmemo.ui.NotesViewModel
+import com.example.bugmemo.ui.common.MarkdownBoldVisualTransformation
 
+// ★ Added: 視覚太字用のVTを追加インポート
 // ★ Added: 太字トグル用アイコン(androidx.compose.material.icons.filled.FormatBold)
 // ★ Added: TextFieldValue のローカル状態(androidx.compose.runtime.mutableStateOf)
 // ★ Added: DataStore購読に必要(androidx.compose.ui.platform.LocalContext)
@@ -58,7 +60,6 @@ fun NoteEditorScreen(
     onBack: () -> Unit = {},
 ) {
     val editing by vm.editing.collectAsStateWithLifecycle(initialValue = null)
-
     // ★ keep: 編集対象が準備できるまで入力や保存を無効化
     val enabled = editing != null
 
@@ -66,10 +67,8 @@ fun NoteEditorScreen(
     // ★ Added: フォントスケール（DataStore）を購読
     // ----------------------------------------
     val context = LocalContext.current
-    // ★ Added
     val fontScale by AppLocaleManager.editorFontScaleFlow(context)
         .collectAsStateWithLifecycle(initialValue = 1.0f)
-    // ★ Added
 
     // ----------------------------------------
     // ★ Added: 本文フィールドは選択範囲操作が必要なため TextFieldValue をローカルで保持
@@ -113,49 +112,59 @@ fun NoteEditorScreen(
                     // ----------------------------------------
                     IconButton(
                         onClick = {
-                            val value = contentField
-                            val text = value.text
-                            val sel = value.selection
-
+                            // ★ Removed: val value = contentField（未使用代入を削除）
+                            // ★ Changed: contentField から直接取得し、無駄代入を削減（Assigned value... を回避）
+                            val text = contentField.text
+                            val sel = contentField.selection
                             // 何も編集中でなければ無視
                             if (!enabled) return@IconButton
 
-                            val newValue: TextFieldValue = if (!sel.collapsed) {
-                                // 選択あり：包む or 外す
-                                val selected = text.substring(sel.start, sel.end)
-                                if (selected.startsWith("**") && selected.endsWith("**") && selected.length >= 4) {
-                                    // ★ Added: すでに **…** を含む範囲を選択 → アンラップ
-                                    val inner = selected.removePrefix("**").removeSuffix("**")
-                                    val newText = text.substring(0, sel.start) + inner + text.substring(sel.end)
-                                    val newCursor = sel.start + inner.length
-                                    TextFieldValue(
-                                        text = newText,
-                                        selection = TextRange(newCursor, newCursor),
-                                    )
+                            val newValue: TextFieldValue =
+                                if (!sel.collapsed) {
+                                    // 選択あり：包む or 外す
+                                    val selected = text.substring(sel.start, sel.end)
+                                    // 範囲は substring でOK
+                                    if (selected.startsWith("**") && selected.endsWith("**") && selected.length >= 4) {
+                                        // ★ Added: すでに **…** を含む範囲を選択 → アンラップ
+                                        val inner = selected.removePrefix("**").removeSuffix("**")
+                                        val newText =
+                                            // ★ Changed: substring(0, sel.start) → take(sel.start)
+                                            // ★ Changed: substring(sel.end)       → drop(sel.end)
+                                            text.take(sel.start) + inner + text.drop(sel.end)
+                                        val newCursor = sel.start + inner.length
+                                        TextFieldValue(
+                                            text = newText,
+                                            selection = TextRange(newCursor, newCursor),
+                                        )
+                                    } else {
+                                        // ★ Added: **…** で囲む
+                                        val newText =
+                                            // ★ Changed: 左右の substring を take/drop に置換
+                                            text.take(sel.start) + "**" + selected + "**" + text.drop(sel.end)
+                                        val newCursor = sel.end + 4
+                                        // 囲ったあとの末尾へ
+                                        TextFieldValue(
+                                            text = newText,
+                                            selection = TextRange(newCursor, newCursor),
+                                        )
+                                    }
                                 } else {
-                                    // ★ Added: **…** で囲む
-                                    val newText = text.substring(0, sel.start) + "**" + selected + "**" + text.substring(sel.end)
-                                    val newCursor = sel.end + 4
-                                    // 囲ったあとの末尾へ
+                                    // 選択なし：**** を挿入してキャレットを中央へ
+                                    val insertPos = sel.start
+                                    val newText =
+                                        // ★ Changed: substring(0, insertPos) / substring(insertPos) → take/drop
+                                        text.take(insertPos) + "****" + text.drop(insertPos)
+                                    val caret = insertPos + 2
+                                    // "**|**" の中央へ
                                     TextFieldValue(
                                         text = newText,
-                                        selection = TextRange(newCursor, newCursor),
+                                        selection = TextRange(caret, caret),
                                     )
                                 }
-                            } else {
-                                // 選択なし：**** を挿入してキャレットを中央へ
-                                val insertPos = sel.start
-                                val newText = text.substring(0, insertPos) + "****" + text.substring(insertPos)
-                                val caret = insertPos + 2 // "**|**" の中央へ
-                                TextFieldValue(
-                                    text = newText,
-                                    selection = TextRange(caret, caret),
-                                )
-                            }
 
                             contentField = newValue
-                            vm.setEditingContent(newValue.text)
-                            // ★ Added: VM へ反映
+                            vm.setEditingContent(contentField.text)
+                            // ★ 代入直後の値を参照し警告を解消
                         },
                     ) {
                         Icon(
@@ -226,6 +235,10 @@ fun NoteEditorScreen(
                 // ★ Added: フォントスケール適用（本文は bodyLarge ベース）
                 textStyle = MaterialTheme.typography.bodyLarge.copy(
                     fontSize = MaterialTheme.typography.bodyLarge.fontSize * fontScale,
+                ),
+                visualTransformation = MarkdownBoldVisualTransformation(
+                    // ★ Added: 見た目だけ太字
+                    hideMarkers = false, // ★ keep: まずは記号を表示したまま太字化（安全）
                 ),
             )
         }
