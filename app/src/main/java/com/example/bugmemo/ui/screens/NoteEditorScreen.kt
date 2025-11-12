@@ -238,7 +238,9 @@ fun NoteEditorScreen(
                 ),
                 visualTransformation = MarkdownBoldVisualTransformation(
                     // ★ Added: 見た目だけ太字
-                    hideMarkers = false, // ★ keep: まずは記号を表示したまま太字化（安全）
+                    hideMarkers = true,
+                    // ★ false → true　へ変更
+                    // ★ keep: まずは記号を表示したまま太字化（安全）
                 ),
             )
         }
