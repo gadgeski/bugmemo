@@ -383,7 +383,7 @@ private fun EditorPane(
             OutlinedTextField(
                 value = newFolder,
                 onValueChange = { text -> newFolder = text },
-                label = { Text("新規フォルダ名") },
+                label = { Text("新規フォルダ") },
                 singleLine = true,
                 modifier = Modifier.weight(1f),
             )
