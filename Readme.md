@@ -43,6 +43,11 @@
 <br>
 <sub>設定</sub>
 </td>
+<td align="center">
+<img src="docs/img/Bug Memo-FontBold.png" alt="太文字化" width="300">
+<br>
+<sub>選択した文字を太文字化</sub>
+</td>
 </tr>
 </table>
 
