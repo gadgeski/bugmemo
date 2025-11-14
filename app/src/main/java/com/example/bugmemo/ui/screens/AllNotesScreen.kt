@@ -116,7 +116,7 @@ fun AllNotesScreen(
                             key = { index ->
                                 val item = notesPaging[index]
                                 item?.id ?: "placeholder-$index"
-                                  // ★ keep: null プレースホルダ対応
+                                // ★ keep: null プレースホルダ対応
                             },
                         ) { index ->
                             val note = notesPaging[index]
