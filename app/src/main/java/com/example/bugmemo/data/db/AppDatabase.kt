@@ -10,7 +10,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [NoteEntity::class, FolderEntity::class, NoteFts::class],
-    version = 4, // ★ Changed: 3 → 4（FTS 定義を修正：content_rowid=id を追加）
+    version = 4,
+    // ★ Changed: 3 → 4（FTS 定義を修正：content_rowid=id を追加）
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -63,7 +64,8 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("""DROP TRIGGER IF EXISTS notes_ai""")
                 db.execSQL("""DROP TRIGGER IF EXISTS notes_ad""")
                 db.execSQL("""DROP TRIGGER IF EXISTS notes_au""")
-                db.execSQL("""DROP TABLE   IF EXISTS notesFts""") // 再作成のため落とす
+                db.execSQL("""DROP TABLE   IF EXISTS notesFts""")
+                // 再作成のため落とす
 
                 // --- FTS4 外部コンテンツ（UNICODE61, content='notes'） ---
                 db.execSQL(
@@ -195,7 +197,8 @@ abstract class AppDatabase : RoomDatabase() {
                 .addMigrations(
                     migration1to2,
                     migration2to3,
-                    migration3to4, // ★ Added: v3→v4 を登録
+                    migration3to4,
+                    // ★ Added: v3→v4 を登録
                 )
                 // .fallbackToDestructiveMigration() // 原則オフ（データ消去のため）
                 .build()

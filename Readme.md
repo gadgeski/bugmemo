@@ -50,6 +50,7 @@
 
 - Kotlin / Coroutines / Flow
 - Jetpack Compose (Material 3, Navigation, Lifecycle)
+- Paging 3 / Paging Compose(Room + PagingData + LazyPagingItems によるページング一覧表示)
 - Room (DAO / Migration)
 - DataStore (Preferences)
 - Unit Test（JUnit4）

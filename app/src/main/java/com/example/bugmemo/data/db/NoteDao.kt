@@ -94,7 +94,8 @@ interface NoteDao {
     fun pagingSourceFts(query: String): PagingSource<Int, NoteEntity>
 
     // ★ keep: LIKE 検索フォールバック（FTS 未準備時に Repository 側オプションで使用）
-    @Suppress("unused") // ★ keep: 使うまで警告抑制（Repository で切替えたら外す）
+    @Suppress("unused")
+    // ★ keep: 使うまで警告抑制（Repository で切替えたら外す）
     @Query(
         """
         SELECT * FROM notes
@@ -132,11 +133,11 @@ interface NoteDao {
     @Query("SELECT COUNT(*) FROM notes")
     fun observeNoteCount(): Flow<Long>
 
-    @Suppress("unused") // ★ keep
+    @Suppress("unused")
     @Query("SELECT COUNT(*) FROM notes")
     suspend fun countNotes(): Long
 
-    @Suppress("unused") // ★ keep
+    @Suppress("unused")
     @Query("SELECT COUNT(*) FROM notes WHERE folderId = :folderId")
     suspend fun countNotesInFolder(folderId: Long): Long
 }

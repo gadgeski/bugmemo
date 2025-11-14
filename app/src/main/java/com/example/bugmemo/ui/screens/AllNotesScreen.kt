@@ -50,7 +50,8 @@ fun AllNotesScreen(
     onBack: () -> Unit = {},
     onOpenEditor: () -> Unit = {},
     // vm: NotesViewModel = viewModel(), // ★ Removed: 画面内生成は避け、親から受け取る
-    vm: NotesViewModel, // ★ keep: 親から受け取る（重複 VM 防止）
+    vm: NotesViewModel,
+    // ★ keep: 親から受け取る（重複 VM 防止）
 ) {
     // ★ keep: Flow<PagingData<Note>> を収集
     val notesPaging: LazyPagingItems<Note> = vm.pagedNotes.collectAsLazyPagingItems()
@@ -114,7 +115,8 @@ fun AllNotesScreen(
                             count = notesPaging.itemCount,
                             key = { index ->
                                 val item = notesPaging[index]
-                                item?.id ?: "placeholder-$index" // ★ keep: null プレースホルダ対応
+                                item?.id ?: "placeholder-$index"
+                                  // ★ keep: null プレースホルダ対応
                             },
                         ) { index ->
                             val note = notesPaging[index]
