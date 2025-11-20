@@ -4,15 +4,15 @@
 # - Spotless 8.0.0 を plugins に追加（今後 root/build.gradle.kts 等で使えるように）
 
 [versions]
-agp = "8.13.0"
+agp = "8.13.1"
 kotlin = "2.2.21"
 # compose-material-icons = "1.7.8"                     # （BOM配下のため不要）
 coreKtx = "1.17.0"
-datastore = "1.1.7"
+datastore = "1.2.0"
 room = "2.8.3"               # KSP とは別（Room 本体のバージョン）
 lifecycle = "2.9.4"
 activityCompose = "1.11.0"
-composeBom = "2025.10.01"
+composeBom = "2025.11.00"
 appcompat = "1.7.1"
 paging = "3.3.6"
 leakcanary = "3.0-alpha-8"
@@ -23,10 +23,10 @@ junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 
 # BOM 対象外
-navigation = "2.9.5"
+navigation = "2.9.6"
 
 # ★ Added: Spotless（Gradle plugin）
-spotless = "8.0.0"
+spotless = "8.1.0"
 
 [libraries]
 # コア
