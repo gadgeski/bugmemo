@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -22,6 +23,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -29,19 +33,18 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.bugmemo.ui.navigation.AppNavHost
 import com.example.bugmemo.ui.navigation.Routes
+import com.example.bugmemo.ui.theme.IceCyan
+import com.example.bugmemo.ui.theme.IceDeepNavy
+import com.example.bugmemo.ui.theme.IceGlassSurface
+import com.example.bugmemo.ui.theme.IceSilver
 import kotlinx.coroutines.flow.collectLatest
-
-// ★ Added: トップレベル遷移のために startDestination を取得する拡張を import(androidx.navigation.NavGraph.Companion.findStartDestination)
-// ★ Changed: 表示/非表示判定でも使うために hierarchy を活用(androidx.navigation.NavDestination.Companion.hierarchy)
 
 @Composable
 fun AppScaffold(
-    // ★ keep: 呼び出し側で生成した VM を受け取る
     vm: NotesViewModel,
 ) {
     val navController = rememberNavController()
 
-    // ★ Changed: currentRoute 文字列比較 → Destination + hierarchy 判定に切替
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
 
@@ -70,9 +73,14 @@ fun AppScaffold(
         }
     }
 
-    // ★ keep: BottomNav に載せるトップレベル3画面
+    // ★ Changed: BottomNavの並び順を変更
+    // "Notes" (All Notes) をホームとして一番左に配置
     val navItems = listOf(
+        NavItem("Notes", Routes.ALL_NOTES) {
+            Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Notes")
+        },
         NavItem("Bugs", Routes.BUGS) {
+            // 必要であれば別のアイコン(BugReportなど)に変更も可
             Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Bugs")
         },
         NavItem("Search", Routes.SEARCH) {
@@ -81,13 +89,8 @@ fun AppScaffold(
         NavItem("Folders", Routes.FOLDERS) {
             Icon(Icons.Filled.Folder, contentDescription = "Folders")
         },
-        // ★ Added: Notes タブ（All Notes）
-        NavItem("Notes", Routes.ALL_NOTES) {
-            Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Notes")
-        },
     )
 
-    // ★ Added: BottomNav 表示対象のルート集合（Routes に同様の set があるならそれを参照してもOK）
     val bottomBarRoutes = setOf(
         Routes.BUGS,
         Routes.SEARCH,
@@ -95,14 +98,9 @@ fun AppScaffold(
         Routes.ALL_NOTES,
     )
 
-    // ★ Added: 現在の Destination が BottomNav 対象かどうかを階層で判定
     val showBottomBar = shouldShowBottomBar(currentDestination, bottomBarRoutes)
 
-    // ─────────────────────────────────────────────────────────────
-    // ★ Added: トップレベル画面間の“共通ナビゲーション”ヘルパ
-    //   - launchSingleTop: 二重積み上げ防止
-    //   - restoreState   : 以前の状態（スクロール等）復元
-    //   - popUpTo(start) : トップレベル間の重複スタック化を防止（saveState で戻れる）
+    // トップレベル画面間の“共通ナビゲーション”ヘルパ
     fun navigateTopLevel(route: String) {
         navController.navigate(route) {
             launchSingleTop = true
@@ -112,43 +110,47 @@ fun AppScaffold(
             }
         }
     }
-    // ─────────────────────────────────────────────────────────────
 
     Scaffold(
+        containerColor = Color.Transparent,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            // ★ Added: 表示/非表示をここで切り替え（EDITOR/SETTINGS/MINDMAP では非表示）
             if (showBottomBar) {
-                NavigationBar {
+                NavigationBar(
+                    containerColor = IceDeepNavy,
+                    contentColor = IceSilver,
+                    tonalElevation = 0.dp,
+                ) {
                     navItems.forEach { item ->
-                        // ★ Changed: Bugs タブは BUGS/ALL_NOTES の両方で選択扱いにする
-                        val selected =
-                            if (item.route == Routes.BUGS) {
-                                // ★ Added: ALL_NOTES も同一グループとして扱う
-                                currentDestination?.hierarchy?.any {
-                                    it.route == Routes.BUGS || it.route == Routes.ALL_NOTES
-                                } == true
-                            } else {
-                                // ★ keep: それ以外は従来どおり route 一致で判定
-                                currentDestination?.hierarchy?.any { it.route == item.route } == true
-                            }
+                        // ★ Changed: シンプルな判定ロジックに変更
+                        // タブが独立したため、現在地とルートが一致しているかだけで判定する
+                        val selected = currentDestination?.hierarchy?.any { it.route == item.route } == true
 
                         NavigationBarItem(
                             selected = selected,
                             onClick = {
-                                // ★ keep: 直接 navigate を書かず共通ヘルパを使用
                                 if (!selected) navigateTopLevel(item.route)
                             },
                             icon = { item.icon() },
-                            label = { Text(item.label) },
+                            label = {
+                                Text(
+                                    item.label,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                )
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = IceCyan,
+                                selectedTextColor = IceCyan,
+                                indicatorColor = IceGlassSurface,
+                                unselectedIconColor = IceSilver,
+                                unselectedTextColor = IceSilver,
+                            ),
                         )
                     }
                 }
             }
         },
-        // ★ Added: bottomBar 引数の後ろにトレーリングカンマを追加（マルチライン呼び出し推奨）
     ) { innerPadding ->
-        // ★ keep: imePadding でキーボード重なりを回避
         AppNavHost(
             navController = navController,
             vm = vm,
@@ -166,13 +168,10 @@ private data class NavItem(
     val icon: @Composable () -> Unit,
 )
 
-// ★ Added: BottomNav 表示判定ヘルパー（階層を見て安全に判定）
 private fun shouldShowBottomBar(
     destination: NavDestination?,
     bottomBarRoutes: Set<String>,
 ): Boolean {
-    // destination が null（初期描画中など）の時は表示しても OK にしておく（必要なら false にしても良い）
     if (destination == null) return true
-    // ★ Added: 初期状態の見た目優先（任意で false に変更可）
     return destination.hierarchy.any { it.route in bottomBarRoutes }
 }
