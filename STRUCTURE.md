@@ -49,7 +49,7 @@ bugmemo/
 │       │   │                   ├── AppScaffold.kt
 │       │   │                   ├── NotesViewModel.kt
 │       │   │                   ├── common
-│       │   │                   │   ├── MarkdownBoldVisual.kt
+│       │   │                   │   ├── MarkdownBoldVisualTransformation.kt
 │       │   │                   │   ├── MarkdownEditUtils.kt
 │       │   │                   │   └── MarkdownText.kt
 │       │   │                   ├── components
@@ -67,7 +67,9 @@ bugmemo/
 │       │   │                   │   ├── SearchScreen.kt
 │       │   │                   │   └── SettingsScreen.kt
 │       │   │                   └── theme
-│       │   │                       └── AppTheme.kt
+│       │   │                       ├── Color.kt
+│       │   │                       ├── Theme.kt
+│       │   │                       └── Type.kt
 │       │   └── res
 │       │       ├── drawable
 │       │       │   ├── ic_launcher_background.xml
@@ -121,6 +123,7 @@ bugmemo/
 │   │   ├── overview.md
 │   │   └── settingsscreen + appLocalemanager.md
 │   └── img
+│       ├── Bug Memo-FontBold.png
 │       ├── BugMemo-Home.png
 │       ├── BugMemo-Mindmap.png
 │       ├── BugMemo-Search.png
@@ -136,5 +139,5 @@ bugmemo/
 ├── local.properties
 └── settings.gradle.kts
 
-50 directories, 86 files
+50 directories, 89 files
 ```
