@@ -1,5 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- ★ Fix: ライブラリを追加したので Theme.Material3 が正しく解決されます -->
+    <style name="Theme.Bugmemo" parent="Theme.Material3.DayNight.NoActionBar">
 
-    <style name="Theme.Bugmemo" parent="android:Theme.Material.Light.NoActionBar" />
+        <!-- ステータスバーを透明にする -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+
+        <!-- アイコン色を白に固定 (Icebergテーマ用) -->
+        <item name="android:windowLightStatusBar">false</item>
+
+        <!-- ナビゲーションバーも透明化 -->
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightNavigationBar">false</item>
+
+        <!-- 起動時の背景色 -->
+        <item name="android:windowBackground">#020C1B</item>
+    </style>
 </resources>

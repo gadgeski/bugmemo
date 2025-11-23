@@ -1,153 +1,172 @@
 // app/src/main/java/com/example/bugmemo/ui/screens/AllNotesScreen.kt
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
+@file:Suppress("ktlint:standard:function-naming")
+@file:OptIn(ExperimentalMaterial3Api::class)
 
 package com.example.bugmemo.ui.screens
 
-// ★ keep: import ブロック内に行末コメントは入れない（ktlint 配慮）
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.paging.LoadState
+import androidx.compose.ui.unit.sp
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.ui.NotesViewModel
+import com.example.bugmemo.ui.theme.IceCyan
+import com.example.bugmemo.ui.theme.IceDeepNavy
+import com.example.bugmemo.ui.theme.IceGlassBorder
+import com.example.bugmemo.ui.theme.IceGlassSurface
+import com.example.bugmemo.ui.theme.IceHorizon
+import com.example.bugmemo.ui.theme.IceSilver
+import com.example.bugmemo.ui.theme.IceSlate
+import com.example.bugmemo.ui.theme.IceTextPrimary
+import com.example.bugmemo.ui.theme.IceTextSecondary
 
-// ★ keep: Paging Compose 依存(LazyPagingItems/collectAsLazyPagingItems)
-// ★ keep: ローディング表示(androidx.compose.material3.CircularProgressIndicator)
+// ★ Added: 押下状態の検知(androidx.compose.foundation.interaction.collectIsPressedAsState)
+// ★ Changed: ワイルドカードインポートをやめ、個別インポートに変更(com.example.bugmemo.ui.theme.IceCyanなど)
+
+/* ========================================================
+   BugMemo Screen: "Iceberg Tech" Edition (With Glow Effect)
+   ======================================================== */
 
 @Composable
 fun AllNotesScreen(
-    // ★ keep: Nav から渡す
-    onBack: () -> Unit = {},
     onOpenEditor: () -> Unit = {},
-    // vm: NotesViewModel = viewModel(), // ★ Removed: 画面内生成は避け、親から受け取る
     vm: NotesViewModel,
-    // ★ keep: 親から受け取る（重複 VM 防止）
 ) {
-    // ★ keep: Flow<PagingData<Note>> を収集
     val notesPaging: LazyPagingItems<Note> = vm.pagedNotes.collectAsLazyPagingItems()
 
-    // ★ keep: “スターのみ”の簡易フィルタ（画面ローカル）
-    val starredOnly = remember { mutableStateOf(false) }
+    // 背景: 深海へのダイブ
+    val backgroundBrush = remember {
+        Brush.verticalGradient(
+            colors = listOf(
+                IceHorizon,
+                IceSlate,
+                IceDeepNavy,
+            ),
+        )
+    }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("All Notes") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                        )
-                    }
-                },
-                actions = {
-                    // ★ keep: スターのみ表示トグル
-                    FilterChip(
-                        // ★ 2. 読み取りは .value
-                        selected = starredOnly.value,
-                        onClick = { starredOnly.value = !starredOnly.value },
-                        // ★ 書き込みも .value
-                        label = { Text(if (starredOnly.value) "Starred only" else "All") },
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(brush = backgroundBrush),
+    ) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = {
+                        vm.newNote()
+                        onOpenEditor()
+                    },
+                    containerColor = IceCyan,
+                    contentColor = IceDeepNavy,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = "Create Note")
+                }
+            },
+        ) { inner ->
+            Column(
+                modifier = Modifier
+                    .padding(inner)
+                    .fillMaxSize(),
+            ) {
+                // ──── Header Section ────
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 20.dp),
+                ) {
+                    Spacer(modifier = Modifier.height(40.dp))
+                    Text(
+                        text = "BUG\nTRACKER",
+                        style = MaterialTheme.typography.displayLarge,
+                        color = IceTextPrimary.copy(alpha = 0.8f),
+                        lineHeight = 56.sp,
                     )
-                },
-            )
-        },
-    ) { inner ->
-        // ★ keep: 初回ロード／エラー／空表示の分岐
-        when (val state = notesPaging.loadState.refresh) {
-            is LoadState.Loading -> {
-                InitialLoading(modifier = Modifier.padding(inner))
-            }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "// SYSTEM_LOGS_V2.0",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = IceCyan,
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
 
-            is LoadState.Error -> {
-                EmptyAllNotesHint(
-                    modifier = Modifier.padding(inner),
-                    title = "読み込みに失敗しました",
-                    subtitle = state.error.message ?: "不明なエラー",
-                )
-            }
-
-            is LoadState.NotLoading -> {
-                if (notesPaging.itemCount == 0) {
-                    // ★ keep: 空状態（Paging の件数で判定）
-                    EmptyAllNotesHint(Modifier.padding(inner))
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .padding(inner)
-                            .fillMaxSize(),
-                        contentPadding = PaddingValues(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        // ★ keep: items(list) → items(count) に置換済み
-                        items(
-                            count = notesPaging.itemCount,
-                            key = { index ->
-                                val item = notesPaging[index]
-                                item?.id ?: "placeholder-$index"
-                                // ★ keep: null プレースホルダ対応
-                            },
-                        ) { index ->
-                            val note = notesPaging[index]
-                            if (note == null) {
-                                PlaceholderRow()
-                            } else {
-                                // ★ keep: 画面ローカルのスター絞り込み
-                                if (!starredOnly.value || note.isStarred) {
-                                    AllNoteRow(
-                                        note = note,
-                                        onClick = {
-                                            // ★ Changed: AllNote → Editor ルートで必ず vm.loadNote(id) を先に呼ぶ
-                                            vm.loadNote(note.id)
-                                            onOpenEditor()
-                                        },
-                                        onToggleStar = {
-                                            vm.toggleStar(
-                                                note.id,
-                                                note.isStarred,
-                                            )
-                                        },
-                                    )
-                                }
-                            }
-                        }
-                        // ★ keep: 追加ロードのフッター表示
-                        if (notesPaging.loadState.append is LoadState.Loading) {
-                            item("append-loading") { AppendLoading() }
-                        }
-                        if (notesPaging.loadState.append is LoadState.Error) {
-                            item("append-error") { AppendError() }
+                // ──── List Section ────
+                LazyColumn(
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(
+                        bottom = 100.dp,
+                    ),
+                ) {
+                    items(
+                        count = notesPaging.itemCount,
+                        key = { index -> notesPaging[index]?.id ?: index },
+                    ) { index ->
+                        val note = notesPaging[index]
+                        if (note != null) {
+                            TechGlassCard(
+                                note = note,
+                                onClick = {
+                                    vm.loadNote(note.id)
+                                    onOpenEditor()
+                                },
+                                onToggleStar = {
+                                    vm.toggleStar(note.id, note.isStarred)
+                                },
+                            )
                         }
                     }
                 }
@@ -157,130 +176,85 @@ fun AllNotesScreen(
 }
 
 @Composable
-private fun AllNoteRow(
+private fun TechGlassCard(
     note: Note,
     onClick: () -> Unit,
     onToggleStar: () -> Unit,
 ) {
-    Surface(
-        tonalElevation = 1.dp,
-        shape = MaterialTheme.shapes.medium,
-        modifier = Modifier.fillMaxWidth(),
+    // ★ Fix: マイクロインタラクションの強化（発光アニメーション）
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    // 押している間、枠線が IceCyan に光る
+    val animatedBorderColor by animateColorAsState(
+        targetValue = if (isPressed) IceCyan else IceGlassBorder,
+        label = "borderGlow",
+        animationSpec = tween(durationMillis = 150),
+    )
+
+    // 押している間、背景も少し明るくする
+    val animatedContainerColor by animateColorAsState(
+        targetValue = if (isPressed) IceGlassSurface.copy(alpha = 0.25f) else IceGlassSurface,
+        label = "containerGlow",
+        animationSpec = tween(durationMillis = 150),
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple(color = IceCyan),
+                // リップルも維持
+                onClick = onClick,
+            ),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = animatedContainerColor,
+            // ★ アニメーション適用
+        ),
+        border = BorderStroke(1.dp, animatedBorderColor),
+        // ★ アニメーション適用
+        elevation = CardDefaults.cardElevation(0.dp),
     ) {
         Row(
-            modifier = Modifier
-                .clickable(onClick = onClick)
-                .padding(12.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(Modifier.weight(1f)) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = note.title.ifBlank { "(無題)" },
+                    text = note.title.ifBlank { "UNTITLED_LOG" },
                     style = MaterialTheme.typography.titleMedium,
+                    color = IceTextPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = note.content,
                     style = MaterialTheme.typography.bodyMedium,
+                    color = IceTextSecondary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+
             IconButton(onClick = onToggleStar) {
                 if (note.isStarred) {
-                    Icon(Icons.Filled.Star, contentDescription = "Starred")
+                    Icon(
+                        Icons.Filled.Star,
+                        contentDescription = "Starred",
+                        tint = IceCyan,
+                    )
                 } else {
-                    Icon(Icons.Outlined.StarBorder, contentDescription = "Not starred")
+                    Icon(
+                        Icons.Outlined.StarBorder,
+                        contentDescription = "Not starred",
+                        tint = IceSilver,
+                    )
                 }
             }
         }
     }
 }
-
-/* ▼▼ ここから Empty/Loading/Placeholder ▼▼ */
-
-@Composable
-private fun EmptyAllNotesHint(
-    modifier: Modifier = Modifier,
-    title: String = "メモがありません",
-    subtitle: String = "作成したメモがここに一覧表示されます",
-) {
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 32.dp),
-        tonalElevation = 0.dp,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(4.dp))
-            Text(
-                subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun InitialLoading(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(top = 48.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        CircularProgressIndicator()
-        Spacer(Modifier.height(12.dp))
-        Text("読み込み中…")
-    }
-}
-
-@Composable
-private fun AppendLoading() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-    ) {
-        CircularProgressIndicator()
-        Spacer(Modifier.height(8.dp))
-        Text("さらに読み込み中…")
-    }
-}
-
-@Composable
-private fun AppendError() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-    ) {
-        Text("読み込みに失敗しました")
-    }
-}
-
-@Composable
-private fun PlaceholderRow() {
-    Surface(
-        tonalElevation = 1.dp,
-        shape = MaterialTheme.shapes.medium,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(64.dp),
-    ) {
-        // ★ keep: 簡易プレースホルダー。必要ならスケルトンを追加
-    }
-}
-
-/* ▲▲ ここまで Empty/Loading/Placeholder ▲▲ */
