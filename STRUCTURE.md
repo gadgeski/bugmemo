@@ -29,6 +29,7 @@ bugmemo/
 │       │   │   └── com
 │       │   │       └── example
 │       │   │           └── bugmemo
+│       │   │               ├── BugMemoApp.kt
 │       │   │               ├── MainActivity.kt
 │       │   │               ├── core
 │       │   │               │   ├── AppLocaleManager.kt
@@ -45,6 +46,8 @@ bugmemo/
 │       │   │               │   │   └── NoteFts.kt
 │       │   │               │   └── prefs
 │       │   │               │       └── SettingsRepository.kt
+│       │   │               ├── di
+│       │   │               │   └── AppModule.kt
 │       │   │               └── ui
 │       │   │                   ├── AppScaffold.kt
 │       │   │                   ├── NotesViewModel.kt
@@ -139,5 +142,5 @@ bugmemo/
 ├── local.properties
 └── settings.gradle.kts
 
-50 directories, 89 files
+51 directories, 91 files
 ```
