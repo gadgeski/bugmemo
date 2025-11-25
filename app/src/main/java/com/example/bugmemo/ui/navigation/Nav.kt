@@ -3,7 +3,7 @@ package com.example.bugmemo.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -17,6 +17,9 @@ import com.example.bugmemo.ui.screens.MindMapScreen
 import com.example.bugmemo.ui.screens.NoteEditorScreen
 import com.example.bugmemo.ui.screens.SearchScreen
 import com.example.bugmemo.ui.screens.SettingsScreen
+
+// ★ Changed: 警告に従い、パッケージを hilt.navigation... から hilt.lifecycle... に変更
+// これにより Deprecated 警告が解消されます(androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel)
 
 // keep: ルート定義
 object Routes {
@@ -37,8 +40,6 @@ fun AppNavHost(
 ) {
     NavHost(
         navController = navController,
-        // ★ Changed: スタート画面を「すべてのノート」に変更
-        // アプリ起動時にコックピットのログ一覧が表示される体験を作る
         startDestination = Routes.ALL_NOTES,
         modifier = modifier,
     ) {
@@ -78,7 +79,8 @@ fun AppNavHost(
         }
         // MindMap
         composable(Routes.MINDMAP) {
-            val mindVm: MindMapViewModel = viewModel()
+            // ★ Changed: 新しいパッケージの hiltViewModel() が使用されます
+            val mindVm: MindMapViewModel = hiltViewModel()
             MindMapScreen(
                 onClose = { navController.navigateUp() },
                 vm = mindVm,
@@ -90,7 +92,7 @@ fun AppNavHost(
                 onBack = { navController.navigateUp() },
             )
         }
-        // ★ ALL_NOTES (Home)
+        // ALL_NOTES (Home)
         composable(Routes.ALL_NOTES) {
             AllNotesScreen(
                 vm = vm,

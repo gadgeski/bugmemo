@@ -17,26 +17,26 @@ import androidx.lifecycle.lifecycleScope
 import com.example.bugmemo.ui.AppScaffold
 import com.example.bugmemo.ui.NotesViewModel
 import com.example.bugmemo.ui.theme.BugMemoTheme
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import android.graphics.Color as AndroidColor
 
+// ★ Keep: 標準の拡張関数を使用(androidx.activity.viewModels)
+// ★ Keep: これが必須(dagger.hilt.android.AndroidEntryPoint)
+
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private val vm: NotesViewModel by viewModels { NotesViewModel.factory() }
+    // ★ Changed: Hilt が ViewModel を生成するため、Factory 指定は不要になりました！
+    private val vm: NotesViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ★ Fix: ステータスバーの制御を「ダークモード用（アイコン白）」に固定
-        // これにより、背景が透明(Transparent)になり、Icebergテーマのグラデーションが
-        // 画面最上部まで突き抜けて表示されるようになります。
+        // ステータスバーの透明化設定 (Iceberg Tech)
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(
-                AndroidColor.TRANSPARENT,
-            ),
-            navigationBarStyle = SystemBarStyle.dark(
-                AndroidColor.TRANSPARENT,
-            ),
+            statusBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT),
         )
 
         enableStrictModeInDebug()
@@ -44,7 +44,6 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             BugMemoTheme {
-                // Surface自体を透明にして、システムバーの裏に色が乗らないようにする
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = Color.Transparent,

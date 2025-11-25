@@ -1,21 +1,34 @@
 // app/src/main/java/com/example/bugmemo/ui/screens/SearchScreen.kt
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:Suppress("ktlint:standard:function-naming")
+@file:OptIn(ExperimentalMaterial3Api::class)
 
 package com.example.bugmemo.ui.screens
 
-// ★ Changed: import は辞書順・未使用除去（ktlint/spotless を想定）
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -24,19 +37,29 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -46,168 +69,193 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.ui.NotesViewModel
-import com.example.bugmemo.ui.common.MarkdownText // ★ keep: 本文を太字解釈するため
-
-// ★ Removed: 画面内での viewModel() 生成は廃止（親から渡されるため）
-// import androidx.lifecycle.viewmodel.compose.viewModel
-// import androidx.compose.foundation.lazy.items // ★ Removed: Paging 置換のため未使用
+import com.example.bugmemo.ui.common.MarkdownText
+import com.example.bugmemo.ui.theme.IceCyan
+import com.example.bugmemo.ui.theme.IceDeepNavy
+import com.example.bugmemo.ui.theme.IceGlassBorder
+import com.example.bugmemo.ui.theme.IceGlassSurface
+import com.example.bugmemo.ui.theme.IceHorizon
+import com.example.bugmemo.ui.theme.IceSilver
+import com.example.bugmemo.ui.theme.IceSlate
+import com.example.bugmemo.ui.theme.IceTextPrimary
+import com.example.bugmemo.ui.theme.IceTextSecondary
 
 /**
- * 検索画面（Bugs のクエリと同じ状態を共有）
- * - クエリ入力で VM の setQuery を更新
- * - 表示は Paging 版：vm.pagedNotes を collectAsLazyPagingItems で収集
- * - 結果タップで編集画面へ遷移（onOpenEditor）
+ * 検索画面（Iceberg Tech Edition）
  */
 @Composable
 fun SearchScreen(
-    // ★ Changed: viewModel() のデフォルト生成をやめ、親（Nav）から渡す
     vm: NotesViewModel,
-    // ★ keep: Editor に遷移するラムダ（Nav から受け取る）
     onOpenEditor: () -> Unit = {},
-    // ★ Added: Bugs（Notes）へトップレベル遷移するラムダ（Nav から受け取る）
     onOpenNotes: () -> Unit = {},
 ) {
     val query by vm.query.collectAsStateWithLifecycle(initialValue = "")
-    // ★ Added: Paging データを収集
     val results: LazyPagingItems<Note> = vm.pagedNotes.collectAsLazyPagingItems()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                // ★ Changed: タイトルは空に（ラベルは本文の Row 側に移動）
-                title = { /* no title here */ },
-                actions = {
-                    // ★ keep: Bugs へ戻るショートカット（Nav 側の共通ヘルパでトップレベル遷移）
-                    IconButton(onClick = onOpenNotes) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.List,
-                            contentDescription = "Bugs",
-                        )
-                    }
-                    // ★ Removed: OutlinedTextField を TopAppBar(actions) から撤去
-                },
-            )
-        },
-    ) { inner ->
-        Column(
-            Modifier
-                .padding(inner)
-                .fillMaxSize(),
-        ) {
-            // ─────────────────────────────────────────────
-            // ★ Added: 「Search」ラベル＋検索ボックスを同じ行（Row）に配置
-            //    - Text は 1 行固定 + Ellipsis
-            //    - TextField は weight(1f) で残り幅を占有（固定 280dp を撤去）
-            // ─────────────────────────────────────────────
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "Search", // ★ Changed: ラベルは Markdown 解釈不要なので Text に戻す
-                    // TODO: 必要なら strings.xml にリソース化
-                    style = MaterialTheme.typography.titleLarge,
-                    maxLines = 1, // ★ Added
-                    overflow = TextOverflow.Ellipsis, // ★ Added
-                    modifier = Modifier.padding(end = 12.dp),
-                )
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { vm.setQuery(it) },
-                    singleLine = true,
-                    placeholder = { Text("キーワードを入力") }, // TODO: リソース化可能
-                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
-                    trailingIcon = {
-                        if (query.isNotEmpty()) {
-                            IconButton(onClick = { vm.setQuery("") }) {
-                                Icon(Icons.Filled.Clear, contentDescription = "Clear")
-                            }
+    // 背景: 深海グラデーション
+    val backgroundBrush = remember {
+        Brush.verticalGradient(
+            colors = listOf(IceHorizon, IceSlate, IceDeepNavy),
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(brush = backgroundBrush),
+    ) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            topBar = {
+                TopAppBar(
+                    title = { /* 検索バーをコンテンツ内に配置するため空にする */ },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        actionIconContentColor = IceSilver,
+                    ),
+                    modifier = Modifier.statusBarsPadding(),
+                    actions = {
+                        IconButton(onClick = onOpenNotes) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.List,
+                                contentDescription = "Bugs",
+                                tint = IceSilver,
+                            )
                         }
                     },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(
-                        onSearch = { /* VM 側の Flow により自動反映 */ },
-                    ),
+                )
+            },
+        ) { inner ->
+            Column(
+                Modifier
+                    .padding(inner)
+                    .fillMaxSize(),
+            ) {
+                // ── Header & Search Bar ──
+                Row(
                     modifier = Modifier
-                        .weight(1f) // ★ Added: 横幅は残りすべてを使用
-                        .height(56.dp), // ★ Added: 見た目の安定化
-                )
-            }
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "SEARCH_LOGS", // Tech表記
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                        color = IceTextPrimary,
+                        maxLines = 1,
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
 
-            // ★ Changed: 未入力時は Paging リストを描画せずヒント表示
-            if (query.isBlank()) {
-                EmptyHint(
-                    title = "検索ワードを入力してください",
-                    // TODO: リソース化可能
-                    subtitle = "例: クラッシュ / Retrofit / Compose",
-                    // TODO: リソース化可能
-                )
-                return@Column
-            }
-
-            // ★ Added: Paging のロード状態に応じた分岐
-            when (val state = results.loadState.refresh) {
-                is LoadState.Loading -> {
-                    // 初回ロード中
-                    InitialLoading()
-                }
-                is LoadState.Error -> {
-                    // 失敗時（簡易表示）
-                    EmptyHint(
-                        title = "読み込みに失敗しました",
-                        subtitle = state.error.message ?: "不明なエラー",
+                    // Techスタイルな検索窓
+                    TextField(
+                        value = query,
+                        onValueChange = { vm.setQuery(it) },
+                        singleLine = true,
+                        placeholder = {
+                            Text(
+                                "Enter keywords...",
+                                color = IceTextSecondary.copy(alpha = 0.5f),
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(Icons.Filled.Search, contentDescription = "Search", tint = IceCyan)
+                        },
+                        trailingIcon = {
+                            if (query.isNotEmpty()) {
+                                IconButton(onClick = { vm.setQuery("") }) {
+                                    Icon(Icons.Filled.Clear, contentDescription = "Clear", tint = IceSilver)
+                                }
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { /* VM反映済み */ }),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp)
+                            .border(BorderStroke(1.dp, IceGlassBorder), RoundedCornerShape(8.dp)),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = IceGlassSurface,
+                            unfocusedContainerColor = IceGlassSurface,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            cursorColor = IceCyan,
+                            focusedTextColor = IceTextPrimary,
+                            unfocusedTextColor = IceTextSecondary,
+                        ),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        ),
                     )
                 }
-                is LoadState.NotLoading -> {
-                    if (results.itemCount == 0) {
-                        // 空結果
+
+                // ── Content Section ──
+                if (query.isBlank()) {
+                    EmptyHint(
+                        title = "WAITING_FOR_INPUT",
+                        subtitle = "Type keywords like: Crash, Retrofit, UI",
+                    )
+                    return@Column
+                }
+
+                when (val state = results.loadState.refresh) {
+                    is LoadState.Loading -> {
+                        InitialLoading()
+                    }
+                    is LoadState.Error -> {
                         EmptyHint(
-                            title = "0件でした", // TODO: リソース化可能
-                            subtitle = "キーワードを変えて試してみましょう",
-                            // TODO: リソース化可能
+                            title = "SYSTEM_ERROR",
+                            subtitle = state.error.message ?: "Unknown Error",
                         )
-                    } else {
-                        // 通常表示
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            // ★ Changed: items(...) → Paging 版（index で取り出す）
-                            items(
-                                count = results.itemCount,
-                                key = { index ->
-                                    val item = results[index]
-                                    item?.id ?: "placeholder-$index"
-                                    // ★ Added: null（プレースホルダー）対策
-                                },
-                            ) { index ->
-                                val note = results[index]
-                                if (note == null) {
-                                    // ★ Added: プレースホルダー（プレフェッチ中）
-                                    ShimmerlessPlaceholderRow()
-                                } else {
-                                    ResultRow(
-                                        note = note,
-                                        onClick = {
-                                            vm.loadNote(note.id)
-                                            onOpenEditor()
-                                        },
-                                        onToggleStar = { vm.toggleStar(note.id, note.isStarred) },
-                                    )
+                    }
+                    is LoadState.NotLoading -> {
+                        if (results.itemCount == 0) {
+                            EmptyHint(
+                                title = "NO_RESULTS_FOUND",
+                                subtitle = "Try different query parameters",
+                            )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(
+                                    start = 16.dp,
+                                    end = 16.dp,
+                                    top = 8.dp,
+                                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 24.dp,
+                                ),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                items(
+                                    count = results.itemCount,
+                                    key = { index ->
+                                        val item = results[index]
+                                        item?.id ?: "placeholder-$index"
+                                    },
+                                ) { index ->
+                                    val note = results[index]
+                                    if (note == null) {
+                                        ShimmerlessPlaceholderRow()
+                                    } else {
+                                        SearchResultCard(
+                                            note = note,
+                                            onClick = {
+                                                vm.loadNote(note.id)
+                                                onOpenEditor()
+                                            },
+                                            onToggleStar = { vm.toggleStar(note.id, note.isStarred) },
+                                        )
+                                    }
                                 }
-                            }
-                            // ★ Added: 追加ロード中のフッター
-                            if (results.loadState.append is LoadState.Loading) {
-                                item(key = "append-loading") {
-                                    AppendLoading()
+                                if (results.loadState.append is LoadState.Loading) {
+                                    item(key = "append-loading") { AppendLoading() }
                                 }
-                            }
-                            if (results.loadState.append is LoadState.Error) {
-                                item(key = "append-error") {
-                                    AppendError()
+                                if (results.loadState.append is LoadState.Error) {
+                                    item(key = "append-error") { AppendError() }
                                 }
                             }
                         }
@@ -219,53 +267,77 @@ fun SearchScreen(
 }
 
 @Composable
-private fun ResultRow(
+private fun SearchResultCard(
     note: Note,
     onClick: () -> Unit,
     onToggleStar: () -> Unit,
 ) {
-    Surface(
-        tonalElevation = 2.dp,
-        shape = MaterialTheme.shapes.medium,
-        modifier = Modifier.fillMaxWidth(),
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val animatedBorderColor by animateColorAsState(
+        targetValue = if (isPressed) IceCyan else IceGlassBorder,
+        label = "borderGlow",
+        animationSpec = tween(durationMillis = 150),
+    )
+
+    val animatedContainerColor by animateColorAsState(
+        targetValue = if (isPressed) IceGlassSurface.copy(alpha = 0.25f) else IceGlassSurface,
+        label = "containerGlow",
+        animationSpec = tween(durationMillis = 150),
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple(color = IceCyan),
+                onClick = onClick,
+            ),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = animatedContainerColor,
+        ),
+        border = BorderStroke(1.dp, animatedBorderColor),
+        elevation = CardDefaults.cardElevation(0.dp),
     ) {
         Row(
-            Modifier
-                .clickable(onClick = onClick)
-                .padding(12.dp),
+            Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = note.title.ifBlank { "(無題)" },
-                    // TODO: リソース化可能（label_untitled 等）
+                    text = note.title.ifBlank { "UNTITLED_LOG" },
                     style = MaterialTheme.typography.titleMedium,
+                    color = IceTextPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(4.dp))
-                // ★ Changed: 本文は MarkdownText で **bold** / __bold__ を太字表示
+                // 本文ハイライトなどは簡易的にMarkdownTextを利用
                 MarkdownText(
-                    text = note.content, // ★ Changed
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = note.content,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = IceTextSecondary,
+                    ),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+
             IconButton(onClick = onToggleStar) {
                 if (note.isStarred) {
-                    Icon(Icons.Filled.Star, contentDescription = "Starred")
-                    // TODO: リソース化可能
+                    Icon(Icons.Filled.Star, contentDescription = "Starred", tint = IceCyan)
                 } else {
-                    Icon(Icons.Outlined.StarBorder, contentDescription = "Not starred")
-                    // TODO: リソース化可能
+                    Icon(Icons.Outlined.StarBorder, contentDescription = "Not starred", tint = IceSilver)
                 }
             }
         }
     }
 }
 
-// ★ Added: 初回ロード表示（中央にインジケータ）
 @Composable
 private fun InitialLoading() {
     Column(
@@ -274,13 +346,16 @@ private fun InitialLoading() {
             .padding(top = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        CircularProgressIndicator()
+        CircularProgressIndicator(color = IceCyan)
         Spacer(Modifier.height(12.dp))
-        Text("読み込み中…")
+        Text(
+            "SEARCHING_DATABASE...",
+            style = MaterialTheme.typography.bodySmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace),
+            color = IceTextSecondary,
+        )
     }
 }
 
-// ★ Added: 追加ロードのフッター表示
 @Composable
 private fun AppendLoading() {
     Row(
@@ -290,13 +365,12 @@ private fun AppendLoading() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
-        CircularProgressIndicator()
+        CircularProgressIndicator(color = IceCyan, modifier = Modifier.height(20.dp).width(20.dp))
         Spacer(Modifier.width(8.dp))
-        Text("さらに読み込み中…")
+        Text("LOADING_MORE...", color = IceTextSecondary, style = MaterialTheme.typography.bodySmall)
     }
 }
 
-// ★ Added: 追加ロード失敗の簡易表示（必要なら再試行ボタンを追加）
 @Composable
 private fun AppendError() {
     Row(
@@ -306,20 +380,19 @@ private fun AppendError() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
-        Text("読み込みに失敗しました")
+        Text("LOAD_FAILED", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
     }
 }
 
-// ★ Added: プレースホルダー行（簡易）
 @Composable
 private fun ShimmerlessPlaceholderRow() {
-    Surface(
-        tonalElevation = 1.dp,
-        shape = MaterialTheme.shapes.medium,
+    Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(64.dp),
-    ) { /* 簡易なので中身は空。必要なら灰色のボックス等を配置 */ }
+        colors = CardDefaults.cardColors(containerColor = IceGlassSurface.copy(alpha = 0.1f)),
+        border = BorderStroke(1.dp, IceGlassBorder.copy(alpha = 0.3f)),
+    ) { /* Placeholder */ }
 }
 
 @Composable
@@ -327,23 +400,22 @@ private fun EmptyHint(
     title: String,
     subtitle: String,
 ) {
-    Surface(
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 32.dp),
-        tonalElevation = 0.dp,
+            .padding(top = 64.dp),
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(4.dp))
-            Text(
-                subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        Text(
+            title,
+            style = MaterialTheme.typography.titleMedium.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace),
+            color = IceTextSecondary,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = IceTextSecondary.copy(alpha = 0.7f),
+        )
     }
 }
