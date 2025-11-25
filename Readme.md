@@ -49,7 +49,9 @@
 </td>
 </tr>
 </table>
+
 ## アプリ画面(旧)
+
 <table>
 <tr>
 <td align="center">
@@ -79,25 +81,41 @@
 </td>
 </tr>
 </table>
+
 ## 技術スタック
+
 - Kotlin / Coroutines / Flow
+
 - Jetpack Compose (Material 3, Navigation, Lifecycle)
+
 - Paging 3 / Paging Compose(Room + PagingData + LazyPagingItems によるページング一覧表示)
+
 - Room (DAO / Migration)
+
 - DataStore (Preferences)
+
 - Unit Test（JUnit4）
+
 - Lint & Spotless（ktlint 連携）による静的検査・整形
+
 ## セットアップ
+
 # 依存解決・同期
+
 ```
 ./gradlew help
 ```
+
 # デバッグビルド
+
 ```
 ./gradlew assembleDebug
 ```
+
 品質チェック
+
 # コード整形（全体を自動修正）
+
 ```
 ./gradlew spotlessApply
 ```
