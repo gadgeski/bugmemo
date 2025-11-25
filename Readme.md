@@ -2,7 +2,12 @@
 
 モバイル開発中の バグやメモを素早く記録 するシンプルなノートアプリ。フォルダ分け・検索・（将来）マインドマップ表示に対応。
 
----
+アプリ全体のデザイン言語を刷新し、深海とテクノロジーをモチーフにした**「Iceberg Tech (Cyber-Glass Brutalism)」**テーマを適用し
+、モダン Android 開発のベストプラクティスに準拠したアーキテクチャ刷新を行いました。
+
+- Hilt による DI（依存性注入）の完全導入
+- Edge-to-Edge（全画面）対応
+- Version Catalog への移行など
 
 ## 主な機能
 
@@ -19,8 +24,32 @@
 - Search: クエリ入力でリアルタイム検索、結果から編集へ
 - Folders: フォルダ一覧・作成・削除、選択で絞り込み
 
-## アプリ画面
+## アプリ画面(新)
 
+<table>
+<tr>
+<td align="center">
+<img src="docs/img/Iceberg-Tech_Home.png" alt="ホーム" width="300">
+<br>
+<sub>ホーム</sub>
+</td>
+<td align="center">
+<img src="docs/img/Iceberg-Tech_Dashboard.png" alt="ダッシュボード" width="300">
+<sub>ダッシュボード</sub>
+</td>
+<td align="center">
+<img src="docs/img/Iceberg-Tech_Search.png" alt="検索" width="300">
+<br>
+<sub>検索</sub>
+</td>
+<td align="center">
+<img src="docs/img/Iceberg-Tech_Directories.png" alt="ディレクトリ" width="300">
+<br>
+<sub>ディレクトリ</sub>
+</td>
+</tr>
+</table>
+## アプリ画面(旧)
 <table>
 <tr>
 <td align="center">
@@ -50,9 +79,7 @@
 </td>
 </tr>
 </table>
-
 ## 技術スタック
-
 - Kotlin / Coroutines / Flow
 - Jetpack Compose (Material 3, Navigation, Lifecycle)
 - Paging 3 / Paging Compose(Room + PagingData + LazyPagingItems によるページング一覧表示)
@@ -60,27 +87,17 @@
 - DataStore (Preferences)
 - Unit Test（JUnit4）
 - Lint & Spotless（ktlint 連携）による静的検査・整形
-
----
-
 ## セットアップ
-
 # 依存解決・同期
-
 ```
 ./gradlew help
 ```
-
 # デバッグビルド
-
 ```
 ./gradlew assembleDebug
 ```
-
 品質チェック
-
 # コード整形（全体を自動修正）
-
 ```
 ./gradlew spotlessApply
 ```
@@ -123,8 +140,6 @@ Lint で baseline created と出た場合はローカルで baseline をコミ�
   - AppDatabase v2（notes.isStarred 列を追加する Migration 1→2 実装）
 - ナビゲーション
   - AppScaffold → AppNavHost → 各 Screen
-
----
 
 ## CI
 
