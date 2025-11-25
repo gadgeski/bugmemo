@@ -1,37 +1,57 @@
 // app/src/main/java/com/example/bugmemo/ui/screens/FoldersScreen.kt
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:Suppress("ktlint:standard:function-naming")
+@file:OptIn(ExperimentalMaterial3Api::class)
 
 package com.example.bugmemo.ui.screens
 
-// ★ Changed: import を整理（未使用除去・辞書順）
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,116 +60,181 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.bugmemo.data.Folder
 import com.example.bugmemo.ui.NotesViewModel
+import com.example.bugmemo.ui.theme.IceCyan
+import com.example.bugmemo.ui.theme.IceDeepNavy
+import com.example.bugmemo.ui.theme.IceGlassBorder
+import com.example.bugmemo.ui.theme.IceGlassSurface
+import com.example.bugmemo.ui.theme.IceHorizon
+import com.example.bugmemo.ui.theme.IceSilver
+import com.example.bugmemo.ui.theme.IceSlate
+import com.example.bugmemo.ui.theme.IceTextPrimary
+import com.example.bugmemo.ui.theme.IceTextSecondary
 import kotlinx.coroutines.launch
 
-// ★ Removed: 画面内での viewModel() 生成は廃止（親から渡すため）
-// import androidx.lifecycle.viewmodel.compose.viewModel
-// ★ Added: Bugs へ戻るショートカット(androidx.compose.material.icons.automirrored.filled.List)
-
 /**
- * フォルダ一覧画面（完成版）
- * - 行タップ：フォルダ絞り込みの切替
- * - 「＋」：そのフォルダで新規ノート作成 → onOpenEditor() で編集画面へ
- * - 上部フォーム：フォルダ追加
+ * フォルダ一覧画面（Iceberg Tech Edition）
  */
 @Composable
 fun FoldersScreen(
-    // ★ Changed: viewModel() のデフォ生成をやめ、親（Nav）から渡す
-    vm: NotesViewModel, // ★ Changed
-    // Nav から受け取るエディタ遷移のコールバック
+    vm: NotesViewModel,
     onOpenEditor: () -> Unit = {},
-    // ★ Added: Bugs（Notes）へトップレベル遷移するラムダ（Nav から受け取る）
-    onOpenNotes: () -> Unit = {}, // ★ Added
+    onOpenNotes: () -> Unit = {},
 ) {
     val folders by vm.folders.collectAsStateWithLifecycle(initialValue = emptyList())
     val currentFilter by vm.filterFolderId.collectAsStateWithLifecycle(initialValue = null)
     var newFolder by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Folders") },
-                // TODO: strings.xml へ移行可能
-                actions = {
-                    // ★ Added: Bugs へ戻るショートカット（Nav 側の共通ヘルパでトップレベル遷移）
-                    IconButton(onClick = onOpenNotes) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.List,
-                            contentDescription = "Bugs",
-                            // TODO: リソース化可能
+    // 背景: 深海グラデーション
+    val backgroundBrush = remember {
+        Brush.verticalGradient(
+            colors = listOf(IceHorizon, IceSlate, IceDeepNavy),
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(brush = backgroundBrush),
+    ) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            // ステータスバーのインセットは中身で調整
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            "DIRECTORIES", // Tech感のある英語表記
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold,
+                            ),
                         )
-                    }
-                    if (currentFilter != null) {
-                        IconButton(onClick = { vm.setFolderFilter(null) }) {
-                            Icon(Icons.Filled.Clear, contentDescription = "Clear filter")
-                            // TODO: リソース化可能
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        titleContentColor = IceTextPrimary,
+                        actionIconContentColor = IceSilver,
+                    ),
+                    modifier = Modifier.statusBarsPadding(), // ステータスバーを避ける
+                    actions = {
+                        IconButton(onClick = onOpenNotes) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.List,
+                                contentDescription = "All Notes",
+                                tint = IceSilver,
+                            )
                         }
-                    }
-                },
-            )
-        },
-    ) { inner ->
-        Column(
-            Modifier
-                .padding(inner)
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            // 新規フォルダ追加
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
-                    value = newFolder,
-                    onValueChange = { newFolder = it },
-                    label = { Text("新規フォルダ名") },
-                    // TODO: リソース化可能
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                )
-                Spacer(Modifier.width(8.dp))
-                Button(
-                    onClick = {
-                        val name = newFolder.trim()
-                        // ここでは成功後にクリアするポリシーを採用
-                        scope.launch {
-                            vm.addFolder(name)
-                            newFolder = ""
+                        if (currentFilter != null) {
+                            IconButton(onClick = { vm.setFolderFilter(null) }) {
+                                Icon(
+                                    Icons.Filled.Clear,
+                                    contentDescription = "Clear filter",
+                                    tint = IceCyan, // フィルタ解除は目立たせる
+                                )
+                            }
                         }
                     },
-                    // ★ Added: 空文字のときは無効化して押せないようにする
-                    enabled = newFolder.isNotBlank(),
-                ) { Text("追加") }
-                // TODO: リソース化可能
-            }
+                )
+            },
+        ) { inner ->
+            Column(
+                Modifier
+                    .padding(inner)
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                // ── 新規フォルダ入力フォーム (Glass Style) ──
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextField(
+                        value = newFolder,
+                        onValueChange = { newFolder = it },
+                        placeholder = {
+                            Text(
+                                "NEW_DIRECTORY_NAME",
+                                color = IceTextSecondary.copy(alpha = 0.5f),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        },
+                        singleLine = true,
+                        modifier = Modifier
+                            .weight(1f)
+                            .border(BorderStroke(1.dp, IceGlassBorder), RoundedCornerShape(8.dp)),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = IceGlassSurface,
+                            unfocusedContainerColor = IceGlassSurface,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            cursorColor = IceCyan,
+                            focusedTextColor = IceTextPrimary,
+                            unfocusedTextColor = IceTextSecondary,
+                        ),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        ),
+                    )
 
-            if (folders.isEmpty()) {
-                EmptyFoldersMessage()
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
-                ) {
-                    items(folders, key = { it.id }) { folder ->
-                        FolderRow(
-                            folder = folder,
-                            isActive = (folder.id == currentFilter),
-                            onSetFilter = { id -> vm.setFolderFilter(id) },
-                            onDelete = { id ->
-                                scope.launch { vm.deleteFolder(id) }
-                            },
-                            onCreateNoteHere = { id ->
-                                vm.newNote()
-                                vm.setEditingFolder(id)
-                                onOpenEditor()
-                            },
-                        )
+                    Spacer(Modifier.width(8.dp))
+
+                    Button(
+                        onClick = {
+                            val name = newFolder.trim()
+                            scope.launch {
+                                vm.addFolder(name)
+                                newFolder = ""
+                            }
+                        },
+                        enabled = newFolder.isNotBlank(),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = IceCyan,
+                            contentColor = IceDeepNavy,
+                            disabledContainerColor = IceGlassSurface.copy(alpha = 0.3f),
+                            disabledContentColor = IceTextSecondary.copy(alpha = 0.5f),
+                        ),
+                        modifier = Modifier.height(56.dp), // TextFieldと高さを合わせる
+                    ) {
+                        Icon(Icons.Filled.Add, contentDescription = "Add")
+                    }
+                }
+
+                if (folders.isEmpty()) {
+                    EmptyFoldersMessage()
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(
+                            top = 8.dp,
+                            // ナビゲーションバー分の余白を確保
+                            bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 24.dp,
+                        ),
+                    ) {
+                        items(folders, key = { it.id }) { folder ->
+                            FolderGlassCard(
+                                folder = folder,
+                                isActive = (folder.id == currentFilter),
+                                onSetFilter = { id -> vm.setFolderFilter(id) },
+                                onDelete = { id -> scope.launch { vm.deleteFolder(id) } },
+                                onCreateNoteHere = { id ->
+                                    vm.newNote()
+                                    vm.setEditingFolder(id)
+                                    onOpenEditor()
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -158,49 +243,95 @@ fun FoldersScreen(
 }
 
 @Composable
-private fun FolderRow(
+private fun FolderGlassCard(
     folder: Folder,
     isActive: Boolean,
     onSetFilter: (Long?) -> Unit,
     onDelete: (Long) -> Unit,
     onCreateNoteHere: (Long) -> Unit,
 ) {
-    Surface(
-        tonalElevation = if (isActive) 4.dp else 1.dp,
-        shape = MaterialTheme.shapes.medium,
-        modifier = Modifier.fillMaxWidth(),
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    // アクティブ(選択中)または押下中で発光させる
+    val isGlowing = isActive || isPressed
+
+    val animatedBorderColor by animateColorAsState(
+        targetValue = if (isGlowing) IceCyan else IceGlassBorder,
+        label = "borderGlow",
+        animationSpec = tween(durationMillis = 200),
+    )
+
+    val animatedContainerColor by animateColorAsState(
+        targetValue = if (isActive) IceGlassSurface.copy(alpha = 0.3f) else IceGlassSurface,
+        label = "containerGlow",
+        animationSpec = tween(durationMillis = 200),
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple(color = IceCyan),
+                onClick = { onSetFilter(if (isActive) null else folder.id) },
+            ),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = animatedContainerColor,
+        ),
+        border = BorderStroke(1.dp, animatedBorderColor),
+        elevation = CardDefaults.cardElevation(0.dp),
     ) {
         Row(
-            Modifier
-                .clickable { onSetFilter(if (isActive) null else folder.id) }
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+            Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.Filled.Folder, contentDescription = null)
-            Spacer(Modifier.width(12.dp))
+            // アイコン切り替え: 選択中は開いたフォルダ、通常は閉じたフォルダ
+            Icon(
+                imageVector = if (isActive) Icons.Filled.FolderOpen else Icons.Filled.Folder,
+                contentDescription = null,
+                tint = if (isGlowing) IceCyan else IceSilver,
+            )
+
+            Spacer(Modifier.width(16.dp))
+
             Column(Modifier.weight(1f)) {
                 Text(
                     text = folder.name,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    ),
+                    color = if (isActive) IceCyan else IceTextPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (isActive) {
                     Text(
-                        text = "（絞り込み中）",
-                        // TODO: リソース化可能
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
+                        text = ">> ACTIVE_FILTER", // Techな表現に
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        ),
+                        color = IceCyan.copy(alpha = 0.7f),
                     )
                 }
             }
+
+            // アクションボタンもTechカラーに
             IconButton(onClick = { onCreateNoteHere(folder.id) }) {
-                Icon(Icons.Filled.Add, contentDescription = "Create note here")
-                // TODO: リソース化可能
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = "Create note here",
+                    tint = IceSilver,
+                )
             }
             IconButton(onClick = { onDelete(folder.id) }) {
-                Icon(Icons.Filled.Delete, contentDescription = "Delete folder")
-                // TODO: リソース化可能
+                Icon(
+                    Icons.Filled.Delete,
+                    contentDescription = "Delete folder",
+                    tint = IceSilver.copy(alpha = 0.6f), // 削除ボタンは少し控えめに
+                )
             }
         }
     }
@@ -208,25 +339,24 @@ private fun FolderRow(
 
 @Composable
 private fun EmptyFoldersMessage() {
-    Surface(
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 32.dp),
-        tonalElevation = 0.dp,
+            .padding(top = 64.dp),
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("フォルダがありません", style = MaterialTheme.typography.titleMedium)
-            // TODO: リソース化可能
-            Spacer(Modifier.height(4.dp))
-            Text(
-                "上の入力欄から追加できます",
-                // TODO: リソース化可能
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        Text(
+            "NO_DIRECTORIES_FOUND",
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+            ),
+            color = IceTextSecondary,
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Create a new directory above",
+            style = MaterialTheme.typography.bodyMedium,
+            color = IceTextSecondary.copy(alpha = 0.7f),
+        )
     }
 }

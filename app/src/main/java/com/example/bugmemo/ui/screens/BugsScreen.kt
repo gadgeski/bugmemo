@@ -1,59 +1,66 @@
 // app/src/main/java/com/example/bugmemo/ui/screens/BugsScreen.kt
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:Suppress("ktlint:standard:function-naming")
+@file:OptIn(ExperimentalMaterial3Api::class)
 
 package com.example.bugmemo.ui.screens
 
-// ★ Changed: import を辞書順に整理（未使用削除）
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.ViewList
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
-import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -62,165 +69,185 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.bugmemo.R
 import com.example.bugmemo.core.FeatureFlags
-import com.example.bugmemo.data.Folder
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.ui.NotesViewModel
+import com.example.bugmemo.ui.theme.IceCyan
+import com.example.bugmemo.ui.theme.IceDeepNavy
+import com.example.bugmemo.ui.theme.IceGlassBorder
+import com.example.bugmemo.ui.theme.IceGlassSurface
+import com.example.bugmemo.ui.theme.IceHorizon
+import com.example.bugmemo.ui.theme.IceSilver
+import com.example.bugmemo.ui.theme.IceSlate
+import com.example.bugmemo.ui.theme.IceTextPrimary
+import com.example.bugmemo.ui.theme.IceTextSecondary
 
-// ★ Added: Paging のロード状態(androidx.paging.LoadState)
-// ★ Added: ローディング表示(androidx.compose.material3.CircularProgressIndicator)
-// import androidx.compose.foundation.lazy.items // ★ Removed: Paging に置換
-
-/* ★ keep: トップレベル遷移を“必ず”ラムダ経由で実行するための超小さな共通ヘルパ
-   - 実際のスタック方針は呼び出し側（AppScaffold/Nav）で実装
-   - ここでは必ず経由させることでポリシーを統一（将来の差し替えも一箇所） */
 private fun performTopLevelNav(navigate: () -> Unit) {
     navigate()
 }
 
+/**
+ * バグ一覧画面（Iceberg Tech Edition）
+ * - 深海グラデーションとガラスのカードで統一
+ */
 @Composable
 fun BugsScreen(
     vm: NotesViewModel,
-    // ★ keep: 必須受け取り（重複VM防止）
     onOpenEditor: () -> Unit = {},
     onOpenSearch: () -> Unit = {},
     onOpenFolders: () -> Unit = {},
     onOpenMindMap: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
     onOpenAllNotes: () -> Unit = {},
-    // ★ Added: “All Notes（一覧画面）” への遷移フックを追加
-    // ★ keep: MindMap への導線（Nav から渡す）
 ) {
-    // ★ Changed: 一覧は Paging 化（Flow<PagingData<Note>> を収集）
     val notesPaging: LazyPagingItems<Note> = vm.pagedNotes.collectAsLazyPagingItems()
-
     val folders by vm.folders.collectAsStateWithLifecycle(initialValue = emptyList())
-    val editing by vm.editing.collectAsStateWithLifecycle(initialValue = null)
     val filterFolderId by vm.filterFolderId.collectAsStateWithLifecycle(initialValue = null)
-    var showFolderMenu by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    val label = folders.firstOrNull { it.id == filterFolderId }?.name
-                    // ★ Changed: タイトルをリソース化（フォルダ選択時は "Bug Memo — %s"）
-                    Text(
-                        text = if (label != null) {
-                            stringResource(R.string.title_bugmemo_with_label, label)
-                        } else {
-                            stringResource(R.string.app_name)
-                        },
-                    )
-                },
-                actions = {
-                    // ★ Added: “All Notes（一覧）” を開くアイコンを最初に追加
-                    IconButton(onClick = { performTopLevelNav(onOpenAllNotes) }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ViewList,
-                            contentDescription = "Open all notes",
-                            // ★ Added: 小PRのため直書き
+    // 背景: 深海グラデーション
+    val backgroundBrush = remember {
+        Brush.verticalGradient(
+            colors = listOf(IceHorizon, IceSlate, IceDeepNavy),
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(brush = backgroundBrush),
+    ) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            topBar = {
+                TopAppBar(
+                    title = {
+                        val label = folders.firstOrNull { it.id == filterFolderId }?.name
+                        Text(
+                            text = if (label != null) "FILTER: $label" else "BUG_DASHBOARD",
+                            // Tech表記
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold,
+                            ),
                         )
-                    }
-                    // ★ Changed: 画面内ショートカットも共通ヘルパを経由して呼ぶ（ナビ方針を統一）
-                    IconButton(onClick = { performTopLevelNav(onOpenSettings) }) {
-                        Icon(
-                            imageVector = Icons.Filled.Settings,
-                            contentDescription = stringResource(R.string.cd_open_settings),
-                        )
-                    }
-                    if (filterFolderId != null) {
-                        IconButton(onClick = { vm.setFolderFilter(null) }) {
-                            // ★ keep: これは内部状態変更のみ（ナビ無し）
-                            Icon(Icons.Filled.Clear, contentDescription = stringResource(R.string.cd_delete))
-                        }
-                    }
-                    IconButton(onClick = { performTopLevelNav(onOpenFolders) }) {
-                        Icon(Icons.Filled.Folder, contentDescription = stringResource(R.string.cd_open_folders))
-                    }
-                    IconButton(onClick = { performTopLevelNav(onOpenSearch) }) {
-                        Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.cd_open_search))
-                    }
-                    // ★ Changed: BuildConfig.DEBUG → FeatureFlags.ENABLE_MIND_MAP_DEBUG
-                    if (FeatureFlags.ENABLE_MIND_MAP_DEBUG) {
-                        // ★ keep: 開発時のみ Mind Map(Dev) へのショートカットを表示（UI非破壊）
-                        IconButton(onClick = { performTopLevelNav(onOpenMindMap) }) {
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        titleContentColor = if (filterFolderId != null) IceCyan else IceTextPrimary,
+                        // フィルタ中はシアン発光
+                        actionIconContentColor = IceSilver,
+                    ),
+                    modifier = Modifier.statusBarsPadding(),
+                    actions = {
+                        IconButton(onClick = { performTopLevelNav(onOpenAllNotes) }) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.List,
-                                contentDescription = stringResource(R.string.cd_open_mindmap_dev),
+                                imageVector = Icons.AutoMirrored.Filled.ViewList,
+                                contentDescription = "Open all notes",
                             )
                         }
-                    }
-                },
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    vm.newNote()
-                    performTopLevelNav(onOpenEditor)
-                    // ★ Changed: FAB からの遷移もヘルパ経由
-                },
+                        IconButton(onClick = { performTopLevelNav(onOpenSettings) }) {
+                            Icon(
+                                imageVector = Icons.Filled.Settings,
+                                contentDescription = stringResource(R.string.cd_open_settings),
+                            )
+                        }
+                        if (filterFolderId != null) {
+                            IconButton(onClick = { vm.setFolderFilter(null) }) {
+                                Icon(
+                                    Icons.Filled.Clear,
+                                    contentDescription = stringResource(R.string.cd_delete),
+                                    tint = IceCyan,
+                                    // クリアボタンは目立たせる
+                                )
+                            }
+                        }
+                        IconButton(onClick = { performTopLevelNav(onOpenFolders) }) {
+                            Icon(Icons.Filled.Folder, contentDescription = stringResource(R.string.cd_open_folders))
+                        }
+                        IconButton(onClick = { performTopLevelNav(onOpenSearch) }) {
+                            Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.cd_open_search))
+                        }
+                        if (FeatureFlags.ENABLE_MIND_MAP_DEBUG) {
+                            IconButton(onClick = { performTopLevelNav(onOpenMindMap) }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.List,
+                                    contentDescription = stringResource(R.string.cd_open_mindmap_dev),
+                                    tint = IceCyan.copy(alpha = 0.5f),
+                                    // Dev機能は控えめに
+                                )
+                            }
+                        }
+                    },
+                )
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = {
+                        vm.newNote()
+                        performTopLevelNav(onOpenEditor)
+                    },
+                    containerColor = IceCyan,
+                    contentColor = IceDeepNavy,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.cd_new_note))
+                }
+            },
+        ) { inner ->
+            Box(
+                modifier = Modifier
+                    .padding(inner)
+                    .fillMaxSize(),
             ) {
-                Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.cd_new_note))
-            }
-        },
-    ) { inner ->
-        Row(
-            Modifier
-                .padding(inner)
-                .fillMaxSize(),
-        ) {
-            // 左：一覧
-            Box(Modifier.weight(1f)) {
-                // ★ Added: Paging のロード状態に応じて分岐
                 when (val state = notesPaging.loadState.refresh) {
                     is LoadState.Loading -> {
                         InitialLoading()
                     }
                     is LoadState.Error -> {
-                        EmptyMessage(
-                            // ★ Changed: 簡易エラー表示（既存の EmptyMessage を流用）
-                            title = "読み込みに失敗しました",
-                            subtitle = state.error.message ?: "不明なエラー",
+                        EmptyHint(
+                            title = "SYSTEM_ERROR",
+                            subtitle = state.error.message ?: "Unknown Error",
                         )
                     }
                     is LoadState.NotLoading -> {
                         if (notesPaging.itemCount == 0) {
-                            // ★ Changed: 空状態
-                            EmptyMessage()
+                            EmptyHint(
+                                title = "NO_LOGS_FOUND",
+                                subtitle = "Tap + to create a new entry",
+                            )
                         } else {
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                contentPadding = PaddingValues(
+                                    start = 16.dp,
+                                    end = 16.dp,
+                                    top = 8.dp,
+                                    bottom = 100.dp, // FAB余白
+                                ),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
                             ) {
-                                // ★ Changed: items(list) → items(count) に置換
                                 items(
                                     count = notesPaging.itemCount,
                                     key = { index ->
                                         val item = notesPaging[index]
                                         item?.id ?: "placeholder-$index"
-                                        // ★ Added: null プレースホルダー対応
                                     },
                                 ) { index ->
                                     val note = notesPaging[index]
                                     if (note == null) {
                                         ShimmerlessPlaceholderRow()
-                                        // ★ Added: プレースホルダー
                                     } else {
-                                        NoteRow(
+                                        BugRow(
                                             note = note,
                                             onClick = {
                                                 vm.loadNote(note.id)
                                                 performTopLevelNav(onOpenEditor)
-                                                // ★ Changed: 行内の遷移もヘルパ経由
                                             },
                                             onToggleStar = { vm.toggleStar(note.id, note.isStarred) },
                                         )
                                     }
                                 }
-
-                                // ★ Added: 追加ロードのフッター表示
                                 if (notesPaging.loadState.append is LoadState.Loading) {
                                     item(key = "append-loading") { AppendLoading() }
                                 }
@@ -232,51 +259,56 @@ fun BugsScreen(
                     }
                 }
             }
-
-            VerticalDivider(
-                modifier = Modifier.fillMaxHeight(),
-                thickness = 1.dp,
-            )
-
-            // 右：エディタ
-            EditorPane(
-                editing = editing,
-                folders = folders,
-                onTitleChange = { text -> vm.setEditingTitle(text) },
-                onContentChange = { text -> vm.setEditingContent(text) },
-                onFolderPick = { id -> vm.setEditingFolder(id) },
-                onSave = { vm.saveEditing() },
-                onDelete = { vm.deleteEditing() },
-                onAddFolder = { name -> vm.addFolder(name) },
-                onDeleteFolder = { id -> vm.deleteFolder(id) },
-                showFolderMenu = showFolderMenu,
-                setShowFolderMenu = { flag -> showFolderMenu = flag },
-            )
         }
     }
 }
 
 @Composable
-private fun NoteRow(
+private fun BugRow(
     note: Note,
     onClick: () -> Unit,
     onToggleStar: () -> Unit,
 ) {
-    Surface(
-        tonalElevation = 2.dp,
-        shape = MaterialTheme.shapes.medium,
-        modifier = Modifier.fillMaxWidth(),
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val animatedBorderColor by animateColorAsState(
+        targetValue = if (isPressed) IceCyan else IceGlassBorder,
+        label = "borderGlow",
+        animationSpec = tween(durationMillis = 150),
+    )
+
+    val animatedContainerColor by animateColorAsState(
+        targetValue = if (isPressed) IceGlassSurface.copy(alpha = 0.25f) else IceGlassSurface,
+        label = "containerGlow",
+        animationSpec = tween(durationMillis = 150),
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple(color = IceCyan),
+                onClick = onClick,
+            ),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = animatedContainerColor,
+        ),
+        border = BorderStroke(1.dp, animatedBorderColor),
+        elevation = CardDefaults.cardElevation(0.dp),
     ) {
         Row(
-            Modifier
-                .clickable(onClick = onClick)
-                .padding(12.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = note.title.ifBlank { "(無題)" },
+                    text = note.title.ifBlank { "UNTITLED_LOG" },
                     style = MaterialTheme.typography.titleMedium,
+                    color = IceTextPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -284,160 +316,30 @@ private fun NoteRow(
                 Text(
                     text = note.content,
                     style = MaterialTheme.typography.bodyMedium,
+                    color = IceTextSecondary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
             IconButton(onClick = onToggleStar) {
                 if (note.isStarred) {
-                    Icon(Icons.Filled.Star, contentDescription = null)
+                    Icon(
+                        Icons.Filled.Star,
+                        contentDescription = "Starred",
+                        tint = IceCyan, // スターもシアンで発光
+                    )
                 } else {
-                    Icon(Icons.Outlined.StarBorder, contentDescription = null)
-                }
-            }
-        }
-    }
-}
-
-/* ▼▼ ここから EditorPane（スクロール付与版） ▼▼ */
-@Composable
-private fun EditorPane(
-    editing: Note?,
-    folders: List<Folder>,
-    onTitleChange: (String) -> Unit,
-    onContentChange: (String) -> Unit,
-    onFolderPick: (Long?) -> Unit,
-    onSave: () -> Unit,
-    onDelete: () -> Unit,
-    onAddFolder: (String) -> Unit,
-    onDeleteFolder: (Long) -> Unit,
-    showFolderMenu: Boolean,
-    setShowFolderMenu: (Boolean) -> Unit,
-) {
-    Column(
-        Modifier
-            .widthIn(min = 340.dp)
-            .fillMaxHeight()
-            .padding(12.dp)
-            .verticalScroll(rememberScrollState()),
-        // ★ keep: 編集ペイン全体を縦スクロール可能に
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text("編集", style = MaterialTheme.typography.titleLarge)
-        OutlinedTextField(
-            value = editing?.title.orEmpty(),
-            onValueChange = onTitleChange,
-            label = { Text("タイトル") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        OutlinedTextField(
-            value = editing?.content.orEmpty(),
-            onValueChange = onContentChange,
-            label = { Text("内容") },
-            minLines = 6,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        HorizontalDivider(thickness = 1.dp)
-        // フォルダ選択
-        Box {
-            OutlinedButton(onClick = { setShowFolderMenu(true) }) {
-                val current = folders.firstOrNull { it.id == editing?.folderId }?.name
-                Text(current ?: "フォルダ未選択")
-            }
-            DropdownMenu(
-                expanded = showFolderMenu,
-                onDismissRequest = { setShowFolderMenu(false) },
-            ) {
-                DropdownMenuItem(
-                    text = { Text("未選択（なし）") },
-                    onClick = {
-                        onFolderPick(null)
-                        setShowFolderMenu(false)
-                    },
-                )
-                folders.forEach { f ->
-                    DropdownMenuItem(
-                        text = { Text(f.name) },
-                        onClick = {
-                            onFolderPick(f.id)
-                            setShowFolderMenu(false)
-                        },
-                        trailingIcon = {
-                            IconButton(onClick = { onDeleteFolder(f.id) }) {
-                                Icon(Icons.Filled.Delete, contentDescription = "Delete folder")
-                            }
-                        },
+                    Icon(
+                        Icons.Outlined.StarBorder,
+                        contentDescription = "Not starred",
+                        tint = IceSilver,
                     )
                 }
             }
         }
-        // 保存・削除・フォルダ追加
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(onClick = onSave, enabled = editing != null) { Text("保存") }
-            OutlinedButton(
-                onClick = onDelete,
-                enabled = (editing?.id ?: 0L) != 0L,
-            ) { Text("削除") }
-            var newFolder by remember { mutableStateOf("") }
-            OutlinedTextField(
-                value = newFolder,
-                onValueChange = { text -> newFolder = text },
-                label = { Text("新規フォルダ") },
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-            )
-            Button(
-                onClick = {
-                    val name = newFolder.trim()
-                    if (name.isNotEmpty()) onAddFolder(name)
-                    newFolder = ""
-                },
-            ) { Text("追加") }
-        }
-    }
-}
-/* ▲▲ ここまで EditorPane ▲▲ */
-
-/* ▼▼ ここから Empty/Loading 系 ▼▼ */
-
-// ★ Changed: 既存 EmptyMessage を引数なし固定 → 互換のため引数ありオーバーロードを用意
-@Composable
-private fun EmptyMessage() {
-    EmptyMessage(
-        title = stringResource(R.string.empty_no_memo),
-        subtitle = stringResource(R.string.empty_tip_create),
-    )
-}
-
-// ★ Added: 文言を受け取れる版（エラー等でも再利用）
-@Composable
-private fun EmptyMessage(
-    title: String,
-    subtitle: String,
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 32.dp),
-        tonalElevation = 0.dp,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(4.dp))
-            Text(
-                subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
     }
 }
 
-// ★ Added: 初回ロード表示（中央にインジケータ）
 @Composable
 private fun InitialLoading() {
     Column(
@@ -446,13 +348,16 @@ private fun InitialLoading() {
             .padding(top = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        CircularProgressIndicator()
+        CircularProgressIndicator(color = IceCyan)
         Spacer(Modifier.height(12.dp))
-        Text("読み込み中…")
+        Text(
+            "LOADING_SYSTEM...",
+            style = MaterialTheme.typography.bodySmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace),
+            color = IceTextSecondary,
+        )
     }
 }
 
-// ★ Added: 追加ロードのフッター表示
 @Composable
 private fun AppendLoading() {
     Row(
@@ -462,13 +367,12 @@ private fun AppendLoading() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
-        CircularProgressIndicator()
-        Spacer(Modifier.height(8.dp))
-        Text("さらに読み込み中…")
+        CircularProgressIndicator(color = IceCyan, modifier = Modifier.height(20.dp).width(20.dp))
+        Spacer(Modifier.width(8.dp))
+        Text("FETCHING_MORE...", color = IceTextSecondary, style = MaterialTheme.typography.bodySmall)
     }
 }
 
-// ★ Added: 追加ロード失敗の簡易表示（必要なら再試行ボタンを追加）
 @Composable
 private fun AppendError() {
     Row(
@@ -478,20 +382,42 @@ private fun AppendError() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
-        Text("読み込みに失敗しました")
+        Text("CONNECTION_LOST", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
     }
 }
 
-// ★ Added: プレースホルダー行（簡易）
 @Composable
 private fun ShimmerlessPlaceholderRow() {
-    Surface(
-        tonalElevation = 1.dp,
-        shape = MaterialTheme.shapes.medium,
+    Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(64.dp),
-    ) { /* 簡易なので中身は空。必要なら灰色のボックス等を配置 */ }
+        colors = CardDefaults.cardColors(containerColor = IceGlassSurface.copy(alpha = 0.1f)),
+        border = BorderStroke(1.dp, IceGlassBorder.copy(alpha = 0.3f)),
+    ) { /* Placeholder */ }
 }
 
-/* ▲▲ ここまで Empty/Loading 系 ▲▲ */
+@Composable
+private fun EmptyHint(
+    title: String,
+    subtitle: String,
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 64.dp),
+    ) {
+        Text(
+            title,
+            style = MaterialTheme.typography.titleMedium.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace),
+            color = IceTextSecondary,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = IceTextSecondary.copy(alpha = 0.7f),
+        )
+    }
+}

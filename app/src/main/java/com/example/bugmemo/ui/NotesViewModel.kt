@@ -6,22 +6,17 @@
 
 package com.example.bugmemo.ui
 
-import android.app.Application
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.example.bugmemo.data.Folder
 import com.example.bugmemo.data.Note
 import com.example.bugmemo.data.NotesRepository
-import com.example.bugmemo.data.RoomNotesRepository
 import com.example.bugmemo.data.SeedNote
-import com.example.bugmemo.data.db.AppDatabase
 import com.example.bugmemo.data.prefs.SettingsRepository
 import com.example.bugmemo.data.seedIfEmpty
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,22 +33,19 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-// ★ Removed: 未実装の拡張に依存していたため削除
-// ★ Removed: import androidx.paging.filter as pagingFilter
+import javax.inject.Inject
 
 /**
- * NotesViewModel
- * - 検索クエリ / フォルダ絞り込みを DataStore へ保存・復元
- * - 一覧は（検索 × フォルダ）で動的フィルタ
- * - 削除→Undo / 失敗時のSnackbar通知
- * - ★ keep: Paging 3 で Flow<PagingData<Note>> を公開
+ * NotesViewModel (Hilt Edition)
+ * - @HiltViewModel と @Inject constructor により、Factory 不要で自動生成
  */
-class NotesViewModel(
+@HiltViewModel
+class NotesViewModel @Inject constructor(
     private val repo: NotesRepository,
     private val settings: SettingsRepository,
 ) : ViewModel() {
 
-    // ─────────── UIイベント（Snackbar など）───────────
+    // ─────────── UIイベント ───────────
     sealed interface UiEvent {
         data class Message(val text: String) : UiEvent
         data class UndoDelete(val text: String) : UiEvent
@@ -61,10 +53,10 @@ class NotesViewModel(
     private val _events = MutableSharedFlow<UiEvent>(extraBufferCapacity = 1)
     val events: SharedFlow<UiEvent> = _events.asSharedFlow()
 
-    // ★ keep: 直前に削除したノート（Undo 復元用）を保持
+    // 直前に削除したノート（Undo 復元用）
     private var lastDeleted: Note? = null
 
-    // ─────────── 検索クエリ（保存・復元対応）──────────
+    // ─────────── 検索クエリ ──────────
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
 
@@ -78,14 +70,13 @@ class NotesViewModel(
         }
     }
 
-    // ★ keep: 入力をデバウンスして検索切替
     private val debouncedQuery: Flow<String> =
         query
             .map { it.trim() }
             .debounce(250)
             .distinctUntilChanged()
 
-    // ─────────── フォルダ絞り込み（保存・復元対応）──────────
+    // ─────────── フォルダ絞り込み ──────────
     private val _filterFolderId = MutableStateFlow<Long?>(null)
     val filterFolderId: StateFlow<Long?> = _filterFolderId.asStateFlow()
 
@@ -100,60 +91,32 @@ class NotesViewModel(
     }
 
     init {
-        // フォルダ絞り込みIDの復元
+        // 設定の復元
         viewModelScope.launch {
-            settings.filterFolderId
-                .collect { saved ->
-                    if (saved != _filterFolderId.value) {
-                        _filterFolderId.value = saved
-                        // ★ Added: 値が変わった時だけ反映
-                    }
-                }
+            settings.filterFolderId.collect { saved ->
+                if (saved != _filterFolderId.value) _filterFolderId.value = saved
+            }
         }
-        // 検索クエリの復元
         viewModelScope.launch {
-            settings.lastQuery
-                .collect { saved ->
-                    if (saved != _query.value) {
-                        _query.value = saved
-                    }
-                }
+            settings.lastQuery.collect { saved ->
+                if (saved != _query.value) _query.value = saved
+            }
         }
     }
 
-    // ─────────── 非 Paging 版（互換）──────────
-    val notes: StateFlow<List<Note>> =
-        combine(debouncedQuery, filterFolderId) { q, folderId -> q to folderId }
-            .flatMapLatest { (q, folderId) ->
-                val base = if (q.isBlank()) repo.observeNotes() else repo.searchNotes(q)
-                if (folderId == null) {
-                    base
-                } else {
-                    base.map { list -> list.filter { it.folderId == folderId } }
-                }
-            }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-
-    // ─────────── Paging 3 版（Flow<PagingData<Note>>）──────────
+    // ─────────── Paging 3 版 ──────────
     private val pageSize = 50
 
-    // ★ Changed: フォルダ絞り込み時は ViewModel 内での PagingData.filter を廃止し、
-    //            Repository の DAO バックエンド（pagingSource(folderId)）を **直接**呼ぶ
-    //            → 「DAO の関数が未使用」警告を解消しつつ、DB 側で最小データだけ読み込む
     val pagedNotes: Flow<PagingData<Note>> =
         combine(debouncedQuery, filterFolderId) { q, folderId -> q to folderId }
             .flatMapLatest { (q, folderId) ->
                 if (q.isBlank()) {
-                    // ★ Changed: 非検索時 → フォルダIDを Repository に渡して DAO の PagingSource を利用
                     repo.pagedNotesByFolder(folderId = folderId, pageSize = pageSize)
                 } else {
-                    // ★ keep: 検索時 → FTS/LIKE の PagingSource を使う Repository 実装へ委譲
-                    //         （フォルダも掛け合わせたい場合は pagedSearchByFolder(...) を IF に追加する）
                     repo.pagedSearch(query = q, pageSize = pageSize)
                 }
             }
             .cachedIn(viewModelScope)
-    // ★ 再生成時の無駄を抑制
 
     // ─────────── フォルダ一覧 ───────────
     val folders: StateFlow<List<Folder>> =
@@ -175,16 +138,15 @@ class NotesViewModel(
 
     fun newNote() {
         val now = System.currentTimeMillis()
-        _editing.value =
-            Note(
-                id = 0L,
-                title = "",
-                content = "",
-                folderId = null,
-                createdAt = now,
-                updatedAt = now,
-                isStarred = false,
-            )
+        _editing.value = Note(
+            id = 0L,
+            title = "",
+            content = "",
+            folderId = null,
+            createdAt = now,
+            updatedAt = now,
+            isStarred = false,
+        )
     }
 
     fun setEditingTitle(text: String) {
@@ -231,12 +193,7 @@ class NotesViewModel(
         lastDeleted = null
         viewModelScope.launch {
             runCatching {
-                repo.upsert(
-                    note.copy(
-                        id = 0L,
-                        updatedAt = System.currentTimeMillis(),
-                    ),
-                )
+                repo.upsert(note.copy(id = 0L, updatedAt = System.currentTimeMillis()))
                 _events.tryEmit(UiEvent.Message("復元しました"))
             }.onFailure { e ->
                 _events.tryEmit(UiEvent.Message("復元に失敗しました: ${e.message ?: "不明なエラー"}"))
@@ -244,10 +201,7 @@ class NotesViewModel(
         }
     }
 
-    fun toggleStar(
-        noteId: Long,
-        current: Boolean,
-    ) {
+    fun toggleStar(noteId: Long, current: Boolean) {
         viewModelScope.launch {
             runCatching {
                 repo.setStarred(noteId, !current)
@@ -285,9 +239,7 @@ class NotesViewModel(
         }
     }
 
-    /* ===============================
-       ★ keep: データ投入（シード）ヘルパ
-       =============================== */
+    // シード投入ヘルパ
     @Suppress("unused")
     fun seedIfEmpty(
         folders: List<String> = listOf("Inbox", "Ideas"),
@@ -310,19 +262,6 @@ class NotesViewModel(
                 repo.seedIfEmpty(folders = folders, notes = notes)
             }.onFailure { e ->
                 _events.tryEmit(UiEvent.Message("シード投入に失敗しました: ${e.message ?: "不明なエラー"}"))
-            }
-        }
-    }
-
-    // ─────────── Factory（DI 最小）──────────
-    companion object {
-        fun factory(): ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                val app = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as Application
-                val db = AppDatabase.get(app)
-                val notesRepo = RoomNotesRepository(db.noteDao(), db.folderDao())
-                val settingsRepo = SettingsRepository.get(app)
-                NotesViewModel(notesRepo, settingsRepo)
             }
         }
     }

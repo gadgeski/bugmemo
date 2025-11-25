@@ -9,7 +9,7 @@ plugins {
     // ★ Added: Hilt Plugin の定義 (apply false でルートに登録)
     // アプリ側と同じバージョン "2.51.1" を指定しておきます。
     // バージョンカタログ(libs.plugins.hilt)がある場合は alias(...) に置き換えてください。
-    id("com.google.dagger.hilt.android") version "2.51.1" apply false
+    id("com.google.dagger.hilt.android") version "2.57.2" apply false
 
     alias(libs.plugins.spotless)
 }

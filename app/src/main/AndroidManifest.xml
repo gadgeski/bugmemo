@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    >
-    <!-- ★ Removed: 未使用の tools 名前空間 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- ★ Fix: android:name=".BugMemoApp" を追加（Hiltを使用するために必須） -->
     <application
+        android:name=".BugMemoApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -12,15 +12,18 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Bugmemo">
+
+        <!-- ★ Fix: windowSoftInputMode="adjustResize" を追加（キーボード制御用） -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.Bugmemo">
+            android:theme="@style/Theme.Bugmemo"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
     </application>
-    <!-- ★ Removed: アプリ側と同一の label は冗長なので削除 -->
+
 </manifest>

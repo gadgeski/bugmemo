@@ -9,12 +9,25 @@
     <string name="title_bugmemo">Bug Memo</string>
 
     <!-- Actions/Buttons -->
-    <string name="action_folders">Folder</string>>
-    <string name="action_search">Search</string>>
-    <string name="action_mindmap_dev">Mind Map(Prototype)</string>>
+    <string name="action_folders">Folder</string> <!-- Fix: Removed extra > -->
+    <string name="action_search">Search</string> <!-- Fix: Removed extra > -->
+    <string name="action_mindmap_dev">Mind Map(Prototype)</string> <!-- Fix: Removed extra > -->
+    <string name="action_add">Add</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_child_add_open">Add child</string>
+    <string name="action_child_add_close">Close</string>
 
     <!-- Input Label -->
     <string name="label_no_folder">No folder selected</string>
+    <string name="label_new_root_node">New node (root)</string>
+    <string name="label_name">Name</string>
+    <string name="label_child_name">Child node</string>
+
+    <!-- Editor basics -->
+    <string name="title_new_note">New note</string>
+    <string name="label_untitled">(Untitled)</string>
+    <string name="label_title">Title</string>
+    <string name="label_content">Content</string>
 
     <!-- contentDescription(Accessibility) -->
     <string name="cd_new_note">Create</string>
@@ -23,6 +36,9 @@
     <string name="cd_open_mindmap_dev">Mind Map(Prototype)</string>
     <string name="cd_clear_folder_filter">Remove folder filtering</string>
     <string name="cd_open_settings">Settings</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_save">Save</string>
+    <string name="cd_delete">Delete</string>
 
     <!-- For reviewing the folder selection menu -->
     <string name="menu_unselected_none">Unselected</string>
@@ -31,26 +47,8 @@
     <string name="empty_no_memo">No memos yet</string>
     <string name="empty_tip_create">Tap the + button to create one</string>
 
-    <!-- Editor basics (already used in NoteEditorScreen) -->
-    <string name="title_new_note">New note</string>
-    <string name="label_untitled">(Untitled)</string>
-    <string name="label_title">Title</string>
-    <string name="label_content">Content</string>
-
-    <!-- Common CD -->
-    <string name="cd_back">Back</string>
-    <string name="cd_save">Save</string>
-    <string name="cd_delete">Delete</string>
-
-    <!-- Mind map bits used above -->
+    <!-- Mind map bits -->
     <string name="title_mindmap_with_count">Mind Map (%1$d)</string>
-    <string name="label_new_root_node">New node (root)</string>
-    <string name="label_name">Name</string>
-    <string name="label_child_name">Child node</string>
-    <string name="action_add">Add</string>
-    <string name="action_edit">Edit</string>
-    <string name="action_child_add_open">Add child</string>
-    <string name="action_child_add_close">Close</string>
     <string name="snack_root_added">Added to root</string>
     <string name="snack_renamed">Updated name</string>
     <string name="snack_deleted">Deleted</string>
@@ -67,8 +65,7 @@
     <string name="action_close">Close</string>
 
     <!-- Settings: Editor Font Size -->
-    <string name="pref_editor_font_size">Editor font size</string> <!-- ★ Added -->
-    <string name="pref_editor_font_size_value">%1$d%%</string> <!-- ★ Added: for showing like 120% -->
-
+    <string name="pref_editor_font_size">Editor font size</string>
+    <string name="pref_editor_font_size_value">%1$d%%</string>
 
 </resources>
