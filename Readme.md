@@ -35,6 +35,7 @@
 </td>
 <td align="center">
 <img src="docs/img/Iceberg-Tech_Dashboard.png" alt="ダッシュボード" width="300">
+<br>
 <sub>ダッシュボード</sub>
 </td>
 <td align="center">
