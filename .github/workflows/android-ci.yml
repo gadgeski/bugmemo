@@ -1,57 +1,62 @@
-# .github/workflows/android-ci.yml
-name: Android CI (lint & unit test)
+name: Android CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ "main", "master" ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ "main", "master" ]
 
 jobs:
   build:
-    # ★ Changed: macOS→Ubuntu（速い・安定）
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Java 17
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: 17
-          # ★ Added: Gradleキャッシュ
-          cache: gradle
+          java-version: '17'
+          distribution: 'temurin'
+          # cache: gradle  <-- setup-gradle に任せるため、ここでは削除
 
-      - name: Gradle Wrapper Permissions
+      # ★ Added: Gradle公式アクション（高度なキャッシュ管理と最適化）
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      # ---- Spotless（フォーマット検査）----
-      - name: Spotless (format check)
-        # ★ Changed: --stacktrace で詳細
+      # 1. Spotless (コードスタイル)
+      - name: Check Spotless
         run: ./gradlew spotlessCheck --stacktrace
 
-      # ---- Lint（モジュールを明示）----
-      - name: Android Lint (debug)
-        # ★ Changed: :app:lintDebug に限定
+      # 2. Lint (静的解析)
+      - name: Run Lint
         run: ./gradlew :app:lintDebug --stacktrace
+
       - name: Upload Lint Reports
-        if: always()
-        # ★ Added: レポートをアーティファクト化
+        if: always() # 失敗してもレポートは残す
         uses: actions/upload-artifact@v4
         with:
           name: lint-report
-          path: app/build/reports/lint/*
+          path: app/build/reports/lint/
 
-      # ---- Unit Test（モジュールを明示）----
-      - name: Unit tests (debug)
-        # ★ Changed: タスクを明示
+      # 3. Unit Test (単体テスト)
+      - name: Run Unit Tests
         run: ./gradlew :app:testDebugUnitTest --stacktrace
+
       - name: Upload Test Reports
         if: always()
-        # ★ Added: テストレポートも取得
         uses: actions/upload-artifact@v4
         with:
           name: test-report
-          path: app/build/test-results/testDebugUnitTest/
+          # ★ Changed: XMLだけでなく、人間が見やすいHTMLレポートのパスを指定
+          path: app/build/reports/tests/testDebugUnitTest/
+
+      # 4. Assemble (ビルド検証)
+      # ★ Added: Lint/Testが通ってもビルドがコケる場合があるため、APK生成もチェックする
+      - name: Build Debug APK
+        run: ./gradlew :app:assembleDebug
