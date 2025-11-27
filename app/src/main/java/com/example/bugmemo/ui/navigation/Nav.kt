@@ -18,9 +18,6 @@ import com.example.bugmemo.ui.screens.NoteEditorScreen
 import com.example.bugmemo.ui.screens.SearchScreen
 import com.example.bugmemo.ui.screens.SettingsScreen
 
-// ★ Changed: 警告に従い、パッケージを hilt.navigation... から hilt.lifecycle... に変更
-// これにより Deprecated 警告が解消されます(androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel)
-
 // keep: ルート定義
 object Routes {
     const val BUGS = "bugs"
@@ -52,6 +49,7 @@ fun AppNavHost(
                 onOpenFolders = { navController.navigateTopLevel(Routes.FOLDERS) },
                 onOpenMindMap = { navController.navigate(Routes.MINDMAP) },
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                onOpenAllNotes = { navController.navigateTopLevel(Routes.ALL_NOTES) },
             )
         }
         // 検索
@@ -79,11 +77,13 @@ fun AppNavHost(
         }
         // MindMap
         composable(Routes.MINDMAP) {
-            // ★ Changed: 新しいパッケージの hiltViewModel() が使用されます
             val mindVm: MindMapViewModel = hiltViewModel()
             MindMapScreen(
                 onClose = { navController.navigateUp() },
                 vm = mindVm,
+                // ★ Fix: MindMapScreen 側に onOpenNote パラメータが存在しないため削除しました
+                // マインドマップからの連携機能を有効にするには、MindMapScreen.kt を更新して
+                // onOpenNote: (Long) -> Unit パラメータを追加してください。
             )
         }
         // 設定
