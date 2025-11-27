@@ -6,6 +6,7 @@ import android.content.Context
 import com.example.bugmemo.data.NotesRepository
 import com.example.bugmemo.data.RoomNotesRepository
 import com.example.bugmemo.data.db.AppDatabase
+import com.example.bugmemo.data.db.MindMapDao
 import com.example.bugmemo.data.prefs.SettingsRepository
 import dagger.Module
 import dagger.Provides
@@ -16,6 +17,8 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
+// ★ Fix: Hiltの生成コードからの参照をIDEが誤検知するのを防ぐために警告を抑制
+@Suppress("unused")
 object AppModule {
 
     // ───────────── Database ─────────────
@@ -23,22 +26,18 @@ object AppModule {
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase = AppDatabase.get(context as Application)
 
+    // ★ Added: MindMapDao を提供
+    @Provides
+    @Singleton
+    fun provideMindMapDao(db: AppDatabase): MindMapDao = db.mindMapDao()
+
     // ───────────── Repositories ─────────────
 
-    // NotesRepository の実体を提供
     @Provides
     @Singleton
     fun provideNotesRepository(db: AppDatabase): NotesRepository = RoomNotesRepository(db.noteDao(), db.folderDao())
 
-    // SettingsRepository を提供
     @Provides
     @Singleton
     fun provideSettingsRepository(@ApplicationContext context: Context): SettingsRepository = SettingsRepository.get(context as Application)
-
-    // ★ Future: MindMap 機能用のリポジトリがあればここに追加
-    // @Provides
-    // @Singleton
-    // fun provideMindMapRepository(db: AppDatabase): MindMapRepository {
-    //     return RoomMindMapRepository(db.mindMapDao())
-    // }
 }

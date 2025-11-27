@@ -4,19 +4,19 @@ package com.example.bugmemo.data.db
 import androidx.room.Entity
 import androidx.room.Fts4
 import androidx.room.FtsOptions
+import com.example.bugmemo.data.Note
 
-// ★ FTS は Fts3/Fts4 を使用（Room に Fts5 はネイティブサポート未対応/androidx.room.Entity）
-// ★ UNICODE61 を使うため/androidx.room.FtsOptions
-// ★ Fixed: @Fts5 → @Fts4 に変更/利便性が高い
-// ★ Added: tokenizer = UNICODE61 を指定（日本語・記号の扱いを改善）
-// ★ contentEntity=NoteEntity で外部コンテンツ方式（トリガは Room が自動生成）
+/**
+ * 全文検索 (FTS4) 用の仮想テーブル定義
+ * - contentEntity = Note::class を指定することで、
+ * Note テーブルと連動してインデックスが自動更新されます。
+ */
 
 @Fts4(
-    contentEntity = NoteEntity::class,
+    contentEntity = Note::class,
     tokenizer = FtsOptions.TOKENIZER_UNICODE61,
 )
 @Entity(tableName = "notesFts")
-// ★ keep: テーブル名は notesFts に統一
 data class NoteFts(
     val title: String,
     val content: String,

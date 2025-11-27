@@ -115,7 +115,8 @@ fun SettingsScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            "SYSTEM_CONFIG", // Tech感のある英語表記
+                            "SYSTEM_CONFIG",
+                            // Tech感のある英語表記
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                                 fontWeight = FontWeight.Bold,

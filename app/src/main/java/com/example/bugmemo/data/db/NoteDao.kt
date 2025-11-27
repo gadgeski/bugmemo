@@ -8,51 +8,20 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.example.bugmemo.data.Note
 import kotlinx.coroutines.flow.Flow
-// ★ keep: 必要な import のみ個別指定（ワイルドカード回避）
 
-// ─────────────────────────────────────────────
-// FolderDao
-// ─────────────────────────────────────────────
-@Dao
-interface FolderDao {
-
-    @Query("SELECT * FROM folders ORDER BY name")
-    fun observeFolders(): Flow<List<FolderEntity>>
-
-    @Insert
-    suspend fun insert(folder: FolderEntity): Long
-
-    @Delete
-    suspend fun delete(folder: FolderEntity)
-
-    @Suppress("unused")
-    // ★ keep: 将来的なダッシュボード用
-    @Query("SELECT COUNT(*) FROM folders")
-    fun observeFolderCount(): Flow<Long>
-
-    @Suppress("unused")
-    // ★ keep: 起動時チェック等
-    @Query("SELECT COUNT(*) FROM folders")
-    suspend fun countFolders(): Long
-
-    @Suppress("unused")
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertAll(folders: List<FolderEntity>): List<Long>
-}
-
-// ─────────────────────────────────────────────
-// NoteDao
-// ─────────────────────────────────────────────
 @Dao
 interface NoteDao {
 
     @Query("SELECT * FROM notes ORDER BY updatedAt DESC")
-    fun observeNotes(): Flow<List<NoteEntity>>
+    fun observeNotes(): Flow<List<Note>>
 
     @Query("SELECT * FROM notes WHERE id = :id LIMIT 1")
-    suspend fun getById(id: Long): NoteEntity?
+    suspend fun getById(id: Long): Note?
 
+    // Repositoryで FTS 版に切り替えたため、未使用なら削除しても良いですが
+    // Flow版の検索として残す場合はこのまま
     @Query(
         """
         SELECT * FROM notes
@@ -60,28 +29,23 @@ interface NoteDao {
         ORDER BY updatedAt DESC
         """,
     )
-    fun search(q: String): Flow<List<NoteEntity>>
-    // ★ keep: Repository 側で "%$query%" を付与する前提
+    fun search(q: String): Flow<List<Note>>
 
-    // ─────────── PagingSource 追加（ここから）──────────
+    // ─────────── PagingSource ──────────
 
-    // ★ keep: フォルダ絞り込み付き（正規名）
+    // フォルダ絞り込み（カラム名は folder_id）
     @Query(
         """
         SELECT * FROM notes
-        WHERE (:folderId IS NULL OR folderId = :folderId)
+        WHERE (:folderId IS NULL OR folder_id = :folderId)
         ORDER BY updatedAt DESC
         """,
     )
-    fun pagingSourceByFolder(folderId: Long?): PagingSource<Int, NoteEntity>
+    fun pagingSourceByFolder(folderId: Long?): PagingSource<Int, Note>
 
-    // ★ Removed: 互換用の別名（未使用）→ 削除して重複を解消
-    // fun pagingSource(folderId: Long?): PagingSource<Int, NoteEntity>
+    // ★ Fix: 未使用になった pagingSourceLike を削除しました
 
-    // ★ Fixed: FTS 検索の PagingSource
-    // - JOIN 先テーブル名は NoteFts.kt の @Entity(tableName="notesFts") に一致させる
-    // - 外部コンテンツ方式なので ON 句は fts.rowid = n.id（← rowid と content table の INTEGER PRIMARY KEY が一致）
-    // - MATCH はエイリアスではなくテーブル名（notesFts）で書く方が Room/SQLite の解釈で安全
+    // FTS 高速検索
     @Query(
         """
         SELECT n.*
@@ -91,38 +55,24 @@ interface NoteDao {
         ORDER BY n.updatedAt DESC
         """,
     )
-    fun pagingSourceFts(query: String): PagingSource<Int, NoteEntity>
+    fun pagingSourceFts(query: String): PagingSource<Int, Note>
 
-    // ★ keep: LIKE 検索フォールバック（FTS 未準備時に Repository 側オプションで使用）
-    @Suppress("unused")
-    // ★ keep: 使うまで警告抑制（Repository で切替えたら外す）
-    @Query(
-        """
-        SELECT * FROM notes
-        WHERE title LIKE :q OR content LIKE :q
-        ORDER BY updatedAt DESC
-        """,
-    )
-    fun pagingSourceLike(q: String): PagingSource<Int, NoteEntity>
+    // ─────────── CRUD ──────────
 
-    // ─────────── PagingSource 追加（ここまで）──────────
-
-    @Insert
-    suspend fun insert(note: NoteEntity): Long
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(note: Note): Long
 
     @Suppress("unused")
-    // ★ keep: バルク挿入
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertAll(notes: List<NoteEntity>): List<Long>
+    suspend fun insertAll(notes: List<Note>): List<Long>
 
     @Update
-    suspend fun update(note: NoteEntity)
+    suspend fun update(note: Note)
 
     @Delete
-    suspend fun delete(note: NoteEntity)
+    suspend fun delete(note: Note)
 
-    // ★ keep: スター状態のみ部分更新
-    @Query("UPDATE notes SET isStarred = :starred, updatedAt = :updatedAt WHERE id = :id")
+    @Query("UPDATE notes SET is_starred = :starred, updatedAt = :updatedAt WHERE id = :id")
     suspend fun updateStarred(
         id: Long,
         starred: Boolean,
@@ -138,6 +88,6 @@ interface NoteDao {
     suspend fun countNotes(): Long
 
     @Suppress("unused")
-    @Query("SELECT COUNT(*) FROM notes WHERE folderId = :folderId")
+    @Query("SELECT COUNT(*) FROM notes WHERE folder_id = :folderId")
     suspend fun countNotesInFolder(folderId: Long): Long
 }
