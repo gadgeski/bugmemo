@@ -3,6 +3,7 @@ package com.example.bugmemo.ui.mindmap
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.bugmemo.data.Note
 import com.example.bugmemo.data.NotesRepository
 import com.example.bugmemo.data.db.MindMapDao
 import com.example.bugmemo.data.db.MindMapEntity
@@ -18,7 +19,7 @@ data class MindNode(
     val id: Long,
     val title: String,
     val parentId: Long? = null,
-    // ★ Added: 連携ノートID
+    // 連携ノートID
     val noteId: Long? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
@@ -27,10 +28,11 @@ data class MindNode(
 @HiltViewModel
 class MindMapViewModel @Inject constructor(
     private val dao: MindMapDao,
-    private val notesRepo: NotesRepository // ★ Added: ノート作成用
+    // ノート作成用
+    private val notesRepo: NotesRepository,
 ) : ViewModel() {
 
-    // ★ Changed: DB からのデータを監視して MindNode に変換
+    // DB からのデータを監視して MindNode に変換
     val nodes: StateFlow<List<MindNode>> = dao.getAllNodes()
         .map { list ->
             list.map { entity ->
@@ -40,7 +42,7 @@ class MindMapViewModel @Inject constructor(
                     parentId = entity.parentId,
                     noteId = entity.noteId,
                     createdAt = entity.createdAt,
-                    updatedAt = entity.updatedAt
+                    updatedAt = entity.updatedAt,
                 )
             }
         }
@@ -79,7 +81,7 @@ class MindMapViewModel @Inject constructor(
                 parentId = target.parentId,
                 noteId = target.noteId,
                 createdAt = target.createdAt,
-                updatedAt = System.currentTimeMillis()
+                updatedAt = System.currentTimeMillis(),
             )
             dao.update(entity)
         }
@@ -88,7 +90,6 @@ class MindMapViewModel @Inject constructor(
     fun deleteNode(id: Long) {
         val all = nodes.value
         // メモリ上で子孫を特定して一括削除
-        // (再帰SQLを書くより、読み込み済みデータで計算して個別deleteを呼ぶ方がRoomでは楽)
         val toDeleteIds = collectWithChildren(all, id)
 
         // Undo用に退避（Entityに戻す）
@@ -111,21 +112,22 @@ class MindMapViewModel @Inject constructor(
         return true
     }
 
-    // ★ Added: このノードの内容で新規ノートを作成し、紐付ける
+    // このノードの内容で新規ノートを作成し、紐付ける
     fun createNoteFromNode(nodeId: Long) {
         viewModelScope.launch {
             val node = nodes.value.find { it.id == nodeId } ?: return@launch
-            if (node.noteId != null) return@launch // 既に紐付いている
+            if (node.noteId != null) return@launch
+            // 既に紐付いている
 
             // 1. ノート作成
-            val note = com.example.bugmemo.data.Note(
+            val note = Note(
                 id = 0,
                 title = node.title,
                 content = "# ${node.title}\n\nCreated from MindMap.",
                 folderId = null,
                 createdAt = System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis(),
-                isStarred = false
+                isStarred = false,
             )
             val newNoteId = notesRepo.upsert(note)
 
@@ -134,9 +136,9 @@ class MindMapViewModel @Inject constructor(
                 id = node.id,
                 title = node.title,
                 parentId = node.parentId,
-                noteId = newNoteId, // ★ Link!
+                noteId = newNoteId, // Link!
                 createdAt = node.createdAt,
-                updatedAt = System.currentTimeMillis()
+                updatedAt = System.currentTimeMillis(),
             )
             dao.update(entity)
         }

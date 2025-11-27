@@ -113,7 +113,7 @@ fun MindMapScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(brush = backgroundBrush)
+            .background(brush = backgroundBrush),
     ) {
         Scaffold(
             containerColor = Color.Transparent,
@@ -126,8 +126,8 @@ fun MindMapScreen(
                             "MIND_MAP_DB",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontFamily = FontFamily.Monospace,
-                                fontWeight = FontWeight.Bold
-                            )
+                                fontWeight = FontWeight.Bold,
+                            ),
                         )
                     },
                     navigationIcon = {
@@ -138,9 +138,9 @@ fun MindMapScreen(
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
                         titleContentColor = IceTextPrimary,
-                        actionIconContentColor = IceSilver
+                        actionIconContentColor = IceSilver,
                     ),
-                    modifier = Modifier.statusBarsPadding()
+                    modifier = Modifier.statusBarsPadding(),
                 )
             },
         ) { inner ->
@@ -182,9 +182,9 @@ fun MindMapScreen(
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent,
                             cursorColor = IceCyan,
-                            focusedTextColor = IceTextPrimary
+                            focusedTextColor = IceTextPrimary,
                         ),
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace)
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
                     )
                     Spacer(Modifier.width(8.dp))
                     Button(
@@ -199,9 +199,9 @@ fun MindMapScreen(
                             containerColor = IceCyan,
                             contentColor = IceDeepNavy,
                             disabledContainerColor = IceGlassSurface.copy(alpha = 0.3f),
-                            disabledContentColor = IceTextSecondary.copy(alpha = 0.5f)
+                            disabledContentColor = IceTextSecondary.copy(alpha = 0.5f),
                         ),
-                        modifier = Modifier.height(56.dp)
+                        modifier = Modifier.height(56.dp),
                     ) { Icon(Icons.Filled.Add, contentDescription = "Add") }
                 }
 
@@ -209,8 +209,8 @@ fun MindMapScreen(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 24.dp
-                    )
+                        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 24.dp,
+                    ),
                 ) {
                     items(flat, key = { (n, _) -> n.id }) { (node, depth) ->
                         MindNodeRow(
@@ -247,7 +247,7 @@ fun MindMapScreen(
                                     vm.createNoteFromNode(node.id)
                                     scope.launch { snackbarHostState.showSnackbar("NOTE_CREATED_AND_LINKED") }
                                 }
-                            }
+                            },
                         )
                     }
                 }
@@ -310,7 +310,7 @@ private fun MindNodeRow(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
             ) {
                 if (edit) {
                     TextField(
@@ -323,7 +323,10 @@ private fun MindNodeRow(
                             .border(BorderStroke(1.dp, IceCyan), RoundedCornerShape(4.dp)),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = {
-                            if (title.isNotBlank()) { onRename(title.trim()); edit = false }
+                            if (title.isNotBlank()) {
+                                onRename(title.trim())
+                                edit = false
+                            }
                         }),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = IceGlassSurface,
@@ -331,11 +334,14 @@ private fun MindNodeRow(
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent,
                             cursorColor = IceCyan,
-                            focusedTextColor = IceTextPrimary
+                            focusedTextColor = IceTextPrimary,
                         ),
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace)
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
                     )
-                    IconButton(onClick = { onRename(title.trim()); edit = false }, enabled = title.isNotBlank()) {
+                    IconButton(onClick = {
+                        onRename(title.trim())
+                        edit = false
+                    }, enabled = title.isNotBlank()) {
                         Icon(Icons.Filled.Save, contentDescription = "Save", tint = IceCyan)
                     }
                 } else {
@@ -385,7 +391,11 @@ private fun MindNodeRow(
                         modifier = Modifier.weight(1f).focusRequester(childFocusRequester).border(BorderStroke(1.dp, IceGlassBorder), RoundedCornerShape(4.dp)),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = {
-                            if (childTitle.isNotBlank()) { onAddChild(childTitle.trim()); childTitle = ""; addingChild = false }
+                            if (childTitle.isNotBlank()) {
+                                onAddChild(childTitle.trim())
+                                childTitle = ""
+                                addingChild = false
+                            }
                         }),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = IceGlassSurface,
@@ -393,15 +403,21 @@ private fun MindNodeRow(
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent,
                             cursorColor = IceCyan,
-                            focusedTextColor = IceTextPrimary
+                            focusedTextColor = IceTextPrimary,
                         ),
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace)
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
                     )
                     Button(
-                        onClick = { if (childTitle.isNotBlank()) { onAddChild(childTitle.trim()); childTitle = ""; addingChild = false } },
+                        onClick = {
+                            if (childTitle.isNotBlank()) {
+                                onAddChild(childTitle.trim())
+                                childTitle = ""
+                                addingChild = false
+                            }
+                        },
                         enabled = childTitle.isNotBlank(),
                         colors = ButtonDefaults.buttonColors(containerColor = IceCyan, contentColor = IceDeepNavy),
-                        shape = RoundedCornerShape(4.dp)
+                        shape = RoundedCornerShape(4.dp),
                     ) { Text("ADD") }
                 }
             }

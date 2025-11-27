@@ -13,5 +13,5 @@ data class MindMapEntity(
     // ★ Added: 連携するノートのID（Nullなら連携なし）
     @ColumnInfo(name = "note_id") val noteId: Long? = null,
     val createdAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
 )

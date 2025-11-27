@@ -24,28 +24,20 @@ object AppModule {
     // ───────────── Database ─────────────
     @Provides
     @Singleton
-    fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
-        return AppDatabase.get(context as Application)
-    }
+    fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase = AppDatabase.get(context as Application)
 
     // ★ Added: MindMapDao を提供
     @Provides
     @Singleton
-    fun provideMindMapDao(db: AppDatabase): MindMapDao {
-        return db.mindMapDao()
-    }
+    fun provideMindMapDao(db: AppDatabase): MindMapDao = db.mindMapDao()
 
     // ───────────── Repositories ─────────────
 
     @Provides
     @Singleton
-    fun provideNotesRepository(db: AppDatabase): NotesRepository {
-        return RoomNotesRepository(db.noteDao(), db.folderDao())
-    }
+    fun provideNotesRepository(db: AppDatabase): NotesRepository = RoomNotesRepository(db.noteDao(), db.folderDao())
 
     @Provides
     @Singleton
-    fun provideSettingsRepository(@ApplicationContext context: Context): SettingsRepository {
-        return SettingsRepository.get(context as Application)
-    }
+    fun provideSettingsRepository(@ApplicationContext context: Context): SettingsRepository = SettingsRepository.get(context as Application)
 }
