@@ -72,9 +72,7 @@ class RoomNotesRepository(
         return this.notes.insertAll(entities)
     }
 
-    override suspend fun insertAllFolders(folders: List<Folder>): List<Long> {
-        return this.folders.insertAll(folders)
-    }
+    override suspend fun insertAllFolders(folders: List<Folder>): List<Long> = this.folders.insertAll(folders)
 
     // ─────────── Paging 3 ───────────
 
@@ -93,8 +91,7 @@ class RoomNotesRepository(
         },
     ).flow
 
-    override fun pagedNotes(pageSize: Int): Flow<PagingData<Note>> =
-        pagedNotesByFolder(folderId = null, pageSize = pageSize)
+    override fun pagedNotes(pageSize: Int): Flow<PagingData<Note>> = pagedNotesByFolder(folderId = null, pageSize = pageSize)
 
     override fun pagedSearch(query: String, pageSize: Int): Flow<PagingData<Note>> = Pager(
         config = PagingConfig(
