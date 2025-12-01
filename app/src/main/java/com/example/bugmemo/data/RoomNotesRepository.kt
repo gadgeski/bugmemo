@@ -72,6 +72,8 @@ class RoomNotesRepository(
         return this.notes.insertAll(entities)
     }
 
+    override suspend fun getAllNotes(): List<Note> = notes.getAllNotes()
+
     override suspend fun insertAllFolders(folders: List<Folder>): List<Long> = this.folders.insertAll(folders)
 
     // ─────────── Paging 3 ───────────

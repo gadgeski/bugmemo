@@ -30,6 +30,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
@@ -55,11 +57,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.bugmemo.R
 import com.example.bugmemo.core.AppLocaleManager
+import com.example.bugmemo.data.prefs.SettingsRepository
 import com.example.bugmemo.ui.theme.IceCyan
 import com.example.bugmemo.ui.theme.IceDeepNavy
 import com.example.bugmemo.ui.theme.IceGlassBorder
@@ -72,11 +76,9 @@ import com.example.bugmemo.ui.theme.IceTextSecondary
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
-// ★ Fix: 必要な import をここに追加しました(androidx.compose.ui.unit.sp)
-
 /**
  * 設定画面（Iceberg Tech Edition）
- * - システムコンソールのようなUI
+ * - GitHub Token 設定を追加
  */
 @Composable
 fun SettingsScreen(
@@ -91,12 +93,14 @@ fun SettingsScreen(
     val editorFontScale by AppLocaleManager.editorFontScaleFlow(ctx)
         .collectAsStateWithLifecycle(initialValue = 1.0f)
 
+    val githubToken by SettingsRepository.get(ctx).githubToken.collectAsStateWithLifecycle()
+
     var selected by remember(languageTag) { mutableStateOf(languageTag) }
     var tempScale by rememberSaveable(editorFontScale) { mutableFloatStateOf(editorFontScale) }
+    var tempToken by remember(githubToken) { mutableStateOf(githubToken) }
 
     val scope = rememberCoroutineScope()
 
-    // 背景: 深海グラデーション
     val backgroundBrush = remember {
         Brush.verticalGradient(
             colors = listOf(IceHorizon, IceSlate, IceDeepNavy),
@@ -116,7 +120,6 @@ fun SettingsScreen(
                     title = {
                         Text(
                             "SYSTEM_CONFIG",
-                            // Tech感のある英語表記
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                                 fontWeight = FontWeight.Bold,
@@ -143,7 +146,6 @@ fun SettingsScreen(
                 SettingsGlassCard {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         SectionHeader(title = "LANGUAGE_SETTINGS")
-
                         LanguageOptionRow(
                             selected = selected == "",
                             label = stringResource(R.string.pref_language_system),
@@ -166,7 +168,6 @@ fun SettingsScreen(
                 SettingsGlassCard {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         SectionHeader(title = "EDITOR_APPEARANCE")
-
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -179,7 +180,6 @@ fun SettingsScreen(
                             )
                             Text(
                                 text = "${(tempScale * 100).toInt()}%",
-                                // シンプルな表記
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                                     fontWeight = FontWeight.Bold,
@@ -187,7 +187,6 @@ fun SettingsScreen(
                                 color = IceCyan,
                             )
                         }
-
                         Slider(
                             value = tempScale,
                             onValueChange = { tempScale = it.coerceIn(0.5f, 2.0f) },
@@ -198,6 +197,42 @@ fun SettingsScreen(
                                 inactiveTrackColor = IceGlassBorder,
                                 activeTickColor = IceDeepNavy,
                                 inactiveTickColor = IceSilver,
+                            ),
+                        )
+                    }
+                }
+
+                // ===== GitHub連携セクション (New) =====
+                SettingsGlassCard {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SectionHeader(title = "GITHUB_INTEGRATION")
+
+                        Text(
+                            text = "Personal Access Token (gist scope)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = IceTextSecondary,
+                        )
+
+                        OutlinedTextField(
+                            value = tempToken,
+                            onValueChange = { tempToken = it },
+                            placeholder = {
+                                Text("ghp_xxxxxxxx...", color = IceTextSecondary.copy(alpha = 0.5f))
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(), // パスワード形式で表示
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = IceTextPrimary,
+                                unfocusedTextColor = IceTextPrimary,
+                                cursorColor = IceCyan,
+                                focusedBorderColor = IceCyan,
+                                unfocusedBorderColor = IceGlassBorder,
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                            ),
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                             ),
                         )
                     }
@@ -229,9 +264,13 @@ fun SettingsScreen(
                                 if (abs(tempScale - editorFontScale) > 0.0001f) {
                                     AppLocaleManager.setEditorFontScale(ctx, tempScale)
                                 }
+                                // トークン保存
+                                if (tempToken != githubToken) {
+                                    SettingsRepository.get(ctx).setGithubToken(tempToken)
+                                }
                             }
                         },
-                        enabled = (selected != languageTag) || (abs(tempScale - editorFontScale) > 0.0001f),
+                        enabled = (selected != languageTag) || (abs(tempScale - editorFontScale) > 0.0001f) || (tempToken != githubToken),
                         modifier = Modifier.weight(1f).height(50.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = IceCyan,
@@ -245,8 +284,6 @@ fun SettingsScreen(
                     }
                 }
 
-                // ナビゲーションバー分の余白
-                // ★ Fix: LocalDensity を使うために import androidx.compose.ui.platform.LocalDensity が必要
                 val density = LocalDensity.current
                 Spacer(Modifier.height(WindowInsets.statusBars.getTop(density).dp + 24.dp))
             }
@@ -323,6 +360,3 @@ private fun LanguageOptionRow(
         )
     }
 }
-
-// ★ Removed: Preview用のハック関数は不要になったので削除し、
-// 正しく import androidx.compose.ui.platform.LocalDensity を追加しました。

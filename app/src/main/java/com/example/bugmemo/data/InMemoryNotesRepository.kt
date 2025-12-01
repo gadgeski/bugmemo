@@ -212,4 +212,6 @@ class InMemoryNotesRepository : NotesRepository {
         if (toAdd.isNotEmpty()) foldersFlow.update { it + toAdd }
         return ids
     }
+
+    override suspend fun getAllNotes(): List<Note> = notesFlow.value
 }

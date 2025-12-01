@@ -30,6 +30,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Card
@@ -41,6 +42,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -67,13 +70,6 @@ import com.example.bugmemo.ui.theme.IceSlate
 import com.example.bugmemo.ui.theme.IceTextPrimary
 import com.example.bugmemo.ui.theme.IceTextSecondary
 
-// ★ Added: 押下状態の検知(androidx.compose.foundation.interaction.collectIsPressedAsState)
-// ★ Changed: ワイルドカードインポートをやめ、個別インポートに変更(com.example.bugmemo.ui.theme.IceCyanなど)
-
-/* ========================================================
-   BugMemo Screen: "Iceberg Tech" Edition (With Glow Effect)
-   ======================================================== */
-
 @Composable
 fun AllNotesScreen(
     onOpenEditor: () -> Unit = {},
@@ -81,14 +77,9 @@ fun AllNotesScreen(
 ) {
     val notesPaging: LazyPagingItems<Note> = vm.pagedNotes.collectAsLazyPagingItems()
 
-    // 背景: 深海へのダイブ
     val backgroundBrush = remember {
         Brush.verticalGradient(
-            colors = listOf(
-                IceHorizon,
-                IceSlate,
-                IceDeepNavy,
-            ),
+            colors = listOf(IceHorizon, IceSlate, IceDeepNavy),
         )
     }
 
@@ -100,6 +91,26 @@ fun AllNotesScreen(
         Scaffold(
             containerColor = Color.Transparent,
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            // ★ Added: TopAppBarを追加してSyncボタンを配置
+            topBar = {
+                TopAppBar(
+                    title = { /* タイトルは本文中の BUG TRACKER に任せるので空 */ },
+                    actions = {
+                        // ★ Gist Sync Button
+                        IconButton(onClick = { vm.syncToGist() }) {
+                            Icon(
+                                imageVector = Icons.Filled.CloudUpload,
+                                contentDescription = "Sync to Gist",
+                                tint = IceCyan, // シアンで発光させる
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                    ),
+                    modifier = Modifier.statusBarsPadding(),
+                )
+            },
             floatingActionButton = {
                 FloatingActionButton(
                     onClick = {
@@ -124,10 +135,10 @@ fun AllNotesScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .statusBarsPadding()
                         .padding(horizontal = 20.dp),
                 ) {
-                    Spacer(modifier = Modifier.height(40.dp))
+                    // TopBar分の余白はScaffoldがpaddingに入れてくれるので、追加のSpacerは少し調整
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "BUG\nTRACKER",
                         style = MaterialTheme.typography.displayLarge,
@@ -181,18 +192,15 @@ private fun TechGlassCard(
     onClick: () -> Unit,
     onToggleStar: () -> Unit,
 ) {
-    // ★ Fix: マイクロインタラクションの強化（発光アニメーション）
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    // 押している間、枠線が IceCyan に光る
     val animatedBorderColor by animateColorAsState(
         targetValue = if (isPressed) IceCyan else IceGlassBorder,
         label = "borderGlow",
         animationSpec = tween(durationMillis = 150),
     )
 
-    // 押している間、背景も少し明るくする
     val animatedContainerColor by animateColorAsState(
         targetValue = if (isPressed) IceGlassSurface.copy(alpha = 0.25f) else IceGlassSurface,
         label = "containerGlow",
@@ -206,16 +214,13 @@ private fun TechGlassCard(
             .clickable(
                 interactionSource = interactionSource,
                 indication = ripple(color = IceCyan),
-                // リップルも維持
                 onClick = onClick,
             ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = animatedContainerColor,
-            // ★ アニメーション適用
         ),
         border = BorderStroke(1.dp, animatedBorderColor),
-        // ★ アニメーション適用
         elevation = CardDefaults.cardElevation(0.dp),
     ) {
         Row(

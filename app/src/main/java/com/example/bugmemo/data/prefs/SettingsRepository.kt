@@ -7,8 +7,14 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 private const val DS_NAME = "settings"
 private val Context.dataStore by preferencesDataStore(name = DS_NAME)
@@ -48,6 +54,31 @@ class SettingsRepository private constructor(
     /** 検索クエリを保存 */
     suspend fun setLastQuery(q: String) {
         appContext.dataStore.edit { prefs -> prefs[Keys.lastQueryKey] = q }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // GitHub Token (EncryptedSharedPreferences)
+    // ─────────────────────────────────────────────────────────────
+    private val masterKey = MasterKey.Builder(appContext)
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .build()
+
+    private val encryptedPrefs = EncryptedSharedPreferences.create(
+        appContext,
+        "secure_settings",
+        masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+    )
+
+    private val _githubToken = MutableStateFlow(encryptedPrefs.getString("github_token", "") ?: "")
+    val githubToken = _githubToken.asStateFlow()
+
+    suspend fun setGithubToken(token: String) {
+        withContext(Dispatchers.IO) {
+            encryptedPrefs.edit().putString("github_token", token).apply()
+            _githubToken.value = token
+        }
     }
 
     // ─────────────────────────────────────────────────────────────

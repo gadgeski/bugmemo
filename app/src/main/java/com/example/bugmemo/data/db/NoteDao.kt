@@ -83,11 +83,16 @@ interface NoteDao {
     @Query("SELECT COUNT(*) FROM notes")
     fun observeNoteCount(): Flow<Long>
 
-    @Suppress("unused")
     @Query("SELECT COUNT(*) FROM notes")
     suspend fun countNotes(): Long
 
     @Suppress("unused")
+    @Query("SELECT * FROM notes WHERE id = :id")
+    suspend fun getNoteById(id: Long): Note?
+
+    @Query("SELECT * FROM notes")
+    suspend fun getAllNotes(): List<Note>
+
     @Query("SELECT COUNT(*) FROM notes WHERE folder_id = :folderId")
     suspend fun countNotesInFolder(folderId: Long): Long
 }

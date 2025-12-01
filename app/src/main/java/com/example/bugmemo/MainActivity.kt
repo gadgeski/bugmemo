@@ -1,6 +1,7 @@
 // app/src/main/java/com/example/bugmemo/MainActivity.kt
 package com.example.bugmemo
 
+import android.content.Intent
 import android.os.Bundle
 import android.os.StrictMode
 import androidx.activity.ComponentActivity
@@ -21,19 +22,14 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import android.graphics.Color as AndroidColor
 
-// ★ Keep: 標準の拡張関数を使用(androidx.activity.viewModels)
-// ★ Keep: これが必須(dagger.hilt.android.AndroidEntryPoint)
-
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    // ★ Changed: Hilt が ViewModel を生成するため、Factory 指定は不要になりました！
     private val vm: NotesViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ステータスバーの透明化設定 (Iceberg Tech)
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT),
@@ -41,6 +37,11 @@ class MainActivity : ComponentActivity() {
 
         enableStrictModeInDebug()
         seedDebugDataOnce()
+
+        // ★ Fix: 画面回転時などに再度Intentを処理しないよう、初回起動時のみチェック
+        if (savedInstanceState == null) {
+            handleIntent(intent)
+        }
 
         setContent {
             BugMemoTheme {
@@ -54,14 +55,28 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // ★ Fix: 新しいIntentをセットしておく（Androidの作法）
+        this.intent = intent
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        // ★ Fix: mimeType のチェックを "text/plain" 完全一致から "text/" 始まりに緩和
+        // これで text/plain; charset=utf-8 なども許容される
+        if (intent?.action == Intent.ACTION_SEND && intent.type?.startsWith("text/") == true) {
+            val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
+            if (!sharedText.isNullOrBlank()) {
+                vm.handleSharedText(sharedText)
+            }
+        }
+    }
+
     private fun enableStrictModeInDebug() {
         if (!BuildConfig.DEBUG) return
-        StrictMode.setThreadPolicy(
-            StrictMode.ThreadPolicy.Builder().detectAll().penaltyLog().build(),
-        )
-        StrictMode.setVmPolicy(
-            StrictMode.VmPolicy.Builder().detectLeakedClosableObjects().detectActivityLeaks().penaltyLog().build(),
-        )
+        StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder().detectAll().penaltyLog().build())
+        StrictMode.setVmPolicy(StrictMode.VmPolicy.Builder().detectLeakedClosableObjects().detectActivityLeaks().penaltyLog().build())
     }
 
     private fun seedDebugDataOnce() {

@@ -25,6 +25,9 @@ data class Note(
     // v2 で追加（既定: 未スター）
     @ColumnInfo(name = "is_starred")
     val isStarred: Boolean = false,
+
+    @ColumnInfo(name = "image_paths")
+    val imagePaths: List<String> = emptyList(),
 )
 
 @Entity(tableName = "folders")
