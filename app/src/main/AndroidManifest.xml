@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- ★ Fix: android:name=".BugMemoApp" を追加（Hiltを使用するために必須） -->
     <application
         android:name=".BugMemoApp"
         android:allowBackup="true"
@@ -13,7 +12,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Bugmemo">
 
-        <!-- ★ Fix: windowSoftInputMode="adjustResize" を追加（キーボード制御用） -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -22,6 +20,13 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- ★ Added: テキスト共有（ACTION_SEND）を受け入れる設定 -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
     </application>

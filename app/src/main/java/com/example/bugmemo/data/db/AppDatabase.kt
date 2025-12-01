@@ -11,9 +11,10 @@ import com.example.bugmemo.data.Note
 // ★ Fix: NoteFts::class を追加しないと NoteDao のクエリが失敗します
 @Database(
     entities = [Note::class, Folder::class, MindMapEntity::class, NoteFts::class],
-    version = 3, // ★ Fix: テーブル構成が変わるのでバージョンを上げる
+    version = 4, // ★ Fix: テーブル構成が変わるのでバージョンを上げる
     exportSchema = true,
 )
+@androidx.room.TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun noteDao(): NoteDao

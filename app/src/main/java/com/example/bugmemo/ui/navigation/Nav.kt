@@ -81,15 +81,15 @@ fun AppNavHost(
             MindMapScreen(
                 onClose = { navController.navigateUp() },
                 vm = mindVm,
-                // ★ Fix: MindMapScreen 側に onOpenNote パラメータが存在しないため削除しました
-                // マインドマップからの連携機能を有効にするには、MindMapScreen.kt を更新して
-                // onOpenNote: (Long) -> Unit パラメータを追加してください。
+                // Note: MindMapScreen 側に onOpenNote パラメータを追加した場合はここで設定します
+                // onOpenNote = { noteId -> ... }
             )
         }
         // 設定
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 onBack = { navController.navigateUp() },
+                // ★ Fix: SettingsScreen 側の定義変更に合わせて vm 引数を削除しました
             )
         }
         // ALL_NOTES (Home)

@@ -69,18 +69,19 @@ fun AppScaffold(
                         vm.undoDelete()
                     }
                 }
+                // ★ Added: 共有インテント等によるエディタへの自動遷移
+                is NotesViewModel.UiEvent.NavigateToEditor -> {
+                    navController.navigate(Routes.EDITOR)
+                }
             }
         }
     }
 
-    // ★ Changed: BottomNavの並び順を変更
-    // "Notes" (All Notes) をホームとして一番左に配置
     val navItems = listOf(
         NavItem("Notes", Routes.ALL_NOTES) {
             Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Notes")
         },
         NavItem("Bugs", Routes.BUGS) {
-            // 必要であれば別のアイコン(BugReportなど)に変更も可
             Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Bugs")
         },
         NavItem("Search", Routes.SEARCH) {
@@ -91,16 +92,9 @@ fun AppScaffold(
         },
     )
 
-    val bottomBarRoutes = setOf(
-        Routes.BUGS,
-        Routes.SEARCH,
-        Routes.FOLDERS,
-        Routes.ALL_NOTES,
-    )
-
+    val bottomBarRoutes = setOf(Routes.BUGS, Routes.SEARCH, Routes.FOLDERS, Routes.ALL_NOTES)
     val showBottomBar = shouldShowBottomBar(currentDestination, bottomBarRoutes)
 
-    // トップレベル画面間の“共通ナビゲーション”ヘルパ
     fun navigateTopLevel(route: String) {
         navController.navigate(route) {
             launchSingleTop = true
@@ -122,22 +116,12 @@ fun AppScaffold(
                     tonalElevation = 0.dp,
                 ) {
                     navItems.forEach { item ->
-                        // ★ Changed: シンプルな判定ロジックに変更
-                        // タブが独立したため、現在地とルートが一致しているかだけで判定する
                         val selected = currentDestination?.hierarchy?.any { it.route == item.route } == true
-
                         NavigationBarItem(
                             selected = selected,
-                            onClick = {
-                                if (!selected) navigateTopLevel(item.route)
-                            },
+                            onClick = { if (!selected) navigateTopLevel(item.route) },
                             icon = { item.icon() },
-                            label = {
-                                Text(
-                                    item.label,
-                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                )
-                            },
+                            label = { Text(item.label, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = IceCyan,
                                 selectedTextColor = IceCyan,
@@ -154,24 +138,14 @@ fun AppScaffold(
         AppNavHost(
             navController = navController,
             vm = vm,
-            modifier = Modifier
-                .padding(innerPadding)
-                .imePadding(),
+            modifier = Modifier.padding(innerPadding).imePadding(),
         )
     }
 }
 
-/** ボトムバー用モデル */
-private data class NavItem(
-    val label: String,
-    val route: String,
-    val icon: @Composable () -> Unit,
-)
+private data class NavItem(val label: String, val route: String, val icon: @Composable () -> Unit)
 
-private fun shouldShowBottomBar(
-    destination: NavDestination?,
-    bottomBarRoutes: Set<String>,
-): Boolean {
+private fun shouldShowBottomBar(destination: NavDestination?, bottomBarRoutes: Set<String>): Boolean {
     if (destination == null) return true
     return destination.hierarchy.any { it.route in bottomBarRoutes }
 }

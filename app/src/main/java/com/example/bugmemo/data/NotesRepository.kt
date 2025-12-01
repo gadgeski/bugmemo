@@ -27,6 +27,7 @@ interface NotesRepository {
     suspend fun countNotes(): Long
     suspend fun countFolders(): Long
     suspend fun countNotesInFolder(folderId: Long): Long
+    suspend fun getAllNotes(): List<Note>
 
     // バルク挿入
     suspend fun insertAllNotes(notes: List<Note>): List<Long>

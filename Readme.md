@@ -1,28 +1,16 @@
-# BugMemo (Android / Kotlin / Compose)
+# 🧊 BugMemo: Iceberg Tech Edition
 
-モバイル開発中の バグやメモを素早く記録 するシンプルなノートアプリ。フォルダ分け・検索・（将来）マインドマップ表示に対応。
+> **"Inject Knowledge into the Core."**
 
-アプリ全体のデザイン言語を刷新し、深海とテクノロジーをモチーフにした**「Iceberg Tech (Cyber-Glass Brutalism)」**テーマを適用し
-、モダン Android 開発のベストプラクティスに準拠したアーキテクチャ刷新を行いました。
+深海とテクノロジーをモチーフにした **「Iceberg Tech (Cyber-Glass Brutalism)」** デザインの、エンジニア向けバグトラッキング & ナレッジベースアプリ。
 
-- Hilt による DI（依存性注入）の完全導入
-- Edge-to-Edge（全画面）対応
-- Version Catalog への移行など
+## 🚀 概要 (Overview)
 
-## 主な機能
+BugMemo は、モバイル開発中に遭遇するバグや技術的な知見を、**「最速で記録し、構造化して整理する」** ためのツールです。
 
-- バグメモの作成・編集・削除（Undo で復元可）
-- フォルダ管理（作成・削除・絞り込み）
-- 検索（タイトル／本文の部分一致）
-- スター付け（重要メモのマーキング）
-- DataStore による検索語・絞り込みの永続化
-- Room によるローカル永続化（マイグレーション対応）
+v2.0 の大規模リファクタリングにより、モダン Android 開発のベストプラクティス（Hilt, Edge-to-Edge, Version Catalog）を完全導入し、**「使っていて心地よい、没入感のある開発者体験」** を提供します。
 
-## 画面構成
-
-- Bugs: 一覧＋右ペイン編集（FAB から新規）
-- Search: クエリ入力でリアルタイム検索、結果から編集へ
-- Folders: フォルダ一覧・作成・削除、選択で絞り込み
+## ✨ 主な機能 (Features)
 
 ## アプリ画面(新)
 
@@ -60,126 +48,135 @@
 <br>
 <sub>ホーム</sub>
 </td>
-<td align="center">
-<img src="docs/img/BugMemo-Search.png" alt="検索" width="300">
-<br>
-<sub>検索</sub>
-</td>
-<td align="center">
-<img src="docs/img/BugMemo-Mindmap.png" alt="マインドマップ" width="300">
-<br>
-<sub>マインドマップ</sub>
-</td>
-<td align="center">
-<img src="docs/img/BugMemo_Setting.png" alt="設定" width="300">
-<br>
-<sub>設定</sub>
-</td>
-<td align="center">
-<img src="docs/img/Bug Memo-FontBold.png" alt="太文字化" width="300">
-<br>
-<sub>選択した文字を太文字化</sub>
-</td>
 </tr>
 </table>
 
-## 技術スタック
+### 🧠 Thinking & Organizing
 
-- Kotlin / Coroutines / Flow
+#### Mind Map Visualizer
 
-- Jetpack Compose (Material 3, Navigation, Lifecycle)
+思考を整理するためのマインドマップ機能。
 
-- Paging 3 / Paging Compose(Room + PagingData + LazyPagingItems によるページング一覧表示)
+- **永続化対応**: Room Database により、アプリを閉じてもデータは保持されます
+- **Deep Link**: ノードからワンタップで「詳細ノート」を新規作成・リンク可能
+- **回路図デザイン**: サイバーパンクな配線デザインを採用
 
-- Room (DAO / Migration)
+#### High-Speed Search (FTS4)
 
-- DataStore (Preferences)
+SQLite の全文検索エンジン（FTS4）を採用し、大量のログからも瞬時にキーワード検索が可能。
 
-- Unit Test（JUnit4）
+#### Folder Management
 
-- Lint & Spotless（ktlint 連携）による静的検査・整形
+プロジェクトやトピックごとのフォルダ分けと絞り込み表示。
 
-## セットアップ
+### 📝 Editing & Logging
 
+#### Markdown Editor
+
+- **シンタックスハイライト**: `**Bold**` や `Link` などの Markdown 記法をリアルタイムで装飾表示
+- **Iceberg UI**: ガラスのような半透明入力パネルと、ネオンカラーのアクセント
+
+#### Quick Capture (Injector 連携)
+
+別途開発のサテライトアプリ「Injector」や、Android の共有メニューからテキストを受け取り、自動でタイトルを生成して保存。
+
+### ☁️ Connectivity
+
+#### GitHub Gist Sync
+
+Personal Access Token を設定することで、ノートを GitHub Gist に Markdown としてバックアップ可能。チームへの共有や PC での閲覧がシームレスに。
+
+## 🛠️ 技術スタック (Tech Stack)
+
+### Architecture
+
+#### MVVM + Clean Architecture (Pragmatic)
+
+UI → ViewModel → Repository → DataSource (Dao/API) の単方向データフロー。
+
+#### Dependency Injection
+
+`Hilt`を全面採用し、手動 Factory を廃止。`AppModule`による依存関係の一元管理。
+
+#### Single Source of Truth
+
+画面状態は`StateFlow`で管理し、Room データベースを信頼できる唯一の情報源とする。
+
+### Libraries & Tools
+
+- **Language**: Kotlin 2.0
+- **UI**: Jetpack Compose (Material 3)
+  - **Edge-to-Edge**: ステータスバー透明化による完全没入 UI
+  - **Animation**: `animateColorAsState`等によるマイクロインタラクション
+- **Database**: Room (KSP, FTS4, Migration 1→3)
+- **Build**: Gradle Kotlin DSL + Version Catalog (libs.versions.toml)
+- **Quality**: Spotless (Ktlint), GitHub Actions (CI)
+
+### Database Schema
+
+```mermaid
+erDiagram
+    NOTE ||--o{ NOTE_FTS : "indexed by"
+    NOTE {
+        long id PK
+        string title
+        string content
+        long folder_id FK
+        long created_at
+        long updated_at
+        boolean is_starred
+    }
+    FOLDER ||--|{ NOTE : "contains"
+    FOLDER {
+        long id PK
+        string name
+    }
+    MIND_MAP_NODE {
+        long id PK
+        string title
+        long parent_id
+        long note_id FK "Links to Note"
+    }
+```
+
+## 💻 セットアップ & 開発ガイド
+
+### 前提条件
+
+- JDK 17
+- Android Studio Ladybug 以降推奨
+
+### ビルドコマンド
+
+```bash
 # 依存解決・同期
-
-```
 ./gradlew help
-```
 
 # デバッグビルド
-
-```
 ./gradlew assembleDebug
-```
 
-品質チェック
-
-# コード整形（全体を自動修正）
-
-```
+# コード整形（Spotless）
 ./gradlew spotlessApply
-```
 
-# 整形チェック（CI と同等）
-
-```
-./gradlew spotlessCheck
-```
-
-# Lint（baseline あり）
-
-```
-./gradlew lint
-```
-
-# ユニットテスト
-
-```
+# テスト実行
 ./gradlew test
 ```
 
-Lint で baseline created と出た場合はローカルで baseline をコミットして再実行してください。
+### CI (GitHub Actions)
 
-# ローカルで先に整形(コミット前)
+Pull Request 作成時に、以下のワークフローが自動実行されます:
 
-```
-./gradlew spotlessApply && ./gradlew spotlessCheck
-```
+1. **Lint & Format**: Spotless によるコードスタイルチェック
+2. **Unit Test**: JUnit4 によるロジック検証
+3. **Build**: `assembleDebug`によるビルド検証
 
-## 開発メモ（Architecture 概要）
+## 📂 プロジェクト構成
 
-- NotesViewModel
-  - UiEvent による Snackbar 通知（メッセージ／Undo）
-  - query, filterFolderId を DataStore へ保存・復元
-  - notes は（検索 × フォルダ）で動的フィルタ
-- Repository 層
-  - RoomNotesRepository（本番）／InMemoryNotesRepository（テスト）
-- DB
-  - AppDatabase v2（notes.isStarred 列を追加する Migration 1→2 実装）
-- ナビゲーション
-  - AppScaffold → AppNavHost → 各 Screen
+- **ui/**: 画面 (Screen) と ViewModel。Iceberg テーマ定義 (theme/)
+- **data/**: Repository 実装、Room Entity/Dao、DataStore
+- **domain/**: (Future) 純粋なビジネスロジック
+- **di/**: Hilt Modules (AppModule)
 
-## CI
+---
 
-GitHub Actions で以下をチェックします。
-
-- spotlessCheck
-- lint
-- test
-
-## 失敗時のよくある原因：
-
-- README など “misc” 対象ファイルの末尾スペース／改行
-- ktlint の import 並び順／命名規約
-- baseline 未コミットによる Lint 失敗
-
-## より理解度を深める為に/アーキテクチャについて
-
-- docs/app_scaffold.md
-- docs/nav.md
-- settingsscreen + appLocalemanager.md
-
-## より理解度を深める為に/アルゴリズムについて
-
-- algorithms.md
+_BugMemo - Inject Knowledge into the Core._
