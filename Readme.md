@@ -12,6 +12,23 @@ v2.0 の大規模リファクタリングにより、モダン Android 開発の
 
 ## ✨ 主な機能 (Features)
 
+## アプリ画面(新旧)
+
+<table>
+<tr>
+<td align="center">
+<img src="docs/img/Iceberg-Tech_Home.png" alt="ホーム(新)" width="300">
+<br>
+<sub>ホーム(新)</sub>
+</td>
+<td align="center">
+<img src="docs/img/BugMemo-Home.png" alt="ホーム(旧)" width="300">
+<br>
+<sub>ホーム(旧)</sub>
+</td>
+</tr>
+</table>
+
 ## アプリ画面(新)
 
 <table>
@@ -35,18 +52,6 @@ v2.0 の大規模リファクタリングにより、モダン Android 開発の
 <img src="docs/img/Iceberg-Tech_Directories.png" alt="ディレクトリ" width="300">
 <br>
 <sub>ディレクトリ</sub>
-</td>
-</tr>
-</table>
-
-## アプリ画面(旧)
-
-<table>
-<tr>
-<td align="center">
-<img src="docs/img/BugMemo-Home.png" alt="ホーム" width="300">
-<br>
-<sub>ホーム</sub>
 </td>
 </tr>
 </table>
