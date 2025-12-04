@@ -4,6 +4,7 @@ package com.example.bugmemo
 import android.content.Intent
 import android.os.Bundle
 import android.os.StrictMode
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -38,10 +39,9 @@ class MainActivity : ComponentActivity() {
         enableStrictModeInDebug()
         seedDebugDataOnce()
 
-        // ★ Fix: 画面回転時などに再度Intentを処理しないよう、初回起動時のみチェック
-        if (savedInstanceState == null) {
-            handleIntent(intent)
-        }
+        // ★ Fix: savedInstanceState の有無に関わらず、Intentにデータがあれば処理を試みる
+        // (画面回転などの再生成時は、下の handleIntent 内で action が消されているため重複しない)
+        handleIntent(intent)
 
         setContent {
             BugMemoTheme {
@@ -57,18 +57,26 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        // ★ Fix: 新しいIntentをセットしておく（Androidの作法）
-        this.intent = intent
+        // ★ Fix: 新しいIntentを受け取ったら、ActivityのIntentを更新する（重要）
+        // これをしないと、getIntent() が古いままになり、整合性が取れなくなることがある
+        setIntent(intent)
         handleIntent(intent)
     }
 
     private fun handleIntent(intent: Intent?) {
-        // ★ Fix: mimeType のチェックを "text/plain" 完全一致から "text/" 始まりに緩和
-        // これで text/plain; charset=utf-8 なども許容される
+        Log.d("BugMemo", "handleIntent: action=${intent?.action}, type=${intent?.type}")
+
         if (intent?.action == Intent.ACTION_SEND && intent.type?.startsWith("text/") == true) {
             val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
+            Log.d("BugMemo", "Shared Text received: ${sharedText?.take(20)}...")
+
             if (!sharedText.isNullOrBlank()) {
                 vm.handleSharedText(sharedText)
+
+                // ★ Fix: 処理済みIntentを「消費」する
+                // これにより、画面回転などで onCreate が再走しても、同じテキストが再度処理されるのを防ぐ
+                intent.action = ""
+                intent.removeExtra(Intent.EXTRA_TEXT)
             }
         }
     }

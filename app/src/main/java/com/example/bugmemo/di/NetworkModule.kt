@@ -1,3 +1,4 @@
+// app/src/main/java/com/example/bugmemo/di/NetworkModule.kt
 package com.example.bugmemo.di
 
 import com.example.bugmemo.data.remote.GistService
@@ -11,6 +12,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
@@ -20,6 +22,7 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideMoshi(): Moshi = Moshi.Builder()
+        // KotlinのデータクラスをJSONに変換するためのアダプター
         .add(KotlinJsonAdapterFactory())
         .build()
 
@@ -27,17 +30,19 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = HttpLoggingInterceptor.Level.BODY // 開発時はログを出す
         }
         return OkHttpClient.Builder()
             .addInterceptor(logging)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
             .build()
     }
 
     @Provides
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient, moshi: Moshi): Retrofit = Retrofit.Builder()
-        .baseUrl("https://api.github.com/")
+        .baseUrl("https://api.github.com/") // GitHub APIのエンドポイント
         .client(okHttpClient)
         .addConverterFactory(MoshiConverterFactory.create(moshi))
         .build()

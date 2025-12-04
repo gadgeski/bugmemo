@@ -1,4 +1,4 @@
-// app/build.gradle.kts — Version Catalog 対応版
+// app/build.gradle.kts
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -70,7 +70,6 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.coil.compose)
 
@@ -80,14 +79,12 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
 
-    // DataStore
+    // DataStore & Security
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.security.crypto)
 
-    // Appcompat
+    // Appcompat & Material
     implementation(libs.androidx.appcompat)
-
-    // ★ Added: View System Material Library (themes.xml のエラー解消用)
     implementation(libs.material)
 
     // Paging
@@ -108,7 +105,7 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
 
-    // Networking
+    // Networking (Retrofit / Moshi / OkHttp)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.moshi)
     implementation(libs.okhttp)

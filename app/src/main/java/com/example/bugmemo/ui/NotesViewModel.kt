@@ -20,6 +20,7 @@ import com.example.bugmemo.data.remote.GistRequest
 import com.example.bugmemo.data.remote.GistService
 import com.example.bugmemo.data.seedIfEmpty
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers // ★ Added
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,9 +37,10 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import kotlinx.coroutines.withContext // ★ Added
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 @HiltViewModel
@@ -235,11 +237,11 @@ class NotesViewModel @Inject constructor(
         }
     }
 
-    // ★ Fix: まだUIから呼ばれていないため警告が出るが、機能として実装済みなので抑制する
-    @Suppress("unused")
+    // ★ Fix: アプリクラッシュの真犯人を修正
+    // 1. Suppress("unused") を削除（AllNotesScreenから呼ばれるため）
+    // 2. withContext(Dispatchers.IO) でバックグラウンド実行を保証
+    // 3. 日付フォーマットを DateTimeFormatter に変更し、警告を解消
     fun syncToGist() {
-        // ★ Note: SettingsRepositoryに githubToken が実装されている前提
-        // もし未実装ならビルドエラーになるため、SettingsRepositoryも要確認
         val token = settings.githubToken.value
         if (token.isBlank()) {
             sendEvent(UiEvent.Message("GitHub Tokenが設定されていません"))
@@ -248,40 +250,50 @@ class NotesViewModel @Inject constructor(
 
         viewModelScope.launch {
             sendEvent(UiEvent.Message("Syncing..."))
+
+            // ★ Crash Fix: 重い処理をIOスレッドに逃がす
             runCatching {
-                // ★ Fix: repo.getAllNotes() は未定義の可能性が高いため、Flowから1回だけ取得する
-                val allNotes = repo.observeNotes().first()
+                withContext(Dispatchers.IO) {
+                    val allNotes = repo.observeNotes().first()
+                    // ★ Fix: モダンな DateTimeFormatter を使用
+                    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
-                val files = allNotes.associate { note ->
-                    val filename = "note_${note.id}.md"
-                    val content = buildString {
-                        appendLine("# ${note.title.ifBlank { "Untitled" }}")
-                        appendLine()
-                        appendLine(note.content)
-                        if (note.imagePaths.isNotEmpty()) {
+                    val files = allNotes.associate { note ->
+                        val filename = "note_${note.id}.md"
+                        val content = buildString {
+                            appendLine("# ${note.title.ifBlank { "Untitled" }}")
                             appendLine()
-                            appendLine("## Attachments")
-                            note.imagePaths.forEach { path ->
-                                appendLine("- $path")
+                            appendLine(note.content)
+                            if (note.imagePaths.isNotEmpty()) {
+                                appendLine()
+                                appendLine("## Attachments")
+                                note.imagePaths.forEach { path ->
+                                    appendLine("- $path")
+                                }
                             }
+                            appendLine()
+                            val updatedTime = Instant.ofEpochMilli(note.updatedAt)
+                                .atZone(ZoneId.systemDefault())
+                                .format(formatter)
+                            appendLine("> Last Updated: $updatedTime")
                         }
-                        appendLine()
-                        // ★ Fix: Locale.US を指定してフォーマット警告を解消
-                        appendLine("> Last Updated: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date(note.updatedAt))}")
+                        filename to GistFileContent(content)
                     }
-                    filename to GistFileContent(content)
+
+                    val nowTime = Instant.now().atZone(ZoneId.systemDefault()).format(formatter)
+                    val request = GistRequest(
+                        description = "BugMemo Sync - $nowTime",
+                        public = false,
+                        files = files,
+                    )
+
+                    val response = gistService.createGist("token $token", request)
+                    response
                 }
-
-                // ★ Fix: Locale.US を指定
-                val request = GistRequest(
-                    description = "BugMemo Sync - ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())}",
-                    public = false,
-                    files = files,
-                )
-
-                val response = gistService.createGist("token $token", request)
+            }.onSuccess { response ->
                 sendEvent(UiEvent.Message("Sync Success! Gist ID: ${response.id}"))
             }.onFailure { e ->
+                e.printStackTrace()
                 sendEvent(UiEvent.Message("Sync Failed: ${e.message}"))
             }
         }
