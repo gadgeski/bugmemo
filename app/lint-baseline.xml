@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<issues format="6" by="lint 8.13.0" type="baseline" client="gradle" dependencies="false" name="AGP (8.13.0)" variant="all" version="8.13.0">
+<issues format="6" by="lint 8.13.1" type="baseline" client="gradle" dependencies="false" name="AGP (8.13.1)" variant="all" version="8.13.1">
 
     <issue
         id="AndroidGradlePluginVersion"
@@ -11,7 +11,194 @@
             line="4"
             column="17"/>
     </issue>
-    
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.datastore:datastore-preferences than 1.1.1 is available: 1.2.0"
+        errorLine1="datastore = &quot;1.1.1&quot;"
+        errorLine2="            ~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="7"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.room:room-compiler than 2.7.0-alpha11 is available: 2.8.4"
+        errorLine1="room = &quot;2.7.0-alpha11&quot;"
+        errorLine2="       ~~~~~~~~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="8"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.room:room-ktx than 2.7.0-alpha11 is available: 2.8.4"
+        errorLine1="room = &quot;2.7.0-alpha11&quot;"
+        errorLine2="       ~~~~~~~~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="8"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.room:room-paging than 2.7.0-alpha11 is available: 2.8.4"
+        errorLine1="room = &quot;2.7.0-alpha11&quot;"
+        errorLine2="       ~~~~~~~~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="8"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.room:room-runtime than 2.7.0-alpha11 is available: 2.8.4"
+        errorLine1="room = &quot;2.7.0-alpha11&quot;"
+        errorLine2="       ~~~~~~~~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="8"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.activity:activity-compose than 1.12.0 is available: 1.12.1"
+        errorLine1="activityCompose = &quot;1.12.0&quot;"
+        errorLine2="                  ~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="12"
+            column="19"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose:compose-bom than 2025.11.01 is available: 2025.12.00"
+        errorLine1="composeBom = &quot;2025.11.01&quot;"
+        errorLine2="             ~~~~~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="13"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.security:security-crypto than 1.1.0-alpha06 is available: 1.1.0"
+        errorLine1="securityCrypto = &quot;1.1.0-alpha06&quot;"
+        errorLine2="                 ~~~~~~~~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="17"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of org.jetbrains.kotlin.android than 2.0.21 is available: 2.2.21"
+        errorLine1="kotlin = &quot;2.0.21&quot;"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="5"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of org.jetbrains.kotlin.plugin.compose than 2.0.21 is available: 2.2.21"
+        errorLine1="kotlin = &quot;2.0.21&quot;"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="5"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.squareup.retrofit2:converter-moshi than 2.11.0 is available: 3.0.0"
+        errorLine1="retrofit = &quot;2.11.0&quot; # 安定版として一般的 (2.11.0でも可)"
+        errorLine2="           ~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="24"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.squareup.retrofit2:retrofit than 2.11.0 is available: 3.0.0"
+        errorLine1="retrofit = &quot;2.11.0&quot; # 安定版として一般的 (2.11.0でも可)"
+        errorLine2="           ~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="24"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.squareup.okhttp3:logging-interceptor than 4.12.0 is available: 5.3.2"
+        errorLine1="okhttp = &quot;4.12.0&quot;"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="25"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.squareup.okhttp3:okhttp than 4.12.0 is available: 5.3.2"
+        errorLine1="okhttp = &quot;4.12.0&quot;"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="25"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.squareup.moshi:moshi than 1.15.0 is available: 1.15.2"
+        errorLine1="moshi = &quot;1.15.0&quot;"
+        errorLine2="        ~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="26"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.squareup.moshi:moshi-kotlin than 1.15.0 is available: 1.15.2"
+        errorLine1="moshi = &quot;1.15.0&quot;"
+        errorLine2="        ~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="26"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.squareup.moshi:moshi-kotlin-codegen than 1.15.0 is available: 1.15.2"
+        errorLine1="moshi = &quot;1.15.0&quot;"
+        errorLine2="        ~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/bugmemo/gradle/libs.versions.toml"
+            line="26"
+            column="9"/>
+    </issue>
+
     <issue
         id="ObsoleteSdkInt"
         message="This folder configuration (`v26`) is unnecessary; `minSdkVersion` is 34. Merge all the resources in this folder into `mipmap-anydpi`.">
@@ -347,6 +534,303 @@
             file="src/main/res/drawable/ic_launcher_foreground.xml"
             line="1"
             column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.xml.locale_config` appears to be unused"
+        errorLine1="&lt;locale-config xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/xml/locale_config.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.title_bugmemo_with_label` appears to be unused"
+        errorLine1="    &lt;string name=&quot;title_bugmemo_with_label&quot;>Bug Memo — %1$s&lt;/string> &lt;!-- ★ keep: 共有済み -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="7"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.title_mindmap_with_count` appears to be unused"
+        errorLine1="    &lt;string name=&quot;title_mindmap_with_count&quot;>Mind Map（%1$d）&lt;/string> &lt;!-- ★ keep: 共有済み -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="8"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.title_bugmemo` appears to be unused"
+        errorLine1="    &lt;string name=&quot;title_bugmemo&quot;>Bug Memo&lt;/string> &lt;!-- ★ Added: 無フィルタ時のタイトル用（BugsScreenのAppBar） -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="9"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.action_add` appears to be unused"
+        errorLine1="    &lt;string name=&quot;action_add&quot;>追加&lt;/string> &lt;!-- ★ keep -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="12"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.action_edit` appears to be unused"
+        errorLine1="    &lt;string name=&quot;action_edit&quot;>編集&lt;/string> &lt;!-- ★ keep -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="13"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.action_child_add_open` appears to be unused"
+        errorLine1="    &lt;string name=&quot;action_child_add_open&quot;>子ノードを追加&lt;/string> &lt;!-- ★ keep -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="14"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.action_child_add_close` appears to be unused"
+        errorLine1="    &lt;string name=&quot;action_child_add_close&quot;>閉じる&lt;/string> &lt;!-- ★ keep -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="15"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.action_folders` appears to be unused"
+        errorLine1="    &lt;string name=&quot;action_folders&quot;>フォルダ&lt;/string> &lt;!-- ★ keep -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="16"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.action_search` appears to be unused"
+        errorLine1="    &lt;string name=&quot;action_search&quot;>検索&lt;/string> &lt;!-- ★ keep -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="17"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.action_mindmap_dev` appears to be unused"
+        errorLine1="    &lt;string name=&quot;action_mindmap_dev&quot;>Mind Map（試験機能）&lt;/string> &lt;!-- ★ keep -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="18"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.label_new_root_node` appears to be unused"
+        errorLine1="    &lt;string name=&quot;label_new_root_node&quot;>新規ノード（ルート）&lt;/string> &lt;!-- ★ keep -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="21"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.label_name` appears to be unused"
+        errorLine1="    &lt;string name=&quot;label_name&quot;>名称&lt;/string> &lt;!-- ★ keep -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="22"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.label_child_name` appears to be unused"
+        errorLine1="    &lt;string name=&quot;label_child_name&quot;>子ノード名&lt;/string> &lt;!-- ★ keep -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="23"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.label_no_folder` appears to be unused"
+        errorLine1="    &lt;string name=&quot;label_no_folder&quot;>フォルダ未選択&lt;/string> &lt;!-- ★ keep -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="24"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.snack_root_added` appears to be unused"
+        errorLine1="    &lt;string name=&quot;snack_root_added&quot;>ルートに追加しました&lt;/string> &lt;!-- ★ keep -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="27"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.snack_renamed` appears to be unused"
+        errorLine1="    &lt;string name=&quot;snack_renamed&quot;>名称を更新しました&lt;/string> &lt;!-- ★ keep -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="28"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.snack_deleted` appears to be unused"
+        errorLine1="    &lt;string name=&quot;snack_deleted&quot;>削除しました&lt;/string> &lt;!-- ★ keep -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="29"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.snack_child_added` appears to be unused"
+        errorLine1="    &lt;string name=&quot;snack_child_added&quot;>子ノードを追加しました&lt;/string> &lt;!-- ★ keep -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="30"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.snack_undo` appears to be unused"
+        errorLine1="    &lt;string name=&quot;snack_undo&quot;>取り消す&lt;/string> &lt;!-- ★ keep -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="31"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.cd_clear_folder_filter` appears to be unused"
+        errorLine1="    &lt;string name=&quot;cd_clear_folder_filter&quot;>フォルダ絞り込みを解除&lt;/string> &lt;!-- ★ Added: BugsScreenのClearボタン用 -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="41"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.empty_no_memo` appears to be unused"
+        errorLine1="    &lt;string name=&quot;empty_no_memo&quot;>メモがありません&lt;/string> &lt;!-- ★ Added: EmptyMessage 文言 -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="45"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.empty_tip_create` appears to be unused"
+        errorLine1="    &lt;string name=&quot;empty_tip_create&quot;>右下の + から作成しましょう&lt;/string> &lt;!-- ★ Added: EmptyMessage 補助 -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="46"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.menu_unselected_none` appears to be unused"
+        errorLine1="    &lt;string name=&quot;menu_unselected_none&quot;>未選択（なし）&lt;/string> &lt;!-- ★ Added: フォルダ選択メニューの見直し用 -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="49"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.title_settings` appears to be unused"
+        errorLine1="    &lt;string name=&quot;title_settings&quot;>設定&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="58"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.pref_language` appears to be unused"
+        errorLine1="    &lt;string name=&quot;pref_language&quot;>アプリの言語&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="59"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.pref_editor_font_size_value` appears to be unused"
+        errorLine1="    &lt;string name=&quot;pref_editor_font_size_value&quot;>%1$d%%&lt;/string> &lt;!-- ★ Added: 表示用（例: 120%） -->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="68"
+            column="13"/>
     </issue>
 
     <issue

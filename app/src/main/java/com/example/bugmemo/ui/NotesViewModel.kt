@@ -41,6 +41,7 @@ import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -133,7 +134,7 @@ class NotesViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { repo.getNote(id) }
                 .onSuccess { _editing.value = it }
-                .onFailure { sendEvent(UiEvent.Message("ノート読込に失敗しました")) }
+                .onFailure { _ -> sendEvent(UiEvent.Message("ノート読込に失敗しました")) }
         }
     }
 
@@ -161,10 +162,12 @@ class NotesViewModel @Inject constructor(
         _editing.update { it?.copy(folderId = folderId) }
     }
 
+    @Suppress("unused")
     fun addImagePath(path: String) {
         _editing.update { it?.copy(imagePaths = it.imagePaths + path) }
     }
 
+    @Suppress("unused")
     fun removeImagePath(path: String) {
         _editing.update { it?.copy(imagePaths = it.imagePaths - path) }
     }
@@ -176,7 +179,7 @@ class NotesViewModel @Inject constructor(
                 val id = repo.upsert(note)
                 if (note.id == 0L && id != 0L) _editing.value = note.copy(id = id)
                 sendEvent(UiEvent.Message("保存しました"))
-            }.onFailure { sendEvent(UiEvent.Message("保存に失敗しました")) }
+            }.onFailure { _ -> sendEvent(UiEvent.Message("保存に失敗しました")) }
         }
     }
 
@@ -189,7 +192,7 @@ class NotesViewModel @Inject constructor(
                 repo.deleteNote(id)
                 _editing.value = null
                 sendEvent(UiEvent.UndoDelete("削除しました（元に戻す）"))
-            }.onFailure { sendEvent(UiEvent.Message("削除に失敗しました")) }
+            }.onFailure { _ -> sendEvent(UiEvent.Message("削除に失敗しました")) }
         }
     }
 
@@ -200,7 +203,7 @@ class NotesViewModel @Inject constructor(
             runCatching {
                 repo.upsert(note.copy(id = 0L, updatedAt = System.currentTimeMillis()))
                 sendEvent(UiEvent.Message("復元しました"))
-            }.onFailure { sendEvent(UiEvent.Message("復元に失敗しました")) }
+            }.onFailure { _ -> sendEvent(UiEvent.Message("復元に失敗しました")) }
         }
     }
 
@@ -209,7 +212,7 @@ class NotesViewModel @Inject constructor(
             runCatching {
                 repo.setStarred(noteId, !current)
                 sendEvent(UiEvent.Message(if (current) "スターを外しました" else "スターを付けました"))
-            }.onFailure { sendEvent(UiEvent.Message("スター変更に失敗しました")) }
+            }.onFailure { _ -> sendEvent(UiEvent.Message("スター変更に失敗しました")) }
         }
     }
 
@@ -237,10 +240,73 @@ class NotesViewModel @Inject constructor(
         }
     }
 
-    // ★ Fix: アプリクラッシュの真犯人を修正
-    // 1. Suppress("unused") を削除（AllNotesScreenから呼ばれるため）
-    // 2. withContext(Dispatchers.IO) でバックグラウンド実行を保証
-    // 3. 日付フォーマットを DateTimeFormatter に変更し、警告を解消
+    // ★ Fix: 個別同期用のメソッドを復活させました
+    fun syncCurrentNoteToGist() {
+        val note = _editing.value ?: return
+        val token = settings.githubToken.value
+        if (token.isBlank()) {
+            sendEvent(UiEvent.Message("GitHub Tokenが設定されていません"))
+            return
+        }
+
+        viewModelScope.launch {
+            sendEvent(UiEvent.Message("Syncing to Gist..."))
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.US)
+                    val nowTime = Instant.now().atZone(ZoneId.systemDefault()).format(formatter)
+
+                    val filename = "bugmemo_${note.id}.md"
+                    val content = buildString {
+                        appendLine("# ${note.title.ifBlank { "Untitled" }}")
+                        appendLine()
+                        appendLine(note.content)
+                        if (note.imagePaths.isNotEmpty()) {
+                            appendLine()
+                            appendLine("## Attachments")
+                            note.imagePaths.forEach { appendLine("- $it") }
+                        }
+                        appendLine()
+                        appendLine("> Last Updated: $nowTime")
+                    }
+
+                    val files = mapOf(filename to GistFileContent(content))
+                    val request = GistRequest(
+                        description = "BugMemo Note: ${note.title}",
+                        public = false,
+                        files = files,
+                    )
+
+                    // 既存IDがあれば更新、なければ新規作成
+                    val response = if (note.gistId == null) {
+                        gistService.createGist("token $token", request)
+                    } else {
+                        try {
+                            gistService.updateGist("token $token", note.gistId, request)
+                        } catch (_: Exception) {
+                            gistService.createGist("token $token", request)
+                        }
+                    }
+
+                    val updatedNote = note.copy(
+                        gistId = response.id,
+                        gistUrl = response.htmlUrl,
+                    )
+                    repo.upsert(updatedNote)
+
+                    _editing.value = updatedNote
+                    response
+                }
+            }.onSuccess {
+                sendEvent(UiEvent.Message("Sync Complete!"))
+            }.onFailure { e ->
+                e.printStackTrace()
+                sendEvent(UiEvent.Message("Sync Failed: ${e.message}"))
+            }
+        }
+    }
+
+    // 全件同期メソッド（AllNotesScreenから利用）
     fun syncToGist() {
         val token = settings.githubToken.value
         if (token.isBlank()) {
@@ -249,14 +315,11 @@ class NotesViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            sendEvent(UiEvent.Message("Syncing..."))
-
-            // ★ Crash Fix: 重い処理をIOスレッドに逃がす
+            sendEvent(UiEvent.Message("Syncing all notes..."))
             runCatching {
                 withContext(Dispatchers.IO) {
                     val allNotes = repo.observeNotes().first()
-                    // ★ Fix: モダンな DateTimeFormatter を使用
-                    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.US)
 
                     val files = allNotes.associate { note ->
                         val filename = "note_${note.id}.md"
@@ -282,7 +345,7 @@ class NotesViewModel @Inject constructor(
 
                     val nowTime = Instant.now().atZone(ZoneId.systemDefault()).format(formatter)
                     val request = GistRequest(
-                        description = "BugMemo Sync - $nowTime",
+                        description = "BugMemo Full Sync - $nowTime",
                         public = false,
                         files = files,
                     )
@@ -291,10 +354,10 @@ class NotesViewModel @Inject constructor(
                     response
                 }
             }.onSuccess { response ->
-                sendEvent(UiEvent.Message("Sync Success! Gist ID: ${response.id}"))
+                sendEvent(UiEvent.Message("Full Sync Success! ID: ${response.id}"))
             }.onFailure { e ->
                 e.printStackTrace()
-                sendEvent(UiEvent.Message("Sync Failed: ${e.message}"))
+                sendEvent(UiEvent.Message("Full Sync Failed: ${e.message}"))
             }
         }
     }

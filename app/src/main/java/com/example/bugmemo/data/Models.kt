@@ -26,8 +26,15 @@ data class Note(
     @ColumnInfo(name = "is_starred")
     val isStarred: Boolean = false,
 
+    // ★ Added: Gist連携用情報
     @ColumnInfo(name = "image_paths")
-    val imagePaths: List<String> = emptyList(),
+    val imagePaths: List<String> = emptyList(), // ※以前の計画にあった画像用も定義しておきます
+
+    @ColumnInfo(name = "gist_id")
+    val gistId: String? = null, // GistのID (例: "aa5...")
+
+    @ColumnInfo(name = "gist_url")
+    val gistUrl: String? = null, // GistのURL
 )
 
 @Entity(tableName = "folders")

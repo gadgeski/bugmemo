@@ -2,8 +2,10 @@
 
 package com.example.bugmemo
 
-import org.junit.Assert.assertEquals // ★ Changed: ワイルドカードを個別 import に変更
-import org.junit.Test // （そのまま利用）
+import org.junit.Assert.assertEquals
+import org.junit.Test
+// （そのまま利用/org.junit.Test）
+// ★ Changed: ワイルドカードを個別 import に変更(org.junit.Assert.assertEquals)
 
 /**
  * Example local unit test, which will execute on the development machine (host).
