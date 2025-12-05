@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- ★ Fix: GitHub Gistと通信するためにインターネット権限を追加（必須） -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:name=".BugMemoApp"
         android:allowBackup="true"
@@ -12,17 +15,24 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Bugmemo">
 
+        <!--
+           ★ Fix: android:launchMode="singleTask" を追加
+           これにより、Injectorから連続でテキストが送られてきた際も、
+           既存の画面を再利用して onNewIntent() で正しく処理できるようになります。
+        -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.Bugmemo"
-            android:windowSoftInputMode="adjustResize">
+            android:windowSoftInputMode="adjustResize"
+            android:launchMode="singleTask">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- ★ Added: テキスト共有（ACTION_SEND）を受け入れる設定 -->
+            <!-- テキスト共有（ACTION_SEND）を受け入れる設定 -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
