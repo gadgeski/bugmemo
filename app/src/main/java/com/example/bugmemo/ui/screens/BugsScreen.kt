@@ -223,7 +223,8 @@ fun BugsScreen(
                                     start = 16.dp,
                                     end = 16.dp,
                                     top = 8.dp,
-                                    bottom = 100.dp, // FAB余白
+                                    bottom = 100.dp,
+                                    // FAB余白
                                 ),
                                 verticalArrangement = Arrangement.spacedBy(12.dp),
                             ) {

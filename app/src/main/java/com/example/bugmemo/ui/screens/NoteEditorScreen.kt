@@ -4,6 +4,10 @@
 
 package com.example.bugmemo.ui.screens
 
+// ★ Changed: 古い VisualTransformation を削除し、新しい utils パッケージのものをインポート
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,16 +17,23 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.FormatBold
 import androidx.compose.material.icons.filled.FormatColorText
@@ -46,9 +57,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
@@ -57,10 +71,10 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.example.bugmemo.R
 import com.example.bugmemo.core.AppLocaleManager
 import com.example.bugmemo.ui.NotesViewModel
-import com.example.bugmemo.ui.common.MarkdownBoldVisualTransformation
 import com.example.bugmemo.ui.theme.IceCyan
 import com.example.bugmemo.ui.theme.IceDeepNavy
 import com.example.bugmemo.ui.theme.IceGlassBorder
@@ -70,8 +84,9 @@ import com.example.bugmemo.ui.theme.IceSilver
 import com.example.bugmemo.ui.theme.IceSlate
 import com.example.bugmemo.ui.theme.IceTextPrimary
 import com.example.bugmemo.ui.theme.IceTextSecondary
-
-// ★ Added: Gist同期用アイコン(androidx.compose.material.icons.filled.CloudUpload)
+import com.example.bugmemo.ui.utils.IcebergEditorVisualTransformation
+import java.io.File
+import java.util.UUID
 
 @Composable
 fun NoteEditorScreen(
@@ -104,6 +119,22 @@ fun NoteEditorScreen(
                 text = newText,
                 selection = TextRange(newText.length),
             )
+        }
+    }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+    ) { uri ->
+        if (uri != null) {
+            val stream = context.contentResolver.openInputStream(uri)
+            val fileName = "img_${System.currentTimeMillis()}_${UUID.randomUUID()}.jpg"
+            val file = File(context.filesDir, fileName)
+            stream?.use { input ->
+                file.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+            vm.addImagePath(file.absolutePath)
         }
     }
 
@@ -159,25 +190,16 @@ fun NoteEditorScreen(
     val headingMenu = remember { mutableStateOf(false) }
 
     val backgroundBrush = remember {
-        Brush.verticalGradient(
-            colors = listOf(
-                IceHorizon,
-                IceSlate,
-                IceDeepNavy,
-            ),
-        )
+        Brush.verticalGradient(colors = listOf(IceHorizon, IceSlate, IceDeepNavy))
     }
 
-    // Boxでラップして背景を適用
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(brush = backgroundBrush),
     ) {
         Scaffold(
-            // Scaffold背景を透明に
             containerColor = Color.Transparent,
-            // ステータスバー考慮
             contentWindowInsets = WindowInsets.statusBars,
             topBar = {
                 TopAppBar(
@@ -186,7 +208,6 @@ fun NoteEditorScreen(
                             ?: stringResource(R.string.title_new_note)
                         Text(
                             text = titleText,
-                            // 等幅フォントで見出しっぽく
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                             ),
@@ -194,24 +215,19 @@ fun NoteEditorScreen(
                             overflow = TextOverflow.Ellipsis,
                         )
                     },
-                    // AppBar自体も透明にし、アイコン色をIcebergテーマに合わせる
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
                         titleContentColor = IceTextPrimary,
                         actionIconContentColor = IceSilver,
                         navigationIconContentColor = IceCyan,
-                        // 戻るボタンはシアンで光らせる
                     ),
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.cd_back),
-                            )
+                            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                         }
                     },
                     actions = {
-                        // ★ Added: Gist Sync Button in Editor
+                        // Gist Sync
                         IconButton(
                             enabled = enabled,
                             onClick = { vm.syncCurrentNoteToGist() },
@@ -219,7 +235,6 @@ fun NoteEditorScreen(
                             Icon(
                                 imageVector = Icons.Filled.CloudUpload,
                                 contentDescription = "Sync to Gist",
-                                // 既に同期済みなら青、未同期なら白（またはグレー）にするなどの演出も可能
                                 tint = if (editing?.gistId != null) IceCyan else IceSilver,
                             )
                         }
@@ -231,40 +246,25 @@ fun NoteEditorScreen(
                                 val text = contentField.text
                                 val sel = contentField.selection
                                 if (!enabled) return@IconButton
-                                val newValue: TextFieldValue =
-                                    if (!sel.collapsed) {
-                                        val selected = text.substring(sel.start, sel.end)
-                                        if (selected.startsWith("**") && selected.endsWith("**") && selected.length >= 4) {
-                                            val inner = selected.removePrefix("**").removeSuffix("**")
-                                            val newText = text.take(sel.start) + inner + text.drop(sel.end)
-                                            val newCursor = sel.start + inner.length
-                                            TextFieldValue(
-                                                text = newText,
-                                                selection = TextRange(newCursor, newCursor),
-                                            )
-                                        } else {
-                                            val newText =
-                                                text.take(sel.start) + "**" + selected + "**" + text.drop(sel.end)
-                                            val newCursor = sel.end + 4
-                                            TextFieldValue(
-                                                text = newText,
-                                                selection = TextRange(newCursor, newCursor),
-                                            )
-                                        }
+                                val newValue = if (!sel.collapsed) {
+                                    val selected = text.substring(sel.start, sel.end)
+                                    if (selected.startsWith("**") && selected.endsWith("**") && selected.length >= 4) {
+                                        val inner = selected.removePrefix("**").removeSuffix("**")
+                                        val newText = text.take(sel.start) + inner + text.drop(sel.end)
+                                        TextFieldValue(newText, TextRange(sel.start + inner.length))
                                     } else {
-                                        val insertPos = sel.start
-                                        val newText = text.take(insertPos) + "****" + text.drop(insertPos)
-                                        val caret = insertPos + 2
-                                        TextFieldValue(text = newText, selection = TextRange(caret, caret))
+                                        val newText = text.take(sel.start) + "**" + selected + "**" + text.drop(sel.end)
+                                        TextFieldValue(newText, TextRange(sel.end + 4))
                                     }
+                                } else {
+                                    val newText = text.take(sel.start) + "****" + text.drop(sel.start)
+                                    TextFieldValue(newText, TextRange(sel.start + 2))
+                                }
                                 contentField = newValue
                                 vm.setEditingContent(contentField.text)
                             },
-                        ) {
-                            Icon(imageVector = Icons.Filled.FormatBold, contentDescription = null)
-                        }
+                        ) { Icon(Icons.Filled.FormatBold, null) }
 
-                        // Underline
                         IconButton(
                             enabled = enabled,
                             onClick = {
@@ -272,21 +272,12 @@ fun NoteEditorScreen(
                                 contentField = nv
                                 vm.setEditingContent(contentField.text)
                             },
-                        ) {
-                            Icon(imageVector = Icons.Filled.FormatUnderlined, contentDescription = null)
-                        }
+                        ) { Icon(Icons.Filled.FormatUnderlined, null) }
 
-                        // Color
-                        IconButton(
-                            enabled = enabled,
-                            onClick = { colorMenu.value = true },
-                        ) {
-                            Icon(imageVector = Icons.Filled.FormatColorText, contentDescription = null)
-                        }
+                        IconButton(enabled = enabled, onClick = { colorMenu.value = true }) { Icon(Icons.Filled.FormatColorText, null) }
                         DropdownMenu(
                             expanded = colorMenu.value,
                             onDismissRequest = { colorMenu.value = false },
-                            // メニュー背景を鉄色にし、枠線を少しつける
                             containerColor = IceSlate,
                             border = BorderStroke(1.dp, IceGlassBorder),
                         ) {
@@ -294,8 +285,7 @@ fun NoteEditorScreen(
                                 DropdownMenuItem(
                                     text = { Text(hex, color = IceTextPrimary, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace) },
                                     onClick = {
-                                        val nv = wrapOrUnwrap(contentField, "[color=$hex]", "[/color]")
-                                        contentField = nv
+                                        contentField = wrapOrUnwrap(contentField, "[color=$hex]", "[/color]")
                                         vm.setEditingContent(contentField.text)
                                         colorMenu.value = false
                                     },
@@ -303,13 +293,7 @@ fun NoteEditorScreen(
                             }
                         }
 
-                        // Heading
-                        IconButton(
-                            enabled = enabled,
-                            onClick = { headingMenu.value = true },
-                        ) {
-                            Icon(imageVector = Icons.Filled.Title, contentDescription = null)
-                        }
+                        IconButton(enabled = enabled, onClick = { headingMenu.value = true }) { Icon(Icons.Filled.Title, null) }
                         DropdownMenu(
                             expanded = headingMenu.value,
                             onDismissRequest = { headingMenu.value = false },
@@ -327,20 +311,23 @@ fun NoteEditorScreen(
                             }
                         }
 
-                        // List Icon
                         IconButton(onClick = onOpenAllNotes) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.List,
-                                contentDescription = null,
-                            )
+                            Icon(Icons.AutoMirrored.Filled.List, null)
                         }
 
-                        // Save (High Tech Accent)
+                        IconButton(
+                            onClick = {
+                                launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            },
+                            enabled = enabled,
+                        ) {
+                            Icon(Icons.Filled.AttachFile, "Attach Image", tint = IceCyan)
+                        }
+
                         IconButton(onClick = { vm.saveEditing() }, enabled = enabled) {
                             Icon(
                                 imageVector = Icons.Filled.Save,
                                 contentDescription = stringResource(R.string.cd_save),
-                                // 有効時はCyanで発光させる
                                 tint = if (enabled) IceCyan else IceSilver.copy(alpha = 0.5f),
                             )
                         }
@@ -353,86 +340,96 @@ fun NoteEditorScreen(
                     .padding(inner)
                     .fillMaxSize()
                     .padding(horizontal = 16.dp)
-                    // ★ Changed: 横余白のみここで指定
                     .verticalScroll(rememberScrollState())
                     .imePadding(),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                // ★ Changed: 要素間の余白を少し広げる
             ) {
-                // タイトル入力
-                // ★ Changed: OutlinedTextField -> TextField (枠線なしスタイル)
                 TextField(
                     value = editing?.title.orEmpty(),
                     onValueChange = { text -> vm.setEditingTitle(text) },
-                    placeholder = {
-                        Text(
-                            stringResource(R.string.label_title),
-                            color = IceTextSecondary.copy(alpha = 0.5f),
-                        )
-                    },
+                    placeholder = { Text(stringResource(R.string.label_title), color = IceTextSecondary.copy(alpha = 0.5f)) },
                     singleLine = true,
                     enabled = enabled,
                     modifier = Modifier.fillMaxWidth(),
-                    // ★ Changed: 文字サイズを大きくし、見出しらしく
                     textStyle = MaterialTheme.typography.headlineSmall.copy(
                         fontSize = MaterialTheme.typography.headlineSmall.fontSize * fontScale,
                         color = IceCyan,
                         fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                         fontWeight = FontWeight.Bold,
                     ),
-                    // ★ Added: 背景色とインジケータ(下線)のカスタマイズ
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
-                        // 背景透明にして親の背景になじませる
                         unfocusedContainerColor = Color.Transparent,
                         disabledContainerColor = Color.Transparent,
                         focusedIndicatorColor = Color.Transparent,
-                        // 下線を消す
                         unfocusedIndicatorColor = Color.Transparent,
                         cursorColor = IceCyan,
-                        // カーソルもシアン
                     ),
                 )
 
-                // 本文入力
-                // ★ Changed: OutlinedTextField -> TextField (枠線なし、背景色あり)
+                if (!editing?.imagePaths.isNullOrEmpty()) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(100.dp),
+                    ) {
+                        items(editing!!.imagePaths) { path ->
+                            Box {
+                                AsyncImage(
+                                    model = File(path),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(100.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .border(BorderStroke(1.dp, IceGlassBorder), RoundedCornerShape(8.dp)),
+                                    contentScale = ContentScale.Crop,
+                                )
+                                IconButton(
+                                    onClick = { vm.removeImagePath(path) },
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .size(24.dp)
+                                        .background(IceDeepNavy.copy(alpha = 0.5f), CircleShape),
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Close,
+                                        null,
+                                        tint = IceTextPrimary,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 TextField(
                     value = contentField,
                     onValueChange = { v ->
                         contentField = v
                         if (enabled) vm.setEditingContent(v.text)
                     },
-                    placeholder = {
-                        Text(
-                            stringResource(R.string.label_content),
-                            color = IceTextSecondary.copy(alpha = 0.5f),
-                        )
-                    },
+                    placeholder = { Text(stringResource(R.string.label_content), color = IceTextSecondary.copy(alpha = 0.5f)) },
                     enabled = enabled,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
                         .heightIn(min = 300.dp)
-                        // ★ Changed: 最小高さを広げる
-                        // ガラスの枠線を追加
-                        .border(
-                            BorderStroke(1.dp, IceGlassBorder),
-                            RoundedCornerShape(12.dp),
-                        ),
+                        .border(BorderStroke(1.dp, IceGlassBorder), RoundedCornerShape(12.dp)),
                     minLines = 10,
                     textStyle = MaterialTheme.typography.bodyLarge.copy(
                         fontSize = MaterialTheme.typography.bodyLarge.fontSize * fontScale,
-                        color = IceTextPrimary, // 本文は少し落ち着いた色
+                        color = IceTextPrimary,
                         fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                     ),
-                    visualTransformation = MarkdownBoldVisualTransformation(
-                        hideMarkers = true,
-                    ),
-                    // ★ Added: カードのような背景色をつけて浮き上がらせる
+                    // ★ Changed: MarkdownBoldVisualTransformation を削除し、
+                    // 新しい IcebergEditorVisualTransformation を適用しました。
+                    // これでエディタ入力中もコードブロックの背景色などが反映されます。
+                    visualTransformation = remember { IcebergEditorVisualTransformation() },
                     shape = RoundedCornerShape(12.dp),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = IceGlassSurface,
-                        // #1E1E1E
                         unfocusedContainerColor = IceGlassSurface,
                         disabledContainerColor = IceGlassSurface.copy(alpha = 0.5f),
                         focusedIndicatorColor = Color.Transparent,

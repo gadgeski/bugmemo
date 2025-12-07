@@ -134,7 +134,7 @@ class NotesViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { repo.getNote(id) }
                 .onSuccess { _editing.value = it }
-                .onFailure { _ -> sendEvent(UiEvent.Message("ノート読込に失敗しました")) }
+                .onFailure { sendEvent(UiEvent.Message("ノート読込に失敗しました")) }
         }
     }
 
@@ -240,10 +240,11 @@ class NotesViewModel @Inject constructor(
         }
     }
 
-    // ★ Fix: 個別同期用のメソッドを復活させました
+    // 編集中のノートを個別に同期（NoteEditorScreenから利用）
     fun syncCurrentNoteToGist() {
         val note = _editing.value ?: return
-        val token = settings.githubToken.value
+        // ★ Fix: trim() を追加して、改行コードや空白を自動削除
+        val token = settings.githubToken.value.trim()
         if (token.isBlank()) {
             sendEvent(UiEvent.Message("GitHub Tokenが設定されていません"))
             return
@@ -308,7 +309,8 @@ class NotesViewModel @Inject constructor(
 
     // 全件同期メソッド（AllNotesScreenから利用）
     fun syncToGist() {
-        val token = settings.githubToken.value
+        // ★ Fix: こちらも trim() を追加
+        val token = settings.githubToken.value.trim()
         if (token.isBlank()) {
             sendEvent(UiEvent.Message("GitHub Tokenが設定されていません"))
             return

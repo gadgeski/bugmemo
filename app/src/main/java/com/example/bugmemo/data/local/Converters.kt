@@ -5,7 +5,11 @@ import androidx.room.TypeConverter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 
-// ★ Added: List<String> などをRoomに保存するための変換機
+/**
+ * Room が List<String> などを保存するために使用する型変換機。
+ * アプリコードからは直接呼ばれず、Roomが裏側で使用するため "unused" 警告を抑制します。
+ */
+@Suppress("unused")
 class Converters {
     private val moshi = Moshi.Builder().build()
     private val listStringAdapter = moshi.adapter<List<String>>(
