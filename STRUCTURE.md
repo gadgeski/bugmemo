@@ -41,13 +41,23 @@ bugmemo/
 │       │   │               │   ├── RoomNotesRepository.kt
 │       │   │               │   ├── db
 │       │   │               │   │   ├── AppDatabase.kt
+│       │   │               │   │   ├── Converters.kt
+│       │   │               │   │   ├── FolderDao.kt
+│       │   │               │   │   ├── MindMapDao.kt
+│       │   │               │   │   ├── MindMapEntity.kt
 │       │   │               │   │   ├── NoteDao.kt
 │       │   │               │   │   ├── NoteEntity.kt
 │       │   │               │   │   └── NoteFts.kt
-│       │   │               │   └── prefs
-│       │   │               │       └── SettingsRepository.kt
+│       │   │               │   ├── local
+│       │   │               │   │   └── Converters.kt
+│       │   │               │   ├── prefs
+│       │   │               │   │   └── SettingsRepository.kt
+│       │   │               │   └── remote
+│       │   │               │       ├── GistModels.kt
+│       │   │               │       └── GistService.kt
 │       │   │               ├── di
-│       │   │               │   └── AppModule.kt
+│       │   │               │   ├── AppModule.kt
+│       │   │               │   └── NetworkModule.kt
 │       │   │               └── ui
 │       │   │                   ├── AppScaffold.kt
 │       │   │                   ├── NotesViewModel.kt
@@ -56,7 +66,8 @@ bugmemo/
 │       │   │                   │   ├── MarkdownEditUtils.kt
 │       │   │                   │   └── MarkdownText.kt
 │       │   │                   ├── components
-│       │   │                   │   └── Common.kt
+│       │   │                   │   ├── Common.kt
+│       │   │                   │   └── MarkdownToolbar.kt
 │       │   │                   ├── mindmap
 │       │   │                   │   └── MindMapViewModel.kt
 │       │   │                   ├── navigation
@@ -69,10 +80,13 @@ bugmemo/
 │       │   │                   │   ├── NoteEditorScreen.kt
 │       │   │                   │   ├── SearchScreen.kt
 │       │   │                   │   └── SettingsScreen.kt
-│       │   │                   └── theme
-│       │   │                       ├── Color.kt
-│       │   │                       ├── Theme.kt
-│       │   │                       └── Type.kt
+│       │   │                   ├── theme
+│       │   │                   │   ├── Color.kt
+│       │   │                   │   ├── Theme.kt
+│       │   │                   │   └── Type.kt
+│       │   │                   └── utils
+│       │   │                       ├── IcebergEditorVisualTransformation.kt
+│       │   │                       └── MarkdownTextHelper.kt
 │       │   └── res
 │       │       ├── drawable
 │       │       │   ├── ic_launcher_background.xml
@@ -116,7 +130,13 @@ bugmemo/
 │               └── com
 │                   └── example
 │                       └── bugmemo
-│                           └── ExampleUnitTest.kt
+│                           ├── ExampleUnitTest.kt
+│                           ├── data
+│                           │   └── db
+│                           │       └── ConvertersTest.kt
+│                           └── ui
+│                               └── utils
+│                                   └── MarkdownTextHelperTest.kt
 ├── build.gradle.kts
 ├── docs
 │   ├── architecture
@@ -130,7 +150,11 @@ bugmemo/
 │       ├── BugMemo-Home.png
 │       ├── BugMemo-Mindmap.png
 │       ├── BugMemo-Search.png
-│       └── BugMemo_Setting.png
+│       ├── BugMemo_Setting.png
+│       ├── Iceberg-Tech_Dashboard.png
+│       ├── Iceberg-Tech_Directories.png
+│       ├── Iceberg-Tech_Home.png
+│       └── Iceberg-Tech_Search.png
 ├── gradle
 │   ├── libs.versions.toml
 │   └── wrapper
@@ -142,5 +166,5 @@ bugmemo/
 ├── local.properties
 └── settings.gradle.kts
 
-51 directories, 91 files
+58 directories, 108 files
 ```
