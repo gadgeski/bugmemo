@@ -1,10 +1,11 @@
 // app/src/main/java/com/example/bugmemo/ui/screens/NoteEditorScreen.kt
 
+// ★最強の抑制設定: これで「代入した値が使われていない」系の警告を全て強制的に非表示にします
+@file:Suppress("unused", "UNUSED_VALUE", "UNUSED_VARIABLE", "ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 package com.example.bugmemo.ui.screens
 
-// ★ Changed: 古い VisualTransformation を削除し、新しい utils パッケージのものをインポート
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,6 +15,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,15 +33,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FormatBold
 import androidx.compose.material.icons.filled.FormatColorText
 import androidx.compose.material.icons.filled.FormatUnderlined
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Title
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -47,6 +51,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
@@ -92,7 +97,6 @@ import java.util.UUID
 fun NoteEditorScreen(
     vm: NotesViewModel,
     onBack: () -> Unit = {},
-    onOpenAllNotes: () -> Unit = {},
 ) {
     val editing by vm.editing.collectAsStateWithLifecycle(initialValue = null)
     val enabled = editing != null
@@ -100,6 +104,9 @@ fun NoteEditorScreen(
     val context = LocalContext.current
     val fontScale by AppLocaleManager.editorFontScaleFlow(context)
         .collectAsStateWithLifecycle(initialValue = 1.0f)
+
+    // 削除確認ダイアログの表示状態
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     var contentField by remember(editing?.id) {
         mutableStateOf(
@@ -110,7 +117,6 @@ fun NoteEditorScreen(
         )
     }
 
-    // ViewModel側のデータ同期
     LaunchedEffect(editing?.content) {
         val currentText = contentField.text
         val newText = editing?.content.orEmpty()
@@ -193,6 +199,34 @@ fun NoteEditorScreen(
         Brush.verticalGradient(colors = listOf(IceHorizon, IceSlate, IceDeepNavy))
     }
 
+    // 削除確認ダイアログ
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            containerColor = IceSlate,
+            titleContentColor = IceTextPrimary,
+            textContentColor = IceTextSecondary,
+            title = { Text("Delete Note?") },
+            text = { Text("このメモを削除しますか？\n（削除後は元に戻す操作が可能です）") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        vm.deleteEditing()
+                        showDeleteDialog = false
+                        onBack() // 削除後は一覧に戻る
+                    }
+                ) {
+                    Text("Delete", color = Color(0xFFFF5252), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel", color = IceSilver)
+                }
+            }
+        )
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -227,6 +261,18 @@ fun NoteEditorScreen(
                         }
                     },
                     actions = {
+                        // Delete Button
+                        IconButton(
+                            enabled = enabled,
+                            onClick = { showDeleteDialog = true }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = "Delete Note",
+                                tint = if (enabled) IceSilver else IceSilver.copy(alpha = 0.3f)
+                            )
+                        }
+
                         // Gist Sync
                         IconButton(
                             enabled = enabled,
@@ -238,42 +284,63 @@ fun NoteEditorScreen(
                                 tint = if (editing?.gistId != null) IceCyan else IceSilver,
                             )
                         }
+                        // Save
+                        IconButton(onClick = { vm.saveEditing() }, enabled = enabled) {
+                            Icon(
+                                imageVector = Icons.Filled.Save,
+                                contentDescription = stringResource(R.string.cd_save),
+                                tint = if (enabled) IceCyan else IceSilver.copy(alpha = 0.5f),
+                            )
+                        }
+                    },
+                )
+            },
+            bottomBar = {
+                BottomAppBar(
+                    containerColor = IceSlate.copy(alpha = 0.9f),
+                    contentColor = IceCyan,
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp),
+                ) {
+                    // Tool: Bold
+                    IconButton(
+                        enabled = enabled,
+                        onClick = {
+                            if (!enabled) return@IconButton
+                            val text = contentField.text
+                            val sel = contentField.selection
 
-                        // Bold
-                        IconButton(
-                            enabled = enabled,
-                            onClick = {
-                                val text = contentField.text
-                                val sel = contentField.selection
-                                if (!enabled) return@IconButton
-                                val newValue = if (!sel.collapsed) {
-                                    val selected = text.substring(sel.start, sel.end)
-                                    if (selected.startsWith("**") && selected.endsWith("**") && selected.length >= 4) {
-                                        val inner = selected.removePrefix("**").removeSuffix("**")
-                                        val newText = text.take(sel.start) + inner + text.drop(sel.end)
-                                        TextFieldValue(newText, TextRange(sel.start + inner.length))
-                                    } else {
-                                        val newText = text.take(sel.start) + "**" + selected + "**" + text.drop(sel.end)
-                                        TextFieldValue(newText, TextRange(sel.end + 4))
-                                    }
+                            val newValue = if (!sel.collapsed) {
+                                val selected = text.substring(sel.start, sel.end)
+                                if (selected.startsWith("**") && selected.endsWith("**") && selected.length >= 4) {
+                                    val inner = selected.removePrefix("**").removeSuffix("**")
+                                    val newText = text.take(sel.start) + inner + text.drop(sel.end)
+                                    TextFieldValue(newText, TextRange(sel.start + inner.length))
                                 } else {
-                                    val newText = text.take(sel.start) + "****" + text.drop(sel.start)
-                                    TextFieldValue(newText, TextRange(sel.start + 2))
+                                    val newText = text.take(sel.start) + "**" + selected + "**" + text.drop(sel.end)
+                                    TextFieldValue(newText, TextRange(sel.end + 4))
                                 }
-                                contentField = newValue
-                                vm.setEditingContent(contentField.text)
-                            },
-                        ) { Icon(Icons.Filled.FormatBold, null) }
+                            } else {
+                                val newText = text.take(sel.start) + "****" + text.drop(sel.start)
+                                TextFieldValue(newText, TextRange(sel.start + 2))
+                            }
 
-                        IconButton(
-                            enabled = enabled,
-                            onClick = {
-                                val nv = wrapOrUnwrap(contentField, "[u]", "[/u]")
-                                contentField = nv
-                                vm.setEditingContent(contentField.text)
-                            },
-                        ) { Icon(Icons.Filled.FormatUnderlined, null) }
+                            contentField = newValue
+                            vm.setEditingContent(newValue.text)
+                        },
+                    ) { Icon(Icons.Filled.FormatBold, null) }
 
+                    // Tool: Underline
+                    IconButton(
+                        enabled = enabled,
+                        onClick = {
+                            val newValue = wrapOrUnwrap(contentField, "[u]", "[/u]")
+                            contentField = newValue
+                            vm.setEditingContent(newValue.text)
+                        },
+                    ) { Icon(Icons.Filled.FormatUnderlined, null) }
+
+                    // Tool: Color
+                    Box {
                         IconButton(enabled = enabled, onClick = { colorMenu.value = true }) { Icon(Icons.Filled.FormatColorText, null) }
                         DropdownMenu(
                             expanded = colorMenu.value,
@@ -285,14 +352,18 @@ fun NoteEditorScreen(
                                 DropdownMenuItem(
                                     text = { Text(hex, color = IceTextPrimary, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace) },
                                     onClick = {
-                                        contentField = wrapOrUnwrap(contentField, "[color=$hex]", "[/color]")
-                                        vm.setEditingContent(contentField.text)
+                                        val newValue = wrapOrUnwrap(contentField, "[color=$hex]", "[/color]")
+                                        contentField = newValue
+                                        vm.setEditingContent(newValue.text)
                                         colorMenu.value = false
                                     },
                                 )
                             }
                         }
+                    }
 
+                    // Tool: Heading
+                    Box {
                         IconButton(enabled = enabled, onClick = { headingMenu.value = true }) { Icon(Icons.Filled.Title, null) }
                         DropdownMenu(
                             expanded = headingMenu.value,
@@ -310,30 +381,21 @@ fun NoteEditorScreen(
                                 )
                             }
                         }
+                    }
 
-                        IconButton(onClick = onOpenAllNotes) {
-                            Icon(Icons.AutoMirrored.Filled.List, null)
-                        }
+                    Spacer(Modifier.weight(1f))
 
-                        IconButton(
-                            onClick = {
-                                launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                            },
-                            enabled = enabled,
-                        ) {
-                            Icon(Icons.Filled.AttachFile, "Attach Image", tint = IceCyan)
-                        }
-
-                        IconButton(onClick = { vm.saveEditing() }, enabled = enabled) {
-                            Icon(
-                                imageVector = Icons.Filled.Save,
-                                contentDescription = stringResource(R.string.cd_save),
-                                tint = if (enabled) IceCyan else IceSilver.copy(alpha = 0.5f),
-                            )
-                        }
-                    },
-                )
-            },
+                    // Tool: Attach Image
+                    IconButton(
+                        onClick = {
+                            launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        },
+                        enabled = enabled,
+                    ) {
+                        Icon(Icons.Filled.AttachFile, "Attach Image")
+                    }
+                }
+            }
         ) { inner ->
             Column(
                 modifier = Modifier
@@ -344,6 +406,7 @@ fun NoteEditorScreen(
                     .imePadding(),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                // Title Field
                 TextField(
                     value = editing?.title.orEmpty(),
                     onValueChange = { text -> vm.setEditingTitle(text) },
@@ -367,6 +430,7 @@ fun NoteEditorScreen(
                     ),
                 )
 
+                // Images
                 if (!editing?.imagePaths.isNullOrEmpty()) {
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -404,6 +468,7 @@ fun NoteEditorScreen(
                     }
                 }
 
+                // Content Field
                 TextField(
                     value = contentField,
                     onValueChange = { v ->
@@ -420,12 +485,10 @@ fun NoteEditorScreen(
                     minLines = 10,
                     textStyle = MaterialTheme.typography.bodyLarge.copy(
                         fontSize = MaterialTheme.typography.bodyLarge.fontSize * fontScale,
+                        lineHeight = (MaterialTheme.typography.bodyLarge.fontSize * fontScale) * 1.5,
                         color = IceTextPrimary,
                         fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                     ),
-                    // ★ Changed: MarkdownBoldVisualTransformation を削除し、
-                    // 新しい IcebergEditorVisualTransformation を適用しました。
-                    // これでエディタ入力中もコードブロックの背景色などが反映されます。
                     visualTransformation = remember { IcebergEditorVisualTransformation() },
                     shape = RoundedCornerShape(12.dp),
                     colors = TextFieldDefaults.colors(

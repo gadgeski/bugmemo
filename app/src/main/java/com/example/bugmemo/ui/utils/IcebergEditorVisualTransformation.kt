@@ -1,5 +1,6 @@
 // app/src/main/java/com/example/bugmemo/ui/utils/IcebergEditorVisualTransformation.kt
 package com.example.bugmemo.ui.utils
+
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -10,21 +11,12 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.sp
 import com.example.bugmemo.ui.theme.IceCyan
 import com.example.bugmemo.ui.theme.IceGlassSurface
-import com.example.bugmemo.ui.theme.IceTextPrimary
+import com.example.bugmemo.ui.theme.IceTextSecondary
 
-/**
- * Iceberg Tech エディタ用ビジュアルトランスフォーメーション
- * 入力中のMarkdownテキストに対し、リアルタイムでハイライト（装飾）を適用する。
- *
- * 対応記法:
- * - コードブロック(```...```)
- * - インラインコード (`...`): 等幅フォント + 背景色
- * - 太字 (**...**): 太字 + シアン発光
- * - 見出し (# ...): 文字サイズ大 + 太字 + シアン
- */
+// ★追加: これが抜けていました(com.example.bugmemo.ui.theme.IceTextSecondary)
+
 class IcebergEditorVisualTransformation : VisualTransformation {
 
-    // 正規表現（Kotlinの命名規則に従いキャメルケースに変更）
     private val codeBlockRegex = Regex("```([\\s\\S]*?)```")
     private val inlineCodeRegex = Regex("`([^`]+)`")
     private val boldRegex = Regex("\\*\\*(.*?)\\*\\*")
@@ -35,14 +27,14 @@ class IcebergEditorVisualTransformation : VisualTransformation {
         val builder = AnnotatedString.Builder(rawText)
 
         // 1. Code Block (```...```)
-        // 最も優先度が高い（他の装飾を飲み込むため）
         codeBlockRegex.findAll(rawText).forEach { match ->
             builder.addStyle(
                 style = SpanStyle(
                     fontFamily = FontFamily.Monospace,
-                    background = IceGlassSurface.copy(alpha = 0.5f),
-                    // 少し濃いガラス背景
-                    color = IceTextPrimary,
+                    background = IceGlassSurface.copy(alpha = 0.3f),
+                    // ★FIX: ここをPrimaryからSecondaryに変更し、コードっぽさを出す
+                    color = IceTextSecondary,
+                    fontSize = 14.sp,
                 ),
                 start = match.range.first,
                 end = match.range.last + 1,
@@ -51,12 +43,12 @@ class IcebergEditorVisualTransformation : VisualTransformation {
 
         // 2. Inline Code (`...`)
         inlineCodeRegex.findAll(rawText).forEach { match ->
-            // コードブロック内にある場合はスキップしたいが、簡易実装として上書き適用
             builder.addStyle(
                 style = SpanStyle(
                     fontFamily = FontFamily.Monospace,
-                    background = IceGlassSurface.copy(alpha = 0.5f),
+                    background = IceGlassSurface.copy(alpha = 0.3f),
                     color = IceCyan,
+                    fontWeight = FontWeight.Bold,
                 ),
                 start = match.range.first,
                 end = match.range.last + 1,
@@ -65,13 +57,11 @@ class IcebergEditorVisualTransformation : VisualTransformation {
 
         // 3. Heading (# Title)
         headingRegex.findAll(rawText).forEach { match ->
-            // 行全体を強調
             builder.addStyle(
                 style = SpanStyle(
                     fontWeight = FontWeight.Bold,
                     color = IceCyan,
-                    fontSize = 18.sp,
-                    // 少し大きく
+                    fontSize = 20.sp,
                 ),
                 start = match.range.first,
                 end = match.range.last + 1,
@@ -90,9 +80,6 @@ class IcebergEditorVisualTransformation : VisualTransformation {
             )
         }
 
-        // OffsetMapping.Identity を返すことで、
-        // 「文字数は変えずに、色とフォントだけ変える」挙動にする。
-        // これにより、カーソル位置ズレのバグを回避しつつリッチな見た目を実現。
         return TransformedText(builder.toAnnotatedString(), OffsetMapping.Identity)
     }
 }

@@ -48,10 +48,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.bugmemo.ui.theme.IceCyan
 import com.example.bugmemo.ui.theme.IceGlassBorder
 import com.example.bugmemo.ui.theme.IceGlassSurface
 import com.example.bugmemo.ui.theme.IceTextPrimary
+import com.example.bugmemo.ui.theme.IceTextSecondary // ★追加: Import漏れ修正
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -73,7 +75,7 @@ sealed interface MarkdownNode {
  * - 長文ログ対応 (LazyColumn + Async Parse)
  * - コードブロックの横スクロール＆コピー機能
  * - インライン装飾＆リンク機能
- * - ★ Fix: maxLines指定時は簡易表示モードに切り替え（ネストスクロール回避）
+ * - ★ Fix: Editorとのデザイン統一（色・フォントサイズ）
  */
 @Composable
 fun MarkdownText(
@@ -82,13 +84,9 @@ fun MarkdownText(
     style: TextStyle = MaterialTheme.typography.bodyMedium,
     color: Color = IceTextPrimary,
     issueTrackerUrlBase: String = "",
-    // ★ Added: 引数を追加して SearchScreen の呼び出しに対応
     maxLines: Int = Int.MAX_VALUE,
     overflow: TextOverflow = TextOverflow.Clip,
 ) {
-    // ★ Fix: maxLines が指定されている場合（一覧表示など）は、
-    // 重いパースや LazyColumn を使わず、軽量な単一Textとして描画する。
-    // これにより、LazyColumn in LazyColumn のクラッシュを防ぎ、パフォーマンスを向上させる。
     if (maxLines != Int.MAX_VALUE) {
         SimpleStyledText(
             text = text,
@@ -103,7 +101,6 @@ fun MarkdownText(
 
     // --- 以下、全文表示用のリッチモード ---
 
-    // パース処理は重くなる可能性があるため、非同期で計算
     var nodes by remember(text) { mutableStateOf<List<MarkdownNode>>(emptyList()) }
 
     LaunchedEffect(text) {
@@ -200,10 +197,12 @@ private fun CodeBlockView(
                 text = code,
                 style = baseStyle.copy(
                     fontFamily = FontFamily.Monospace,
-                    fontSize = baseStyle.fontSize,
-                    lineHeight = baseStyle.lineHeight,
+                    // ★ FIX: Editorと統一。14.sp固定にし、行間をその1.5倍にする
+                    fontSize = 14.sp,
+                    lineHeight = 21.sp, // 14.sp * 1.5
                 ),
-                color = IceTextPrimary,
+                // ★ FIX: Editorと統一。IceTextSecondaryを使用
+                color = IceTextSecondary,
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(scrollState)
@@ -219,7 +218,6 @@ private fun SimpleStyledText(
     style: TextStyle,
     color: Color,
     issueTrackerUrlBase: String,
-    // ★ Added: 引数追加
     maxLines: Int = Int.MAX_VALUE,
     overflow: TextOverflow = TextOverflow.Clip,
 ) {
@@ -231,7 +229,9 @@ private fun SimpleStyledText(
     val codeSpanStyle = SpanStyle(
         fontFamily = FontFamily.Monospace,
         background = IceGlassSurface.copy(alpha = 0.3f),
-        color = IceTextPrimary,
+        // ★ FIX: Editorと統一。インラインコードはIceCyanにする
+        color = IceCyan,
+        fontWeight = FontWeight.Bold,
     )
 
     val annotatedString = remember(text, issueTrackerUrlBase) {
@@ -294,7 +294,6 @@ private fun SimpleStyledText(
         text = annotatedString,
         style = style,
         color = color,
-        // ★ Added: パラメータ適用
         maxLines = maxLines,
         overflow = overflow,
     )
