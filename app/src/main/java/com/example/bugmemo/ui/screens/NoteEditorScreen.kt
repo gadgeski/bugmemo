@@ -214,7 +214,7 @@ fun NoteEditorScreen(
                         vm.deleteEditing()
                         showDeleteDialog = false
                         onBack() // 削除後は一覧に戻る
-                    }
+                    },
                 ) {
                     Text("Delete", color = Color(0xFFFF5252), fontWeight = FontWeight.Bold)
                 }
@@ -223,7 +223,7 @@ fun NoteEditorScreen(
                 TextButton(onClick = { showDeleteDialog = false }) {
                     Text("Cancel", color = IceSilver)
                 }
-            }
+            },
         )
     }
 
@@ -264,12 +264,12 @@ fun NoteEditorScreen(
                         // Delete Button
                         IconButton(
                             enabled = enabled,
-                            onClick = { showDeleteDialog = true }
+                            onClick = { showDeleteDialog = true },
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Delete,
                                 contentDescription = "Delete Note",
-                                tint = if (enabled) IceSilver else IceSilver.copy(alpha = 0.3f)
+                                tint = if (enabled) IceSilver else IceSilver.copy(alpha = 0.3f),
                             )
                         }
 
@@ -395,7 +395,7 @@ fun NoteEditorScreen(
                         Icon(Icons.Filled.AttachFile, "Attach Image")
                     }
                 }
-            }
+            },
         ) { inner ->
             Column(
                 modifier = Modifier
