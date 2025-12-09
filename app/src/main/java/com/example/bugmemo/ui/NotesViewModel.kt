@@ -15,10 +15,10 @@ import com.example.bugmemo.data.Note
 import com.example.bugmemo.data.NotesRepository
 import com.example.bugmemo.data.SeedNote
 import com.example.bugmemo.data.prefs.SettingsRepository
-import com.example.bugmemo.data.remote.GistFileContent
 import com.example.bugmemo.data.remote.GistRequest
 import com.example.bugmemo.data.remote.GistService
 import com.example.bugmemo.data.seedIfEmpty
+import com.example.bugmemo.ui.utils.GistContentBuilder // ★追加
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -38,10 +38,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -243,7 +239,6 @@ class NotesViewModel @Inject constructor(
     // 編集中のノートを個別に同期（NoteEditorScreenから利用）
     fun syncCurrentNoteToGist() {
         val note = _editing.value ?: return
-        // ★ Fix: trim() を追加して、改行コードや空白を自動削除
         val token = settings.githubToken.value.trim()
         if (token.isBlank()) {
             sendEvent(UiEvent.Message("GitHub Tokenが設定されていません"))
@@ -254,26 +249,12 @@ class NotesViewModel @Inject constructor(
             sendEvent(UiEvent.Message("Syncing to Gist..."))
             runCatching {
                 withContext(Dispatchers.IO) {
-                    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.US)
-                    val nowTime = Instant.now().atZone(ZoneId.systemDefault()).format(formatter)
+                    // ★ FIX: ロジックをGistContentBuilderに移譲
+                    val files = GistContentBuilder.buildSingleFileMap(note)
+                    val description = GistContentBuilder.buildSyncDescription(isFullSync = false, title = note.title)
 
-                    val filename = "bugmemo_${note.id}.md"
-                    val content = buildString {
-                        appendLine("# ${note.title.ifBlank { "Untitled" }}")
-                        appendLine()
-                        appendLine(note.content)
-                        if (note.imagePaths.isNotEmpty()) {
-                            appendLine()
-                            appendLine("## Attachments")
-                            note.imagePaths.forEach { appendLine("- $it") }
-                        }
-                        appendLine()
-                        appendLine("> Last Updated: $nowTime")
-                    }
-
-                    val files = mapOf(filename to GistFileContent(content))
                     val request = GistRequest(
-                        description = "BugMemo Note: ${note.title}",
+                        description = description,
                         public = false,
                         files = files,
                     )
@@ -309,7 +290,6 @@ class NotesViewModel @Inject constructor(
 
     // 全件同期メソッド（AllNotesScreenから利用）
     fun syncToGist() {
-        // ★ Fix: こちらも trim() を追加
         val token = settings.githubToken.value.trim()
         if (token.isBlank()) {
             sendEvent(UiEvent.Message("GitHub Tokenが設定されていません"))
@@ -321,33 +301,13 @@ class NotesViewModel @Inject constructor(
             runCatching {
                 withContext(Dispatchers.IO) {
                     val allNotes = repo.observeNotes().first()
-                    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.US)
 
-                    val files = allNotes.associate { note ->
-                        val filename = "note_${note.id}.md"
-                        val content = buildString {
-                            appendLine("# ${note.title.ifBlank { "Untitled" }}")
-                            appendLine()
-                            appendLine(note.content)
-                            if (note.imagePaths.isNotEmpty()) {
-                                appendLine()
-                                appendLine("## Attachments")
-                                note.imagePaths.forEach { path ->
-                                    appendLine("- $path")
-                                }
-                            }
-                            appendLine()
-                            val updatedTime = Instant.ofEpochMilli(note.updatedAt)
-                                .atZone(ZoneId.systemDefault())
-                                .format(formatter)
-                            appendLine("> Last Updated: $updatedTime")
-                        }
-                        filename to GistFileContent(content)
-                    }
+                    // ★ FIX: ロジックをGistContentBuilderに移譲
+                    val files = GistContentBuilder.buildBatchFileMap(allNotes)
+                    val description = GistContentBuilder.buildSyncDescription(isFullSync = true)
 
-                    val nowTime = Instant.now().atZone(ZoneId.systemDefault()).format(formatter)
                     val request = GistRequest(
-                        description = "BugMemo Full Sync - $nowTime",
+                        description = description,
                         public = false,
                         files = files,
                     )
