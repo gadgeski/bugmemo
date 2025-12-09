@@ -33,14 +33,12 @@ object GistContentBuilder {
      * 複数のノートをGist送信用のMap形式に変換する
      * ファイル名は "note_{id}.md"
      */
-    fun buildBatchFileMap(notes: List<Note>): Map<String, GistFileContent> {
-        return notes.associate { note ->
-            val filename = "note_${note.id}.md"
-            // 一括同期の場合は、ノートごとの最終更新日時を使用する（元の仕様を踏襲）
-            val footerTime = formatTime(note.updatedAt)
-            val content = buildMarkdown(note, footerTime)
-            filename to GistFileContent(content)
-        }
+    fun buildBatchFileMap(notes: List<Note>): Map<String, GistFileContent> = notes.associate { note ->
+        val filename = "note_${note.id}.md"
+        // 一括同期の場合は、ノートごとの最終更新日時を使用する（元の仕様を踏襲）
+        val footerTime = formatTime(note.updatedAt)
+        val content = buildMarkdown(note, footerTime)
+        filename to GistFileContent(content)
     }
 
     /**
@@ -56,25 +54,21 @@ object GistContentBuilder {
     }
 
     // 内部ロジック: Markdown文字列の構築
-    private fun buildMarkdown(note: Note, footerTimestamp: String): String {
-        return buildString {
-            appendLine("# ${note.title.ifBlank { "Untitled" }}")
+    private fun buildMarkdown(note: Note, footerTimestamp: String): String = buildString {
+        appendLine("# ${note.title.ifBlank { "Untitled" }}")
+        appendLine()
+        appendLine(note.content)
+        if (note.imagePaths.isNotEmpty()) {
             appendLine()
-            appendLine(note.content)
-            if (note.imagePaths.isNotEmpty()) {
-                appendLine()
-                appendLine("## Attachments")
-                note.imagePaths.forEach { appendLine("- $it") }
-            }
-            appendLine()
-            appendLine("> Last Updated: $footerTimestamp")
+            appendLine("## Attachments")
+            note.imagePaths.forEach { appendLine("- $it") }
         }
+        appendLine()
+        appendLine("> Last Updated: $footerTimestamp")
     }
 
     // 内部ロジック: 日付フォーマット
-    private fun formatTime(epochMillis: Long): String {
-        return Instant.ofEpochMilli(epochMillis)
-            .atZone(ZoneId.systemDefault())
-            .format(formatter)
-    }
+    private fun formatTime(epochMillis: Long): String = Instant.ofEpochMilli(epochMillis)
+        .atZone(ZoneId.systemDefault())
+        .format(formatter)
 }

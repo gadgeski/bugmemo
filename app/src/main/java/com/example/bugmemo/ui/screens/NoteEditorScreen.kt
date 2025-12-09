@@ -162,7 +162,7 @@ fun NoteEditorScreen(
                         vm.deleteEditing()
                         showDeleteDialog = false
                         onBack()
-                    }
+                    },
                 ) {
                     Text("Delete", color = Color(0xFFFF5252), fontWeight = FontWeight.Bold)
                 }
@@ -171,7 +171,7 @@ fun NoteEditorScreen(
                 TextButton(onClick = { showDeleteDialog = false }) {
                     Text("Cancel", color = IceSilver)
                 }
-            }
+            },
         )
     }
 
@@ -211,12 +211,12 @@ fun NoteEditorScreen(
                     actions = {
                         IconButton(
                             enabled = enabled,
-                            onClick = { showDeleteDialog = true }
+                            onClick = { showDeleteDialog = true },
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Delete,
                                 contentDescription = "Delete Note",
-                                tint = if (enabled) IceSilver else IceSilver.copy(alpha = 0.3f)
+                                tint = if (enabled) IceSilver else IceSilver.copy(alpha = 0.3f),
                             )
                         }
 
@@ -252,9 +252,9 @@ fun NoteEditorScreen(
                     },
                     onImagePick = {
                         launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                    }
+                    },
                 )
-            }
+            },
         ) { inner ->
             Column(
                 modifier = Modifier
