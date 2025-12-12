@@ -1,7 +1,5 @@
 // app/src/main/java/com/example/bugmemo/ui/screens/NoteEditorScreen.kt
 
-// ★最強の抑制設定: 警告の誤検知を回避
-@file:Suppress("unused", "UNUSED_VALUE", "UNUSED_VARIABLE", "ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 package com.example.bugmemo.ui.screens
@@ -61,7 +59,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -90,14 +88,20 @@ import com.example.bugmemo.ui.theme.IceSlate
 import com.example.bugmemo.ui.theme.IceTextPrimary
 import com.example.bugmemo.ui.theme.IceTextSecondary
 import com.example.bugmemo.ui.utils.IcebergEditorVisualTransformation
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import java.io.File
 import java.util.UUID
 
+@OptIn(FlowPreview::class)
 @Composable
 fun NoteEditorScreen(
     vm: NotesViewModel,
     onBack: () -> Unit = {},
 ) {
+    // getValueをインポートしたので、ここの 'by' が正しく機能し、
+    // editing は 'State<Note?>' ではなく中身の 'Note?' になります。
     val editing by vm.editing.collectAsStateWithLifecycle(initialValue = null)
     val enabled = editing != null
 
@@ -105,9 +109,10 @@ fun NoteEditorScreen(
     val fontScale by AppLocaleManager.editorFontScaleFlow(context)
         .collectAsStateWithLifecycle(initialValue = 1.0f)
 
-    var showDeleteDialog by remember { mutableStateOf(false) }
+    // IDE誤検知回避のため、by委譲を使わずStateオブジェクトとして保持（.valueアクセス）
+    val showDeleteDialogState = remember { mutableStateOf(false) }
 
-    var contentField by remember(editing?.id) {
+    val contentFieldState = remember(editing?.id) {
         mutableStateOf(
             TextFieldValue(
                 text = editing?.content.orEmpty(),
@@ -116,11 +121,23 @@ fun NoteEditorScreen(
         )
     }
 
+    // Debounce実装
+    LaunchedEffect(Unit) {
+        snapshotFlow { contentFieldState.value.text }
+            .debounce(300L)
+            .distinctUntilChanged()
+            .collect { text ->
+                if (enabled && text != editing?.content) {
+                    vm.setEditingContent(text)
+                }
+            }
+    }
+
     LaunchedEffect(editing?.content) {
-        val currentText = contentField.text
+        val currentText = contentFieldState.value.text
         val newText = editing?.content.orEmpty()
         if (currentText != newText) {
-            contentField = contentField.copy(
+            contentFieldState.value = contentFieldState.value.copy(
                 text = newText,
                 selection = TextRange(newText.length),
             )
@@ -147,10 +164,9 @@ fun NoteEditorScreen(
         Brush.verticalGradient(colors = listOf(IceHorizon, IceSlate, IceDeepNavy))
     }
 
-    // 削除確認ダイアログ
-    if (showDeleteDialog) {
+    if (showDeleteDialogState.value) {
         AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
+            onDismissRequest = { showDeleteDialogState.value = false },
             containerColor = IceSlate,
             titleContentColor = IceTextPrimary,
             textContentColor = IceTextSecondary,
@@ -160,7 +176,7 @@ fun NoteEditorScreen(
                 TextButton(
                     onClick = {
                         vm.deleteEditing()
-                        showDeleteDialog = false
+                        showDeleteDialogState.value = false
                         onBack()
                     },
                 ) {
@@ -168,7 +184,7 @@ fun NoteEditorScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
+                TextButton(onClick = { showDeleteDialogState.value = false }) {
                     Text("Cancel", color = IceSilver)
                 }
             },
@@ -211,7 +227,7 @@ fun NoteEditorScreen(
                     actions = {
                         IconButton(
                             enabled = enabled,
-                            onClick = { showDeleteDialog = true },
+                            onClick = { showDeleteDialogState.value = true },
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Delete,
@@ -241,14 +257,12 @@ fun NoteEditorScreen(
                     },
                 )
             },
-            // ★ FIX: 肥大化していたBottomBar部分を別関数に切り出し、呼び出しのみに変更
             bottomBar = {
                 EditorBottomBar(
                     enabled = enabled,
-                    contentField = contentField,
+                    contentField = contentFieldState.value,
                     onContentChange = { newField ->
-                        contentField = newField
-                        vm.setEditingContent(newField.text)
+                        contentFieldState.value = newField
                     },
                     onImagePick = {
                         launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
@@ -289,7 +303,6 @@ fun NoteEditorScreen(
                     ),
                 )
 
-                // Images
                 if (!editing?.imagePaths.isNullOrEmpty()) {
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -329,10 +342,9 @@ fun NoteEditorScreen(
 
                 // Content Field
                 TextField(
-                    value = contentField,
+                    value = contentFieldState.value,
                     onValueChange = { v ->
-                        contentField = v
-                        if (enabled) vm.setEditingContent(v.text)
+                        contentFieldState.value = v
                     },
                     placeholder = { Text(stringResource(R.string.label_content), color = IceTextSecondary.copy(alpha = 0.5f)) },
                     enabled = enabled,
@@ -364,13 +376,7 @@ fun NoteEditorScreen(
     }
 }
 
-// ───── 以下、切り出したUIコンポーネント ─────
-
-/**
- * 編集画面の下部ツールバー
- * テキスト装飾や画像添付などのツールを提供します。
- * UIとテキスト加工ロジックをここに集約し、NoteEditorScreenの責務を軽減しています。
- */
+// ───── EditorBottomBar ─────
 @Composable
 private fun EditorBottomBar(
     enabled: Boolean,
@@ -381,7 +387,6 @@ private fun EditorBottomBar(
     val colorMenu = remember { mutableStateOf(false) }
     val headingMenu = remember { mutableStateOf(false) }
 
-    // 内部ロジック: テキストを特定のタグで囲む
     fun wrapOrUnwrap(value: TextFieldValue, open: String, close: String): TextFieldValue {
         val t = value.text
         val sel = value.selection
@@ -408,7 +413,6 @@ private fun EditorBottomBar(
         }
     }
 
-    // 内部ロジック: 見出しタグのトグル
     fun toggleHeading(level: Int) {
         val t = contentField.text
         val sel = contentField.selection
@@ -426,7 +430,6 @@ private fun EditorBottomBar(
             (sel.start + delta).coerceAtLeast(0),
             (sel.end + delta).coerceAtLeast(0),
         )
-        // 変更を親に通知
         onContentChange(contentField.copy(text = newText, selection = newSel))
     }
 
@@ -435,7 +438,6 @@ private fun EditorBottomBar(
         contentColor = IceCyan,
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp),
     ) {
-        // Tool: Bold
         IconButton(
             enabled = enabled,
             onClick = {
@@ -461,7 +463,6 @@ private fun EditorBottomBar(
             },
         ) { Icon(Icons.Filled.FormatBold, null) }
 
-        // Tool: Underline
         IconButton(
             enabled = enabled,
             onClick = {
@@ -470,7 +471,6 @@ private fun EditorBottomBar(
             },
         ) { Icon(Icons.Filled.FormatUnderlined, null) }
 
-        // Tool: Color
         Box {
             IconButton(enabled = enabled, onClick = { colorMenu.value = true }) { Icon(Icons.Filled.FormatColorText, null) }
             DropdownMenu(
@@ -492,7 +492,6 @@ private fun EditorBottomBar(
             }
         }
 
-        // Tool: Heading
         Box {
             IconButton(enabled = enabled, onClick = { headingMenu.value = true }) { Icon(Icons.Filled.Title, null) }
             DropdownMenu(
@@ -515,7 +514,6 @@ private fun EditorBottomBar(
 
         Spacer(Modifier.weight(1f))
 
-        // Tool: Attach Image
         IconButton(
             onClick = onImagePick,
             enabled = enabled,
