@@ -18,7 +18,7 @@ import com.example.bugmemo.data.prefs.SettingsRepository
 import com.example.bugmemo.data.remote.GistRequest
 import com.example.bugmemo.data.remote.GistService
 import com.example.bugmemo.data.seedIfEmpty
-import com.example.bugmemo.ui.utils.GistContentBuilder // ★追加
+import com.example.bugmemo.ui.utils.GistContentBuilder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -39,6 +39,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+
+// ★追加(com.example.bugmemo.ui.utils.GistContentBuilder)
 
 @HiltViewModel
 class NotesViewModel @Inject constructor(

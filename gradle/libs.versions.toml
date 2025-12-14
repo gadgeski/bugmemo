@@ -1,29 +1,31 @@
 # gradle/libs.versions.toml
 
 [versions]
-agp = "8.13.1"
+agp = "8.13.2"
 kotlin = "2.0.21"
 coreKtx = "1.17.0"
-datastore = "1.1.1"
+datastore = "1.2.0"
 room = "2.7.0-alpha11"
 # ★ Fix: Room 2.8.4 -> 2.7.0-alpha11 に変更
 # Kotlin 2.0 (KSP 2.0) 環境でのスキーマ出力エラー(AbstractMethodError)を解消するため
 lifecycle = "2.10.0"
-activityCompose = "1.12.0"
-composeBom = "2025.11.01"
+activityCompose = "1.12.1"
+composeBom = "2025.12.00"
 appcompat = "1.7.1"
 paging = "3.3.6"
 leakcanary = "2.14"
-securityCrypto = "1.1.0-alpha06"
+securityCrypto = "1.1.0"
 
 # View System Material (XMLテーマ用)
 material = "1.13.0"
 
 # Networking & Image
 coil = "2.7.0"
-retrofit = "2.11.0" # 安定版として一般的 (2.11.0でも可)
+retrofit = "3.0.0"
+# 安定版として一般的 (2.11.0でも可)
 okhttp = "4.12.0"
-moshi = "1.15.0"
+# Kotlin 2.0でも読めるようにOkHttp を 4.x に固定
+moshi = "1.15.2"
 
 # テスト系
 junit = "4.13.2"
@@ -32,6 +34,9 @@ espressoCore = "3.7.0"
 
 # BOM 対象外
 navigation = "2.9.6"
+
+# Markdown Preview用
+composeMarkdown = "0.5.8"
 
 # Hilt (DI)
 hilt = "2.57.2"
@@ -61,6 +66,9 @@ androidx-activity-compose          = { module = "androidx.activity:activity-comp
 androidx-navigation-compose        = { module = "androidx.navigation:navigation-compose", version.ref = "navigation" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+
+# Markdown Preview用
+jeziellago-compose-markdown = { module = "com.github.jeziellago:compose-markdown", version.ref = "composeMarkdown" }
 
 # Material & Coil
 material = { module = "com.google.android.material:material", version.ref = "material" }

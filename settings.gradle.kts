@@ -24,5 +24,15 @@ dependencyResolutionManagement {
     }
 }
 
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        // ★ JitPack（追加）
+        maven("https://jitpack.io")
+    }
+}
+
 rootProject.name = "bugmemo" // ★ ここは任意
 include(":app") // ★ 必須：app モジュールを含める
