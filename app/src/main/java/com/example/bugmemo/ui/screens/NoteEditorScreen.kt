@@ -47,7 +47,9 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -67,6 +69,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
@@ -88,11 +92,16 @@ import com.example.bugmemo.ui.theme.IceSlate
 import com.example.bugmemo.ui.theme.IceTextPrimary
 import com.example.bugmemo.ui.theme.IceTextSecondary
 import com.example.bugmemo.ui.utils.IcebergEditorVisualTransformation
+import dev.jeziellago.compose.markdowntext.MarkdownText
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import java.io.File
 import java.util.UUID
+
+// ★変更: TabRow -> PrimaryTabRow(androidx.compose.material3.PrimaryTabRow)
+
+private enum class EditorTabMode { Edit, Preview }
 
 @OptIn(FlowPreview::class)
 @Composable
@@ -100,18 +109,32 @@ fun NoteEditorScreen(
     vm: NotesViewModel,
     onBack: () -> Unit = {},
 ) {
-    // getValueをインポートしたので、ここの 'by' が正しく機能し、
-    // editing は 'State<Note?>' ではなく中身の 'Note?' になります。
     val editing by vm.editing.collectAsStateWithLifecycle(initialValue = null)
+    // 警告 "Condition 'enabled' is always true" が出る場合、editingがnullにならない型推論がされている可能性があります。
+    // ロジック的には安全のため != null チェックを残しても問題ありませんが、
+    // ここでは警告を抑制するため、また enabled 変数はUI制御で使われているためそのままにします。
     val enabled = editing != null
 
     val context = LocalContext.current
     val fontScale by AppLocaleManager.editorFontScaleFlow(context)
         .collectAsStateWithLifecycle(initialValue = 1.0f)
 
-    // IDE誤検知回避のため、by委譲を使わずStateオブジェクトとして保持（.valueアクセス）
+    // IDE誤検知回避：by委譲を使わずStateオブジェクトを保持
     val showDeleteDialogState = remember { mutableStateOf(false) }
 
+    // タブ状態
+    val tabModeState = remember { mutableStateOf(EditorTabMode.Edit) }
+
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    LaunchedEffect(tabModeState.value) {
+        if (tabModeState.value == EditorTabMode.Preview) {
+            focusManager.clearFocus(force = true)
+            keyboardController?.hide()
+        }
+    }
+
+    // IDE誤検知回避：Stateオブジェクト保持
     val contentFieldState = remember(editing?.id) {
         mutableStateOf(
             TextFieldValue(
@@ -121,8 +144,8 @@ fun NoteEditorScreen(
         )
     }
 
-    // Debounce実装
-    LaunchedEffect(Unit) {
+    // Debounce（300ms）
+    LaunchedEffect(editing?.id) {
         snapshotFlow { contentFieldState.value.text }
             .debounce(300L)
             .distinctUntilChanged()
@@ -133,6 +156,7 @@ fun NoteEditorScreen(
             }
     }
 
+    // DBからの同期
     LaunchedEffect(editing?.content) {
         val currentText = contentFieldState.value.text
         val newText = editing?.content.orEmpty()
@@ -200,74 +224,105 @@ fun NoteEditorScreen(
             containerColor = Color.Transparent,
             contentWindowInsets = WindowInsets.statusBars,
             topBar = {
-                TopAppBar(
-                    title = {
-                        val titleText = editing?.title?.ifBlank { stringResource(R.string.label_untitled) }
-                            ?: stringResource(R.string.title_new_note)
-                        Text(
-                            text = titleText,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
+                Column {
+                    TopAppBar(
+                        title = {
+                            val titleText = editing?.title?.ifBlank { stringResource(R.string.label_untitled) }
+                                ?: stringResource(R.string.title_new_note)
+                            Text(
+                                text = titleText,
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent,
+                            titleContentColor = IceTextPrimary,
+                            actionIconContentColor = IceSilver,
+                            navigationIconContentColor = IceCyan,
+                        ),
+                        navigationIcon = {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.cd_back),
+                                )
+                            }
+                        },
+                        actions = {
+                            IconButton(
+                                enabled = enabled,
+                                onClick = { showDeleteDialogState.value = true },
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Delete,
+                                    contentDescription = "Delete Note",
+                                    tint = if (enabled) IceSilver else IceSilver.copy(alpha = 0.3f),
+                                )
+                            }
+
+                            IconButton(
+                                enabled = enabled,
+                                onClick = { vm.syncCurrentNoteToGist() },
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.CloudUpload,
+                                    contentDescription = "Sync to Gist",
+                                    tint = if (editing?.gistId != null) IceCyan else IceSilver,
+                                )
+                            }
+
+                            IconButton(onClick = { vm.saveEditing() }, enabled = enabled) {
+                                Icon(
+                                    imageVector = Icons.Filled.Save,
+                                    contentDescription = stringResource(R.string.cd_save),
+                                    tint = if (enabled) IceCyan else IceSilver.copy(alpha = 0.5f),
+                                )
+                            }
+                        },
+                    )
+
+                    // --- Edit / Preview タブ ---
+                    val selectedIndex = if (tabModeState.value == EditorTabMode.Edit) 0 else 1
+
+                    // ★FIX: TabRow -> PrimaryTabRow に変更
+                    PrimaryTabRow(
+                        selectedTabIndex = selectedIndex,
                         containerColor = Color.Transparent,
-                        titleContentColor = IceTextPrimary,
-                        actionIconContentColor = IceSilver,
-                        navigationIconContentColor = IceCyan,
-                    ),
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
-                        }
-                    },
-                    actions = {
-                        IconButton(
-                            enabled = enabled,
-                            onClick = { showDeleteDialogState.value = true },
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Delete,
-                                contentDescription = "Delete Note",
-                                tint = if (enabled) IceSilver else IceSilver.copy(alpha = 0.3f),
-                            )
-                        }
-
-                        IconButton(
-                            enabled = enabled,
-                            onClick = { vm.syncCurrentNoteToGist() },
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.CloudUpload,
-                                contentDescription = "Sync to Gist",
-                                tint = if (editing?.gistId != null) IceCyan else IceSilver,
-                            )
-                        }
-
-                        IconButton(onClick = { vm.saveEditing() }, enabled = enabled) {
-                            Icon(
-                                imageVector = Icons.Filled.Save,
-                                contentDescription = stringResource(R.string.cd_save),
-                                tint = if (enabled) IceCyan else IceSilver.copy(alpha = 0.5f),
-                            )
-                        }
-                    },
-                )
+                        contentColor = IceCyan,
+                        // dividerはデフォルトで適切に処理されるため削除、indicatorもデフォルトを使用
+                    ) {
+                        Tab(
+                            selected = selectedIndex == 0,
+                            onClick = { tabModeState.value = EditorTabMode.Edit },
+                            text = { Text("Edit", color = IceTextPrimary) },
+                        )
+                        Tab(
+                            selected = selectedIndex == 1,
+                            onClick = { tabModeState.value = EditorTabMode.Preview },
+                            text = { Text("Preview", color = IceTextPrimary) },
+                        )
+                    }
+                }
             },
             bottomBar = {
-                EditorBottomBar(
-                    enabled = enabled,
-                    contentField = contentFieldState.value,
-                    onContentChange = { newField ->
-                        contentFieldState.value = newField
-                    },
-                    onImagePick = {
-                        launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                    },
-                )
+                if (tabModeState.value == EditorTabMode.Edit) {
+                    EditorBottomBar(
+                        enabled = enabled,
+                        contentField = contentFieldState.value,
+                        onContentChange = { newField ->
+                            contentFieldState.value = newField
+                        },
+                        onImagePick = {
+                            launcher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                            )
+                        },
+                    )
+                }
             },
         ) { inner ->
             Column(
@@ -279,30 +334,49 @@ fun NoteEditorScreen(
                     .imePadding(),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                // Title Field
-                TextField(
-                    value = editing?.title.orEmpty(),
-                    onValueChange = { text -> vm.setEditingTitle(text) },
-                    placeholder = { Text(stringResource(R.string.label_title), color = IceTextSecondary.copy(alpha = 0.5f)) },
-                    singleLine = true,
-                    enabled = enabled,
-                    modifier = Modifier.fillMaxWidth(),
-                    textStyle = MaterialTheme.typography.headlineSmall.copy(
-                        fontSize = MaterialTheme.typography.headlineSmall.fontSize * fontScale,
-                        color = IceCyan,
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        cursorColor = IceCyan,
-                    ),
-                )
+                // Title
+                if (tabModeState.value == EditorTabMode.Edit) {
+                    TextField(
+                        value = editing?.title.orEmpty(),
+                        onValueChange = { text -> vm.setEditingTitle(text) },
+                        placeholder = { Text(stringResource(R.string.label_title), color = IceTextSecondary.copy(alpha = 0.5f)) },
+                        singleLine = true,
+                        enabled = enabled,
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = MaterialTheme.typography.headlineSmall.copy(
+                            fontSize = MaterialTheme.typography.headlineSmall.fontSize * fontScale,
+                            color = IceCyan,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            disabledContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            cursorColor = IceCyan,
+                        ),
+                    )
+                } else {
+                    Text(
+                        text = (
+                            editing?.title?.ifBlank { stringResource(R.string.label_untitled) }
+                                ?: stringResource(R.string.title_new_note)
+                            ),
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontSize = MaterialTheme.typography.headlineSmall.fontSize * fontScale,
+                            color = IceCyan,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
 
+                // Images
                 if (!editing?.imagePaths.isNullOrEmpty()) {
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -322,6 +396,8 @@ fun NoteEditorScreen(
                                     contentScale = ContentScale.Crop,
                                 )
                                 IconButton(
+                                    // ★ここは “Preview中は編集不可” だけにする
+                                    enabled = tabModeState.value == EditorTabMode.Edit,
                                     onClick = { vm.removeImagePath(path) },
                                     modifier = Modifier
                                         .align(Alignment.TopEnd)
@@ -340,43 +416,65 @@ fun NoteEditorScreen(
                     }
                 }
 
-                // Content Field
-                TextField(
-                    value = contentFieldState.value,
-                    onValueChange = { v ->
-                        contentFieldState.value = v
-                    },
-                    placeholder = { Text(stringResource(R.string.label_content), color = IceTextSecondary.copy(alpha = 0.5f)) },
-                    enabled = enabled,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .heightIn(min = 300.dp)
-                        .border(BorderStroke(1.dp, IceGlassBorder), RoundedCornerShape(12.dp)),
-                    minLines = 10,
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(
-                        fontSize = MaterialTheme.typography.bodyLarge.fontSize * fontScale,
-                        lineHeight = (MaterialTheme.typography.bodyLarge.fontSize * fontScale) * 1.5,
-                        color = IceTextPrimary,
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                    ),
-                    visualTransformation = remember { IcebergEditorVisualTransformation() },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = IceGlassSurface,
-                        unfocusedContainerColor = IceGlassSurface,
-                        disabledContainerColor = IceGlassSurface.copy(alpha = 0.5f),
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        cursorColor = IceCyan,
-                    ),
-                )
+                // Content
+                if (tabModeState.value == EditorTabMode.Edit) {
+                    TextField(
+                        value = contentFieldState.value,
+                        onValueChange = { v -> contentFieldState.value = v },
+                        placeholder = { Text(stringResource(R.string.label_content), color = IceTextSecondary.copy(alpha = 0.5f)) },
+                        enabled = enabled,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .heightIn(min = 300.dp)
+                            .border(BorderStroke(1.dp, IceGlassBorder), RoundedCornerShape(12.dp)),
+                        minLines = 10,
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(
+                            fontSize = MaterialTheme.typography.bodyLarge.fontSize * fontScale,
+                            lineHeight = (MaterialTheme.typography.bodyLarge.fontSize * fontScale) * 1.5,
+                            color = IceTextPrimary,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        ),
+                        visualTransformation = remember { IcebergEditorVisualTransformation() },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = IceGlassSurface,
+                            unfocusedContainerColor = IceGlassSurface,
+                            disabledContainerColor = IceGlassSurface.copy(alpha = 0.5f),
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            cursorColor = IceCyan,
+                        ),
+                    )
+                } else {
+                    // Preview：Markdownレンダリング
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .heightIn(min = 300.dp)
+                            .border(BorderStroke(1.dp, IceGlassBorder), RoundedCornerShape(12.dp))
+                            .background(IceGlassSurface, RoundedCornerShape(12.dp))
+                            .padding(12.dp),
+                    ) {
+                        MarkdownText(
+                            markdown = contentFieldState.value.text,
+                            modifier = Modifier.fillMaxWidth(),
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontSize = MaterialTheme.typography.bodyLarge.fontSize * fontScale,
+                                lineHeight = (MaterialTheme.typography.bodyLarge.fontSize * fontScale) * 1.5,
+                                color = IceTextPrimary,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            ),
+                        )
+                    }
+                }
             }
         }
     }
 }
 
-// ───── EditorBottomBar ─────
+// ───── EditorBottomBar（変更なし） ─────
 @Composable
 private fun EditorBottomBar(
     enabled: Boolean,
@@ -465,14 +563,13 @@ private fun EditorBottomBar(
 
         IconButton(
             enabled = enabled,
-            onClick = {
-                val newValue = wrapOrUnwrap(contentField, "[u]", "[/u]")
-                onContentChange(newValue)
-            },
+            onClick = { onContentChange(wrapOrUnwrap(contentField, "[u]", "[/u]")) },
         ) { Icon(Icons.Filled.FormatUnderlined, null) }
 
         Box {
-            IconButton(enabled = enabled, onClick = { colorMenu.value = true }) { Icon(Icons.Filled.FormatColorText, null) }
+            IconButton(enabled = enabled, onClick = { colorMenu.value = true }) {
+                Icon(Icons.Filled.FormatColorText, null)
+            }
             DropdownMenu(
                 expanded = colorMenu.value,
                 onDismissRequest = { colorMenu.value = false },
@@ -483,8 +580,7 @@ private fun EditorBottomBar(
                     DropdownMenuItem(
                         text = { Text(hex, color = IceTextPrimary, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace) },
                         onClick = {
-                            val newValue = wrapOrUnwrap(contentField, "[color=$hex]", "[/color]")
-                            onContentChange(newValue)
+                            onContentChange(wrapOrUnwrap(contentField, "[color=$hex]", "[/color]"))
                             colorMenu.value = false
                         },
                     )
@@ -493,7 +589,9 @@ private fun EditorBottomBar(
         }
 
         Box {
-            IconButton(enabled = enabled, onClick = { headingMenu.value = true }) { Icon(Icons.Filled.Title, null) }
+            IconButton(enabled = enabled, onClick = { headingMenu.value = true }) {
+                Icon(Icons.Filled.Title, null)
+            }
             DropdownMenu(
                 expanded = headingMenu.value,
                 onDismissRequest = { headingMenu.value = false },
@@ -514,10 +612,7 @@ private fun EditorBottomBar(
 
         Spacer(Modifier.weight(1f))
 
-        IconButton(
-            onClick = onImagePick,
-            enabled = enabled,
-        ) {
+        IconButton(onClick = onImagePick, enabled = enabled) {
             Icon(Icons.Filled.AttachFile, "Attach Image")
         }
     }

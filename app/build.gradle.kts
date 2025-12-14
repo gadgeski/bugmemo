@@ -73,6 +73,9 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.coil.compose)
 
+    // ★ Markdown Preview（追加）
+    implementation(libs.jeziellago.compose.markdown)
+
     // Activity / Lifecycle / Navigation
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
