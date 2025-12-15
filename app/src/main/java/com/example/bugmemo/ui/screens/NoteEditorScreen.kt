@@ -330,7 +330,7 @@ fun NoteEditorScreen(
                     .padding(inner)
                     .fillMaxSize()
                     .padding(horizontal = 16.dp)
-                    .verticalScroll(rememberScrollState())
+                    // .verticalScroll(rememberScrollState()) ← previewでもスクロール出来る様に外す。
                     .imePadding(),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
@@ -452,8 +452,10 @@ fun NoteEditorScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
-                            .heightIn(min = 300.dp)
+                            // .heightIn(min = 300.dp) ← previewでもスクロール出来る様に外す。
                             .border(BorderStroke(1.dp, IceGlassBorder), RoundedCornerShape(12.dp))
+                            .verticalScroll(rememberScrollState())
+                            // ★previewでもスクロール出来る様に追加！
                             .background(IceGlassSurface, RoundedCornerShape(12.dp))
                             .padding(12.dp),
                     ) {
