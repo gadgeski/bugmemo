@@ -1,6 +1,6 @@
-// app/src/main/java/com/gadgeski/bugmemo/ui/utils/IcebergEditorVisualTransformation.kt
 package com.gadgeski.bugmemo.ui.utils
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -8,31 +8,39 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.sp
 import com.gadgeski.bugmemo.ui.theme.IceCyan
 import com.gadgeski.bugmemo.ui.theme.IceGlassSurface
 import com.gadgeski.bugmemo.ui.theme.IceTextSecondary
 
-// ★追加: これが抜けていました(com.example.bugmemo.ui.theme.IceTextSecondary)
-
 class IcebergEditorVisualTransformation : VisualTransformation {
 
+    // 1. Code Block: ```...```
     private val codeBlockRegex = Regex("```([\\s\\S]*?)```")
+    // 2. Inline Code: `...`
     private val inlineCodeRegex = Regex("`([^`]+)`")
+    // 3. Bold: **...**
     private val boldRegex = Regex("\\*\\*(.*?)\\*\\*")
+    // 4. Heading: # Title
     private val headingRegex = Regex("^(#{1,6})\\s+(.*)$", RegexOption.MULTILINE)
+    // 5. Underline: [u]...[/u] (New!)
+    private val underlineRegex = Regex("\\[u](.*?)\\[/u]")
+    // 6. Color: [color=#RRGGBB]...[/color] (New!)
+    private val colorRegex = Regex("\\[color=(#[0-9a-fA-F]{6})](.*?)\\[/color]")
 
     override fun filter(text: AnnotatedString): TransformedText {
         val rawText = text.text
         val builder = AnnotatedString.Builder(rawText)
 
-        // 1. Code Block (```...```)
+        // --- Basic Markdown ---
+
+        // Code Block
         codeBlockRegex.findAll(rawText).forEach { match ->
             builder.addStyle(
                 style = SpanStyle(
                     fontFamily = FontFamily.Monospace,
                     background = IceGlassSurface.copy(alpha = 0.3f),
-                    // ★FIX: ここをPrimaryからSecondaryに変更し、コードっぽさを出す
                     color = IceTextSecondary,
                     fontSize = 14.sp,
                 ),
@@ -41,7 +49,7 @@ class IcebergEditorVisualTransformation : VisualTransformation {
             )
         }
 
-        // 2. Inline Code (`...`)
+        // Inline Code
         inlineCodeRegex.findAll(rawText).forEach { match ->
             builder.addStyle(
                 style = SpanStyle(
@@ -55,7 +63,7 @@ class IcebergEditorVisualTransformation : VisualTransformation {
             )
         }
 
-        // 3. Heading (# Title)
+        // Heading
         headingRegex.findAll(rawText).forEach { match ->
             builder.addStyle(
                 style = SpanStyle(
@@ -68,7 +76,7 @@ class IcebergEditorVisualTransformation : VisualTransformation {
             )
         }
 
-        // 4. Bold (**...**)
+        // Bold
         boldRegex.findAll(rawText).forEach { match ->
             builder.addStyle(
                 style = SpanStyle(
@@ -80,6 +88,57 @@ class IcebergEditorVisualTransformation : VisualTransformation {
             )
         }
 
+        // --- Extended Features (From MarkdownBold) ---
+
+        // Underline [u]...[/u]
+        underlineRegex.findAll(rawText).forEach { match ->
+            builder.addStyle(
+                style = SpanStyle(textDecoration = TextDecoration.Underline),
+                start = match.range.first,
+                end = match.range.last + 1
+            )
+        }
+
+        // Color [color=#RRGGBB]...[/color]
+        colorRegex.findAll(rawText).forEach { match ->
+            // groupValues[1] はカラーコード (#RRGGBB)
+            val colorHex = match.groupValues[1]
+            val color = parseHexColor(colorHex)
+            if (color != null) {
+                builder.addStyle(
+                    style = SpanStyle(color = color),
+                    start = match.range.first,
+                    end = match.range.last + 1
+                )
+            }
+        }
+
+        // Note: OffsetMapping.Identity means we show the markdown symbols (** etc)
+        // This is preferred for an Editor (so you can edit the syntax).
         return TransformedText(builder.toAnnotatedString(), OffsetMapping.Identity)
+    }
+
+    // Helper: Hex String -> Color
+    // ★ Fix 2: Helper: Hex String -> Color
+    private fun parseHexColor(hex: String): Color? {
+        return try {
+            val cleanHex = hex.removePrefix("#")
+            if (cleanHex.length == 6) {
+                // 先頭の2文字 (Red)
+                // Before: cleanHex.substring(0, 2).toInt(16)
+                // After:  cleanHex.take(2).toInt(16)
+                val r = cleanHex.take(2).toInt(16)
+
+                // 真ん中と末尾は substring のままでOK（drop(2).take(2)等は逆に冗長になるため）
+                val g = cleanHex.substring(2, 4).toInt(16)
+                val b = cleanHex.substring(4, 6).toInt(16)
+
+                Color(r, g, b)
+            } else {
+                null
+            }
+        } catch (_: Exception) {
+            null
+        }
     }
 }

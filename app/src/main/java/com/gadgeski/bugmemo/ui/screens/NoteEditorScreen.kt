@@ -13,7 +13,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,15 +35,8 @@ import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.FormatBold
-import androidx.compose.material.icons.filled.FormatColorText
-import androidx.compose.material.icons.filled.FormatUnderlined
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Title
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -82,6 +75,7 @@ import coil.compose.AsyncImage
 import com.gadgeski.bugmemo.R
 import com.gadgeski.bugmemo.core.AppLocaleManager
 import com.gadgeski.bugmemo.ui.NotesViewModel
+import com.gadgeski.bugmemo.ui.components.MarkdownToolbar
 import com.gadgeski.bugmemo.ui.theme.IceCyan
 import com.gadgeski.bugmemo.ui.theme.IceDeepNavy
 import com.gadgeski.bugmemo.ui.theme.IceGlassBorder
@@ -92,6 +86,7 @@ import com.gadgeski.bugmemo.ui.theme.IceSlate
 import com.gadgeski.bugmemo.ui.theme.IceTextPrimary
 import com.gadgeski.bugmemo.ui.theme.IceTextSecondary
 import com.gadgeski.bugmemo.ui.utils.IcebergEditorVisualTransformation
+import com.gadgeski.bugmemo.ui.utils.MarkdownTextHelper
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
@@ -484,138 +479,51 @@ private fun EditorBottomBar(
     onContentChange: (TextFieldValue) -> Unit,
     onImagePick: () -> Unit,
 ) {
-    val colorMenu = remember { mutableStateOf(false) }
-    val headingMenu = remember { mutableStateOf(false) }
-
-    fun wrapOrUnwrap(value: TextFieldValue, open: String, close: String): TextFieldValue {
-        val t = value.text
-        val sel = value.selection
-        return if (!sel.collapsed) {
-            val selected = t.substring(sel.start, sel.end)
-            val isWrapped = selected.startsWith(open) && selected.endsWith(close)
-            if (isWrapped) {
-                val inner = selected.removePrefix(open).removeSuffix(close)
-                val newText = t.replaceRange(sel.start, sel.end, inner)
-                val pos = sel.start + inner.length
-                value.copy(text = newText, selection = TextRange(pos, pos))
-            } else {
-                val wrapped = open + selected + close
-                val newText = t.replaceRange(sel.start, sel.end, wrapped)
-                val pos = sel.start + wrapped.length
-                value.copy(text = newText, selection = TextRange(pos, pos))
-            }
-        } else {
-            val pos = sel.start
-            val inserted = open + close
-            val newText = t.take(pos) + inserted + t.drop(pos)
-            val caret = pos + open.length
-            return value.copy(text = newText, selection = TextRange(caret, caret))
-        }
-    }
-
-    fun toggleHeading(level: Int) {
-        val t = contentField.text
-        val sel = contentField.selection
-        val lineStart = t.lastIndexOf('\n', startIndex = (sel.start - 1).coerceAtLeast(0)) + 1
-        val lineEnd = t.indexOf('\n', startIndex = sel.end).let { if (it == -1) t.length else it }
-        val line = t.substring(lineStart, lineEnd)
-
-        val stripped = line.replace(Regex("^#{1,6}\\s+"), "")
-        val prefix = "#".repeat(level) + " "
-        val newLine = if (line.startsWith(prefix)) stripped else prefix + stripped
-
-        val newText = t.replaceRange(lineStart, lineEnd, newLine)
-        val delta = newLine.length - line.length
-        val newSel = TextRange(
-            (sel.start + delta).coerceAtLeast(0),
-            (sel.end + delta).coerceAtLeast(0),
-        )
-        onContentChange(contentField.copy(text = newText, selection = newSel))
-    }
-
-    BottomAppBar(
-        containerColor = IceSlate.copy(alpha = 0.9f),
-        contentColor = IceCyan,
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp),
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        IconButton(
-            enabled = enabled,
-            onClick = {
-                if (!enabled) return@IconButton
-                val text = contentField.text
-                val sel = contentField.selection
-
-                val newValue = if (!sel.collapsed) {
-                    val selected = text.substring(sel.start, sel.end)
-                    if (selected.startsWith("**") && selected.endsWith("**") && selected.length >= 4) {
-                        val inner = selected.removePrefix("**").removeSuffix("**")
-                        val newText = text.take(sel.start) + inner + text.drop(sel.end)
-                        TextFieldValue(newText, TextRange(sel.start + inner.length))
-                    } else {
-                        val newText = text.take(sel.start) + "**" + selected + "**" + text.drop(sel.end)
-                        TextFieldValue(newText, TextRange(sel.end + 4))
-                    }
-                } else {
-                    val newText = text.take(sel.start) + "****" + text.drop(sel.start)
-                    TextFieldValue(newText, TextRange(sel.start + 2))
-                }
-                onContentChange(newValue)
+        // Markdown Toolbar (ロジックはMarkdownTextHelperに委譲)
+        MarkdownToolbar(
+            modifier = Modifier.weight(1f),
+            onBoldClick = {
+                if (enabled) onContentChange(MarkdownTextHelper.toggleBold(contentField))
             },
-        ) { Icon(Icons.Filled.FormatBold, null) }
+            onCodeClick = {
+                if (enabled) onContentChange(MarkdownTextHelper.toggleCode(contentField))
+            },
+            onCodeBlockClick = {
+                if (enabled) onContentChange(MarkdownTextHelper.toggleCodeBlock(contentField))
+            },
+            onListClick = {
+                if (enabled) onContentChange(MarkdownTextHelper.toggleList(contentField))
+            },
+            onCheckboxClick = {
+                if (enabled) onContentChange(MarkdownTextHelper.toggleCheckbox(contentField))
+            },
+            onHeadingClick = {
+                // シンプルにH2見出しをトグル
+                if (enabled) onContentChange(MarkdownTextHelper.toggleHeading(contentField, 2))
+            }
+        )
 
+        // Attach Image Button (右端)
         IconButton(
+            onClick = onImagePick,
             enabled = enabled,
-            onClick = { onContentChange(wrapOrUnwrap(contentField, "[u]", "[/u]")) },
-        ) { Icon(Icons.Filled.FormatUnderlined, null) }
-
-        Box {
-            IconButton(enabled = enabled, onClick = { colorMenu.value = true }) {
-                Icon(Icons.Filled.FormatColorText, null)
-            }
-            DropdownMenu(
-                expanded = colorMenu.value,
-                onDismissRequest = { colorMenu.value = false },
-                containerColor = IceSlate,
-                border = BorderStroke(1.dp, IceGlassBorder),
-            ) {
-                listOf("#ff5252", "#ff9800", "#4caf50", "#2196f3").forEach { hex ->
-                    DropdownMenuItem(
-                        text = { Text(hex, color = IceTextPrimary, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace) },
-                        onClick = {
-                            onContentChange(wrapOrUnwrap(contentField, "[color=$hex]", "[/color]"))
-                            colorMenu.value = false
-                        },
-                    )
-                }
-            }
-        }
-
-        Box {
-            IconButton(enabled = enabled, onClick = { headingMenu.value = true }) {
-                Icon(Icons.Filled.Title, null)
-            }
-            DropdownMenu(
-                expanded = headingMenu.value,
-                onDismissRequest = { headingMenu.value = false },
-                containerColor = IceSlate,
-                border = BorderStroke(1.dp, IceGlassBorder),
-            ) {
-                (1..3).forEach { level ->
-                    DropdownMenuItem(
-                        text = { Text("H$level", color = IceTextPrimary, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace) },
-                        onClick = {
-                            toggleHeading(level)
-                            headingMenu.value = false
-                        },
-                    )
-                }
-            }
-        }
-
-        Spacer(Modifier.weight(1f))
-
-        IconButton(onClick = onImagePick, enabled = enabled) {
-            Icon(Icons.Filled.AttachFile, "Attach Image")
+            modifier = Modifier
+                .size(48.dp)
+                .background(IceGlassSurface, RoundedCornerShape(12.dp))
+                .border(BorderStroke(1.dp, IceGlassBorder), RoundedCornerShape(12.dp))
+        ) {
+            Icon(
+                imageVector = Icons.Filled.AttachFile,
+                contentDescription = "Attach Image",
+                tint = if (enabled) IceCyan else IceSilver.copy(alpha = 0.5f)
+            )
         }
     }
 }
