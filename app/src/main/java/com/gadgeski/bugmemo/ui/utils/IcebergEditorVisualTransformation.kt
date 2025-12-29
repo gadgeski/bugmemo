@@ -18,14 +18,19 @@ class IcebergEditorVisualTransformation : VisualTransformation {
 
     // 1. Code Block: ```...```
     private val codeBlockRegex = Regex("```([\\s\\S]*?)```")
+
     // 2. Inline Code: `...`
     private val inlineCodeRegex = Regex("`([^`]+)`")
+
     // 3. Bold: **...**
     private val boldRegex = Regex("\\*\\*(.*?)\\*\\*")
+
     // 4. Heading: # Title
     private val headingRegex = Regex("^(#{1,6})\\s+(.*)$", RegexOption.MULTILINE)
+
     // 5. Underline: [u]...[/u] (New!)
     private val underlineRegex = Regex("\\[u](.*?)\\[/u]")
+
     // 6. Color: [color=#RRGGBB]...[/color] (New!)
     private val colorRegex = Regex("\\[color=(#[0-9a-fA-F]{6})](.*?)\\[/color]")
 
@@ -95,7 +100,7 @@ class IcebergEditorVisualTransformation : VisualTransformation {
             builder.addStyle(
                 style = SpanStyle(textDecoration = TextDecoration.Underline),
                 start = match.range.first,
-                end = match.range.last + 1
+                end = match.range.last + 1,
             )
         }
 
@@ -108,7 +113,7 @@ class IcebergEditorVisualTransformation : VisualTransformation {
                 builder.addStyle(
                     style = SpanStyle(color = color),
                     start = match.range.first,
-                    end = match.range.last + 1
+                    end = match.range.last + 1,
                 )
             }
         }
@@ -120,25 +125,23 @@ class IcebergEditorVisualTransformation : VisualTransformation {
 
     // Helper: Hex String -> Color
     // ★ Fix 2: Helper: Hex String -> Color
-    private fun parseHexColor(hex: String): Color? {
-        return try {
-            val cleanHex = hex.removePrefix("#")
-            if (cleanHex.length == 6) {
-                // 先頭の2文字 (Red)
-                // Before: cleanHex.substring(0, 2).toInt(16)
-                // After:  cleanHex.take(2).toInt(16)
-                val r = cleanHex.take(2).toInt(16)
+    private fun parseHexColor(hex: String): Color? = try {
+        val cleanHex = hex.removePrefix("#")
+        if (cleanHex.length == 6) {
+            // 先頭の2文字 (Red)
+            // Before: cleanHex.substring(0, 2).toInt(16)
+            // After:  cleanHex.take(2).toInt(16)
+            val r = cleanHex.take(2).toInt(16)
 
-                // 真ん中と末尾は substring のままでOK（drop(2).take(2)等は逆に冗長になるため）
-                val g = cleanHex.substring(2, 4).toInt(16)
-                val b = cleanHex.substring(4, 6).toInt(16)
+            // 真ん中と末尾は substring のままでOK（drop(2).take(2)等は逆に冗長になるため）
+            val g = cleanHex.substring(2, 4).toInt(16)
+            val b = cleanHex.substring(4, 6).toInt(16)
 
-                Color(r, g, b)
-            } else {
-                null
-            }
-        } catch (_: Exception) {
+            Color(r, g, b)
+        } else {
             null
         }
+    } catch (_: Exception) {
+        null
     }
 }

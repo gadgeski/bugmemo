@@ -484,7 +484,7 @@ private fun EditorBottomBar(
             .fillMaxWidth()
             .padding(4.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         // Markdown Toolbar (ロジックはMarkdownTextHelperに委譲)
         MarkdownToolbar(
@@ -507,7 +507,7 @@ private fun EditorBottomBar(
             onHeadingClick = {
                 // シンプルにH2見出しをトグル
                 if (enabled) onContentChange(MarkdownTextHelper.toggleHeading(contentField, 2))
-            }
+            },
         )
 
         // Attach Image Button (右端)
@@ -517,12 +517,12 @@ private fun EditorBottomBar(
             modifier = Modifier
                 .size(48.dp)
                 .background(IceGlassSurface, RoundedCornerShape(12.dp))
-                .border(BorderStroke(1.dp, IceGlassBorder), RoundedCornerShape(12.dp))
+                .border(BorderStroke(1.dp, IceGlassBorder), RoundedCornerShape(12.dp)),
         ) {
             Icon(
                 imageVector = Icons.Filled.AttachFile,
                 contentDescription = "Attach Image",
-                tint = if (enabled) IceCyan else IceSilver.copy(alpha = 0.5f)
+                tint = if (enabled) IceCyan else IceSilver.copy(alpha = 0.5f),
             )
         }
     }
