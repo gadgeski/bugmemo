@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.bugmemo"
+    namespace = "com.gadgeski.bugmemo"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.bugmemo"
+        applicationId = "com.gadgeski.bugmemo"
         minSdk = 34
         targetSdk = 36
         versionCode = 1
