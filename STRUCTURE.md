@@ -7,15 +7,17 @@ bugmemo/
 │   ├── lint-baseline.xml
 │   ├── proguard-rules.pro
 │   ├── schemas
-│   │   └── com.example.bugmemo.data.db.AppDatabase
-│   │       ├── 2.json
-│   │       ├── 3.json
+│   │   ├── com.example.bugmemo.data.db.AppDatabase
+│   │   │   ├── 2.json
+│   │   │   ├── 3.json
+│   │   │   └── 4.json
+│   │   └── com.gadgeski.bugmemo.data.db.AppDatabase
 │   │       └── 4.json
 │   └── src
 │       ├── androidTest
 │       │   └── java
 │       │       └── com
-│       │           └── example
+│       │           └── gadgeski
 │       │               └── bugmemo
 │       │                   ├── ExampleInstrumentedTest.kt
 │       │                   └── data
@@ -27,7 +29,7 @@ bugmemo/
 │       │   ├── ic_launcher-playstore.png
 │       │   ├── java
 │       │   │   └── com
-│       │   │       └── example
+│       │   │       └── gadgeski
 │       │   │           └── bugmemo
 │       │   │               ├── BugMemoApp.kt
 │       │   │               ├── MainActivity.kt
@@ -35,7 +37,6 @@ bugmemo/
 │       │   │               │   ├── AppLocaleManager.kt
 │       │   │               │   └── FeatureFlags.kt
 │       │   │               ├── data
-│       │   │               │   ├── InMemoryNotesRepository.kt
 │       │   │               │   ├── Models.kt
 │       │   │               │   ├── NotesRepository.kt
 │       │   │               │   ├── RoomNotesRepository.kt
@@ -62,7 +63,6 @@ bugmemo/
 │       │   │                   ├── AppScaffold.kt
 │       │   │                   ├── NotesViewModel.kt
 │       │   │                   ├── common
-│       │   │                   │   ├── MarkdownBoldVisualTransformation.kt
 │       │   │                   │   ├── MarkdownEditUtils.kt
 │       │   │                   │   └── MarkdownText.kt
 │       │   │                   ├── components
@@ -85,6 +85,7 @@ bugmemo/
 │       │   │                   │   ├── Theme.kt
 │       │   │                   │   └── Type.kt
 │       │   │                   └── utils
+│       │   │                       ├── GistContentBuilder.kt
 │       │   │                       ├── IcebergEditorVisualTransformation.kt
 │       │   │                       └── MarkdownTextHelper.kt
 │       │   └── res
@@ -128,10 +129,11 @@ bugmemo/
 │       └── test
 │           └── java
 │               └── com
-│                   └── example
+│                   └── gadgeski
 │                       └── bugmemo
 │                           ├── ExampleUnitTest.kt
 │                           ├── data
+│                           │   ├── FakeNotesRepository.kt
 │                           │   └── db
 │                           │       └── ConvertersTest.kt
 │                           └── ui
@@ -166,5 +168,5 @@ bugmemo/
 ├── local.properties
 └── settings.gradle.kts
 
-58 directories, 108 files
+59 directories, 109 files
 ```
