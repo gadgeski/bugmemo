@@ -26,7 +26,7 @@ class AiDeckViewModel @Inject constructor() : ViewModel() {
             val mockLogs = listOf(
                 "> Analyzing stack trace...",
                 "> NullPointerException detected in NoteRepository.kt:42",
-                "> Proposal: Implement safe call operator and let block."
+                "> Proposal: Implement safe call operator and let block.",
             )
             _aiLogStream.value = ""
             mockLogs.forEach { log ->

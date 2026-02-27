@@ -10,6 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.gadgeski.bugmemo.ui.NotesViewModel
 import com.gadgeski.bugmemo.ui.mindmap.MindMapViewModel
+import com.gadgeski.bugmemo.ui.screens.AiDeckScreen
 import com.gadgeski.bugmemo.ui.screens.AllNotesScreen
 import com.gadgeski.bugmemo.ui.screens.BugsScreen
 import com.gadgeski.bugmemo.ui.screens.FoldersScreen
@@ -17,7 +18,6 @@ import com.gadgeski.bugmemo.ui.screens.MindMapScreen
 import com.gadgeski.bugmemo.ui.screens.NoteEditorScreen
 import com.gadgeski.bugmemo.ui.screens.SearchScreen
 import com.gadgeski.bugmemo.ui.screens.SettingsScreen
-import com.gadgeski.bugmemo.ui.screens.AiDeckScreen
 
 // keep: ルート定義
 object Routes {
@@ -104,7 +104,7 @@ fun AppNavHost(
         // AiDeck
         composable(Routes.AIDECK) {
             AiDeckScreen(
-                onNavigateBack = { navController.navigateUp() }
+                onNavigateBack = { navController.navigateUp() },
             )
         }
     }

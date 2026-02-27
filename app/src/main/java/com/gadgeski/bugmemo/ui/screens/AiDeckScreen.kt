@@ -36,11 +36,11 @@ import kotlinx.coroutines.flow.map
 @Composable
 fun AiDeckScreen(
     viewModel: AiDeckViewModel = hiltViewModel(),
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
     val context = LocalContext.current
     var isHalfOpened by remember { mutableStateOf(false) }
-    
+
     // [Rule Compliance: Consume onNavigateBack via system gesture]
     BackHandler {
         onNavigateBack()
@@ -68,7 +68,7 @@ fun AiDeckScreen(
             transitionSpec = {
                 fadeIn(animationSpec = tween(500)) togetherWith fadeOut(animationSpec = tween(500))
             },
-            label = "DeckMorphingAnimation"
+            label = "DeckMorphingAnimation",
         ) { halfOpened ->
             if (halfOpened) {
                 Column(modifier = Modifier.fillMaxSize()) {
@@ -79,7 +79,7 @@ fun AiDeckScreen(
                         onReject = { viewModel.rejectAction() },
                         onAnalyze = { viewModel.startAnalysisMock() },
                         isStreaming = isStreaming,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     )
                 }
             } else {
@@ -90,7 +90,7 @@ fun AiDeckScreen(
                         onReject = { viewModel.rejectAction() },
                         onAnalyze = { viewModel.startAnalysisMock() },
                         isStreaming = isStreaming,
-                        modifier = Modifier.height(200.dp)
+                        modifier = Modifier.height(200.dp),
                     )
                 }
             }

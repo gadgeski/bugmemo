@@ -34,13 +34,13 @@ fun DeckMonitor(logText: String, modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = DeepNavy),
-        border = BorderStroke(1.dp, MintCyan.copy(alpha = 0.3f))
+        border = BorderStroke(1.dp, MintCyan.copy(alpha = 0.3f)),
     ) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
-            reverseLayout = false
+            reverseLayout = false,
         ) {
             item {
                 Text(
@@ -48,7 +48,7 @@ fun DeckMonitor(logText: String, modifier: Modifier = Modifier) {
                     color = MintCyan,
                     fontFamily = FontFamily.Monospace,
                     fontSize = 14.sp,
-                    lineHeight = 20.sp
+                    lineHeight = 20.sp,
                 )
             }
         }
@@ -61,18 +61,18 @@ fun DeckConsole(
     onReject: () -> Unit,
     onAnalyze: () -> Unit,
     isStreaming: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(DeepNavy)
             .padding(16.dp),
-            verticalArrangement = Arrangement.Bottom
+        verticalArrangement = Arrangement.Bottom,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             OutlinedButton(
                 onClick = onReject,
@@ -82,8 +82,8 @@ fun DeckConsole(
                 border = BorderStroke(1.dp, if (isStreaming) CoolGray.copy(alpha = 0.5f) else CoolGray),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = CoolGray,
-                    disabledContentColor = CoolGray.copy(alpha = 0.5f)
-                )
+                    disabledContentColor = CoolGray.copy(alpha = 0.5f),
+                ),
             ) {
                 Text("REJECT")
             }
@@ -96,8 +96,8 @@ fun DeckConsole(
                     containerColor = MintCyan,
                     contentColor = DeepNavy,
                     disabledContainerColor = MintCyan.copy(alpha = 0.3f),
-                    disabledContentColor = DeepNavy.copy(alpha = 0.5f)
-                )
+                    disabledContentColor = DeepNavy.copy(alpha = 0.5f),
+                ),
             ) {
                 Text("APPROVE", fontWeight = FontWeight.Bold)
             }
@@ -113,9 +113,9 @@ fun DeckConsole(
                 containerColor = DeepNavy,
                 contentColor = MintCyan,
                 disabledContainerColor = DeepNavy,
-                disabledContentColor = MintCyan.copy(alpha = 0.5f)
+                disabledContentColor = MintCyan.copy(alpha = 0.5f),
             ),
-            border = BorderStroke(1.dp, if (isStreaming) MintCyan.copy(alpha = 0.5f) else MintCyan)
+            border = BorderStroke(1.dp, if (isStreaming) MintCyan.copy(alpha = 0.5f) else MintCyan),
         ) {
             Text(if (isStreaming) "EXECUTING..." else "▶ RUN DIAGNOSTICS", fontFamily = FontFamily.Monospace)
         }
