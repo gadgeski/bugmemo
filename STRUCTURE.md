@@ -1,5 +1,6 @@
 ```
 bugmemo/
+├── AGENTS.md
 ├── Readme.md
 ├── STRUCTURE.md
 ├── app
@@ -7,10 +8,6 @@ bugmemo/
 │   ├── lint-baseline.xml
 │   ├── proguard-rules.pro
 │   ├── schemas
-│   │   ├── com.example.bugmemo.data.db.AppDatabase
-│   │   │   ├── 2.json
-│   │   │   ├── 3.json
-│   │   │   └── 4.json
 │   │   └── com.gadgeski.bugmemo.data.db.AppDatabase
 │   │       └── 4.json
 │   └── src
@@ -60,6 +57,7 @@ bugmemo/
 │       │   │               │   ├── AppModule.kt
 │       │   │               │   └── NetworkModule.kt
 │       │   │               └── ui
+│       │   │                   ├── AiDeckViewModel.kt
 │       │   │                   ├── AppScaffold.kt
 │       │   │                   ├── NotesViewModel.kt
 │       │   │                   ├── common
@@ -67,12 +65,15 @@ bugmemo/
 │       │   │                   │   └── MarkdownText.kt
 │       │   │                   ├── components
 │       │   │                   │   ├── Common.kt
-│       │   │                   │   └── MarkdownToolbar.kt
+│       │   │                   │   ├── MarkdownToolbar.kt
+│       │   │                   │   └── deck
+│       │   │                   │       └── AiDeckComponents.kt
 │       │   │                   ├── mindmap
 │       │   │                   │   └── MindMapViewModel.kt
 │       │   │                   ├── navigation
 │       │   │                   │   └── Nav.kt
 │       │   │                   ├── screens
+│       │   │                   │   ├── AiDeckScreen.kt
 │       │   │                   │   ├── AllNotesScreen.kt
 │       │   │                   │   ├── BugsScreen.kt
 │       │   │                   │   ├── FoldersScreen.kt
@@ -148,11 +149,7 @@ bugmemo/
 │   │   ├── overview.md
 │   │   └── settingsscreen + appLocalemanager.md
 │   └── img
-│       ├── Bug Memo-FontBold.png
 │       ├── BugMemo-Home.png
-│       ├── BugMemo-Mindmap.png
-│       ├── BugMemo-Search.png
-│       ├── BugMemo_Setting.png
 │       ├── Iceberg-Tech_Dashboard.png
 │       ├── Iceberg-Tech_Directories.png
 │       ├── Iceberg-Tech_Home.png
@@ -168,5 +165,5 @@ bugmemo/
 ├── local.properties
 └── settings.gradle.kts
 
-59 directories, 109 files
+59 directories, 106 files
 ```
