@@ -1,6 +1,7 @@
 # gradle/libs.versions.toml
 
 [versions]
+window = "1.2.0"
 agp = "8.13.2"
 kotlin = "2.0.21"
 coreKtx = "1.17.0"
@@ -47,6 +48,7 @@ spotless = "8.1.0"
 ksp = "2.0.21-1.0.27"
 
 [libraries]
+androidx-window = { group = "androidx.window", name = "window", version.ref = "window" }
 # コア
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 

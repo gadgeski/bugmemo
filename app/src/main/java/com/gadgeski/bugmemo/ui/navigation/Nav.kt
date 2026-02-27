@@ -17,6 +17,7 @@ import com.gadgeski.bugmemo.ui.screens.MindMapScreen
 import com.gadgeski.bugmemo.ui.screens.NoteEditorScreen
 import com.gadgeski.bugmemo.ui.screens.SearchScreen
 import com.gadgeski.bugmemo.ui.screens.SettingsScreen
+import com.gadgeski.bugmemo.ui.screens.AiDeckScreen
 
 // keep: ルート定義
 object Routes {
@@ -27,6 +28,7 @@ object Routes {
     const val MINDMAP = "mindmap"
     const val SETTINGS = "settings"
     const val ALL_NOTES = "all_notes"
+    const val AIDECK = "aideck"
 }
 
 @Composable
@@ -97,6 +99,12 @@ fun AppNavHost(
             AllNotesScreen(
                 vm = vm,
                 onOpenEditor = { navController.navigate(Routes.EDITOR) },
+            )
+        }
+        // AiDeck
+        composable(Routes.AIDECK) {
+            AiDeckScreen(
+                onNavigateBack = { navController.navigateUp() }
             )
         }
     }
